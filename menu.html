@@ -20,6 +20,24 @@
   </div>
 
   <header class="header"></header>
+  
+  <!-- Carousel clean abaixo do menu-area -->
+  <section class="hero-carousel" aria-label="Promoções">
+    <div class="carousel-track">
+      <div class="carousel-slide active">
+        <img src="images/banner1.jpg" alt="Banner 1">
+        <div class="carousel-caption">Clássicas irresistíveis</div>
+      </div>
+      <div class="carousel-slide">
+        <img src="images/banner2.jpg" alt="Banner 2">
+        <div class="carousel-caption">Promoções da semana</div>
+      </div>
+      <div class="carousel-slide">
+        <img src="images/banner1.jpg" alt="Banner 1 repetido">
+        <div class="carousel-caption">Sabor e qualidade</div>
+      </div>
+    </div>
+  </section>
 
   <div class="container">
     <div class="container-area">
@@ -133,10 +151,23 @@
   </div>
 
   <footer>
-    <a href="https://www.linkedin.com/in/mateusalvesds/" target="_blank">© Developed by Mateus Alves</a>
+    <a href="https://github.com/pabloedusilva" target="_blank">© Developed by Pablo Silva</a>
   </footer>
 
   <script src="js/nav.js"></script>
+  <script>
+    // Carousel autoplay simples (fade)
+    (function(){
+      const slides = document.querySelectorAll('.hero-carousel .carousel-slide');
+      if(!slides || slides.length === 0) return;
+      let idx = 0;
+      setInterval(()=>{
+        slides[idx].classList.remove('active');
+        idx = (idx + 1) % slides.length;
+        slides[idx].classList.add('active');
+      }, 3500);
+    })();
+  </script>
   <script type="text/javascript" src="js/geral.js"></script>
   <script type="text/javascript" src="js/cart.js"></script>
 </body>

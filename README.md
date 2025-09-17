@@ -26,7 +26,7 @@ Aplicação simulando um sistema de <strong>Pizzaria</strong>, onde é possível
 
 <h1 align="center">
 <!-- <h1> -->
-<a href="https://matealves.github.io/pizzaria/index.html" target="_blank">Testar</a> 
+<a href="#" target="_blank">Testar</a> 
 </h1>
 
 <p align = "center">
@@ -80,11 +80,7 @@ Aplicação simulando um sistema de <strong>Pizzaria</strong>, onde é possível
 Entre em contato através dos links a seguir!
 <br>
 <br>
-<a href="https://www.linkedin.com/in/mateusalvesds/" target="_blank"><img src="https://img.shields.io/badge/-LinkedIn-%230077B5?style=for-the-badge&logo=linkedin&logoColor=white" target="_blank"></a>
-
-<a href = "mailto:contatomateusalves@hotmail.com"><img src="https://img.shields.io/badge/Microsoft_Outlook-0078D4?style=for-the-badge&logo=microsoft-outlook&logoColor=white" target="_blank"></a>
-
-<a href="https://api.whatsapp.com/send?phone=+5511966616365" target="_blank"><img src="https://img.shields.io/badge/WhatsApp-25D366?style=for-the-badge&logo=whatsapp&logoColor=white" target="_blank"></a>
+<a href="https://github.com/pabloedusilva" target="_blank"><img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white" target="_blank"></a>
 
 </div>
 <br>
