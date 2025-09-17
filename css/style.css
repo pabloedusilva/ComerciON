@@ -340,7 +340,8 @@ h1 {
     font-weight: 600
 }
 
-.pizza-area {
+.pizza-area,
+.drinks-area {
     display: flex;
     flex-wrap: wrap;
     justify-content: center

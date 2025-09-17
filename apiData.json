@@ -1,12 +1,13 @@
-[
-  {
-    "id": 1,
-    "name": "Atum",
-    "img": "images/atum.png",
-    "price": [14.49, 19.99, 29.99],
-    "sizes": ["320g", "530g", "860g"],
-    "description": "Molho, muçarela, atum, cebola fatiada e orégano."
-  },
+{
+  "pizzas": [
+    {
+      "id": 1,
+      "name": "Atum",
+      "img": "images/atum.png",
+      "price": [14.49, 19.99, 29.99],
+      "sizes": ["320g", "530g", "860g"],
+      "description": "Molho, muçarela, atum, cebola fatiada e orégano."
+    },
   {
     "id": 2,
     "name": "Calabresa",
@@ -127,4 +128,31 @@
     "sizes": ["320g", "530g", "860g"],
     "description": "Banana, doce de leite, açúcar e canela."
   }
-]
+  ],
+  "drinks": [
+    {
+      "id": 17,
+      "name": "Coca-cola",
+      "img": "images/pizza-desenho.png",
+      "price": [3.50, 5.50, 8.90],
+      "sizes": ["350ml", "600ml", "2L"],
+      "description": "Refrigerante Coca-cola gelado."
+    },
+    {
+      "id": 18,
+      "name": "Pepsi",
+      "img": "images/pizza-desenho.png", 
+      "price": [3.20, 5.20, 8.50],
+      "sizes": ["350ml", "600ml", "2L"],
+      "description": "Refrigerante Pepsi gelado."
+    },
+    {
+      "id": 19,
+      "name": "Guaraná",
+      "img": "images/pizza-desenho.png",
+      "price": [3.00, 4.80, 7.90],
+      "sizes": ["350ml", "600ml", "2L"], 
+      "description": "Refrigerante Guaraná gelado."
+    }
+  ]
+}
