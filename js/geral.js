@@ -11,11 +11,40 @@ localStorage.getItem("pizza_cart")
   ? (cart = JSON.parse(localStorage.getItem("pizza_cart")))
   : (cart = []);
 
+// Função para compatibilizar carrinho antigo (qtd -> qt)
+cart = cart.map(item => {
+  if (item.qtd && !item.qt) {
+    item.qt = item.qtd;
+    delete item.qtd;
+  }
+  if (!item.type) {
+    item.type = 'pizza'; // assume pizza para itens antigos
+  }
+  if (!item.price && item.id) {
+    // Recuperar preço se não estiver salvo (será definido após carregar API)
+    item.needsPriceUpdate = true;
+  }
+  return item;
+});
+
 const api = fetch("./apiData.json")
   .then(async (response) => await response.json())
   .then((data) => {
     pizzas = data.pizzas;
     drinks = data.drinks;
+
+    // Atualizar preços de itens antigos no carrinho
+    cart = cart.map(item => {
+      if (item.needsPriceUpdate) {
+        let dataArray = item.type === 'pizza' ? pizzas : drinks;
+        let productItem = dataArray.find(product => product.id == item.id);
+        if (productItem) {
+          item.price = productItem.price[item.size];
+        }
+        delete item.needsPriceUpdate;
+      }
+      return item;
+    });
 
     updateCart();
 
@@ -203,97 +232,30 @@ document.querySelector(".pizzaInfo--addButton").addEventListener("click", () => 
       identifier,
       id: currentData[modalKey].id,
       size,
+      price: currentData[modalKey].price[size],
       qt: modalQt,
       type: modalType
     });
   }
 
+  // Adicionar animação ao ícone do carrinho
+  document.querySelector(".fa-cart-shopping").classList.add("pulse");
+
   updateCart();
   closeModal();
+  //Salvar no localStorage
+  localStorage.setItem("pizza_cart", JSON.stringify(cart));
 });
 
-// ##CART
-function updateCart() {
-  // ## MOBILE CART
-  document.querySelector(".menu-openner span").innerHTML = cart.length;
-
-  if (cart.length > 0) {
-    // ## DESKTOP CART
-    document.querySelector("aside").classList.add("show");
-    document.querySelector(".cart").innerHTML = "";
-
-    let subTotal = 0;
-    let desconto = 0;
-    let total = 0;
-
-    for (let i in cart) {
-      let dataArray = cart[i].type === 'pizza' ? pizzas : drinks;
-      let pizzaItem = dataArray.find((item) => item.id == cart[i].id);
-
-      subTotal += pizzaItem.price[cart[i].size] * cart[i].qt;
-
-      let cartItem = document
-        .querySelector(".models .cart--item")
-        .cloneNode(true);
-
-      let pizzaSizeName;
-
-      pizzaSizeName = pizzaItem.sizes[cart[i].size];
-
-      cartItem.querySelector("img").src = pizzaItem.img;
-      cartItem.querySelector(
-        ".cart--item-nome"
-      ).innerHTML = `${pizzaItem.name} (${pizzaSizeName})`;
-      cartItem.querySelector(".cart--item--qt").innerHTML = cart[i].qt;
-      cartItem
-        .querySelector(".cart--item-qtmenos")
-        .addEventListener("click", () => {
-          if (cart[i].qt > 1) {
-            cart[i].qt--;
-          } else {
-            cart.splice(i, 1);
-          }
-          updateCart();
-        });
-      cartItem
-        .querySelector(".cart--item-qtmais")
-        .addEventListener("click", () => {
-          cart[i].qt++;
-          updateCart();
-        });
-
-      document.querySelector(".cart").append(cartItem);
-    }
-
-    desconto = subTotal * 0.1;
-    total = subTotal - desconto;
-
-    document.querySelector(".subtotal span:last-child").innerHTML = `${subTotal.toLocaleString("pt-br", {
-      style: "currency",
-      currency: "BRL",
-    })}`;
-    document.querySelector(".desconto span:last-child").innerHTML = `${desconto.toLocaleString("pt-br", {
-      style: "currency",
-      currency: "BRL",
-    })}`;
-    document.querySelector(".total span:last-child").innerHTML = `${total.toLocaleString("pt-br", {
-      style: "currency",
-      currency: "BRL",
-    })}`;
-  } else {
-    document.querySelector("aside").classList.remove("show");
-    document.querySelector(".menu-openner span").innerHTML = "0";
-  }
-
-  //SESSION STORAGE
-  localStorage.setItem("pizza_cart", JSON.stringify(cart));
-}
+// ##CART - Esta função será sobrescrita pelo cart.js
+// Removida para evitar conflitos, usando apenas a versão do cart.js
 
 //FINALIZAR PEDIDO
 document.querySelector(".cart--finalizar").addEventListener("click", () => {
   document.querySelector("aside").classList.remove("show");
   cart = [];
   updateCart();
+  localStorage.setItem("pizza_cart", JSON.stringify(cart));
 });
 
 //## MOBILE EVENTS
