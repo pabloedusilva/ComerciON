@@ -1,32 +1,5 @@
-//##ADD TO CART
-document
-  .querySelector(".pizzaInfo--addButton")
-  .addEventListener("click", () => {
-    let size = parseInt(
-      document
-        .querySelector(".pizzaInfo--size.selected")
-        .getAttribute("data-key")
-    );
-    let identifier = pizzas[modalKey].id + "@" + size; //concatena id da pizza e tamanho
-    let keyItem = cart.findIndex((item) => item.identifier == identifier); //return
-    if (keyItem > -1) {
-      cart[keyItem].qtd += modalQt; // aumenta a qtd caso item já esteja no cart
-    } else {
-      //## Adicionando objeto na variável "cart".
-      cart.push({
-        identifier,
-        id: pizzas[modalKey].id,
-        size,
-        price: pizzas[modalKey].price[size],
-        qtd: modalQt,
-      });
-    }
-    document.querySelector(".fa-cart-shopping").classList.add("pulse");
-
-    updateCart();
-    closeModal();
-    saveCart();
-  });
+// Event listener removido para evitar duplicação
+// A funcionalidade de adicionar ao carrinho está no geral.js
 //Salvar itens do carrinho no localStorage
 const saveCart = () => {
   localStorage.setItem("pizza_cart", JSON.stringify(cart));
@@ -56,21 +29,18 @@ function updateCart() {
     let total = 0;
 
     for (let i in cart) {
-      let pizzaItem = pizzas.find((item) => item.id == cart[i].id);
-      pizzasValor += cart[i].price * cart[i].qtd;
-
-      let pizzaSizeName;
-      switch (cart[i].size) {
-        case 0:
-          pizzaSizeName = "P";
-          break;
-        case 1:
-          pizzaSizeName = "M";
-          break;
-        case 2:
-          pizzaSizeName = "G";
-          break;
+      // Determinar se é pizza ou drink e buscar no array correto
+      let dataArray = cart[i].type === 'pizza' ? pizzas : drinks;
+      let pizzaItem = dataArray.find((item) => item.id == cart[i].id);
+      
+      // Se não encontrou o item, pular para o próximo
+      if (!pizzaItem) {
+        continue;
       }
+      
+      pizzasValor += cart[i].price * cart[i].qt;
+
+      let pizzaSizeName = pizzaItem.sizes[cart[i].size];
       let pizzaName = `${pizzaItem.name} (${pizzaSizeName})`;
       let cartItem = document
         .querySelector(".models .cart--item")
@@ -78,22 +48,24 @@ function updateCart() {
 
       cartItem.querySelector("img").src = pizzaItem.img;
       cartItem.querySelector(".cart--item-nome").innerHTML = pizzaName;
-      cartItem.querySelector(".cart--item--qt").innerHTML = cart[i].qtd;
+      cartItem.querySelector(".cart--item--qt").innerHTML = cart[i].qt;
       cartItem
         .querySelector(".cart--item-qtmenos")
         .addEventListener("click", () => {
-          if (cart[i].qtd > 1) {
-            cart[i].qtd--;
+          if (cart[i].qt > 1) {
+            cart[i].qt--;
           } else {
             cart.splice(i, 1);
           }
           updateCart();
+          saveCart();
         });
       cartItem
         .querySelector(".cart--item-qtmais")
         .addEventListener("click", () => {
-          cart[i].qtd++;
+          cart[i].qt++;
           updateCart();
+          saveCart();
         });
 
       document.querySelector(".cart").append(cartItem);
