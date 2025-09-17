@@ -65,8 +65,8 @@
         <h1 class="titulo--h1">Pizzas</h1>
         <div class="pizza-area"></div>
         
-        <!-- Seção de Refrigerantes -->
-        <h1 class="titulo--h1" style="margin-top: 60px;">Refrigerantes</h1>
+        <!-- Seção de Bebidas -->
+        <h1 class="titulo--h1" style="margin-top: 60px;">Bebidas</h1>
         <div class="drinks-area"></div>
       </main>
       <aside>
@@ -106,9 +106,9 @@
           <div class="pizzaInfo--cancelMobileButton">
             <i class="fa-solid fa-arrow-left"></i>
           </div>
-          <div class="pizzaBig" style="flex-direction: column;">
+          <div class="pizzaBig">
             <img src="" />
-            <div style="margin-top:8px; font-size:11px; color:#ccc; font-style:italic; text-align:center;">
+            <div class="image-disclaimer">
               Imagens ilustrativas
             </div>
           </div>
@@ -126,6 +126,21 @@
                 </div>
                 <div data-key="2" class="pizzaInfo--size selected">
                   GRANDE <span>--</span>
+                </div>
+              </div>
+            </div>
+            <div class="pizzaInfo--customizearea">
+              <div class="pizzaInfo--sector">Personalizar</div>
+              <div class="pizzaInfo--customize">
+                <div class="customize-input-wrapper">
+                  <input type="text" 
+                         id="removeIngredients" 
+                         placeholder="Ex: cebola, tomate, azeitona..." 
+                         maxlength="100"
+                         class="customize-input">
+                  <small class="customize-helper">
+                    Informe quais ingredientes deseja remover (opcional)
+                  </small>
                 </div>
               </div>
             </div>

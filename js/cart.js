@@ -42,6 +42,12 @@ function updateCart() {
 
       let pizzaSizeName = pizzaItem.sizes[cart[i].size];
       let pizzaName = `${pizzaItem.name} (${pizzaSizeName})`;
+      
+      // Adicionar ingredientes removidos se houver
+      if (cart[i].removedIngredients && cart[i].removedIngredients.length > 0) {
+        pizzaName += `<br><small style="color: #999; font-size: 11px;">Sem: ${cart[i].removedIngredients}</small>`;
+      }
+      
       let cartItem = document
         .querySelector(".models .cart--item")
         .cloneNode(true);

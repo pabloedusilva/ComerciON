@@ -119,6 +119,17 @@ function openModal(key, type) {
     currency: "BRL",
   })}`;
   
+  // Mostrar/ocultar área de personalização apenas para pizzas
+  const customizeArea = document.querySelector(".pizzaInfo--customizearea");
+  const removeIngredientsInput = document.getElementById("removeIngredients");
+  
+  if (type === 'pizza') {
+    customizeArea.style.display = 'block';
+    removeIngredientsInput.value = '';
+  } else {
+    customizeArea.style.display = 'none';
+  }
+  
   // Reset tamanhos
   document.querySelector(".pizzaInfo--size.selected")?.classList.remove("selected");
   document.querySelectorAll(".pizzaInfo--size").forEach((size, sizeIndex) => {
@@ -222,7 +233,13 @@ document.querySelector(".pizzaInfo--addButton").addEventListener("click", () => 
     document.querySelector(".pizzaInfo--size.selected").getAttribute("data-key")
   );
 
-  let identifier = `${currentData[modalKey].id}@${size}`;
+  // Pegar ingredientes removidos (apenas para pizzas)
+  let removedIngredients = '';
+  if (modalType === 'pizza') {
+    removedIngredients = document.getElementById("removeIngredients").value.trim();
+  }
+
+  let identifier = `${currentData[modalKey].id}@${size}@${removedIngredients}`;
 
   let key = cart.findIndex((item) => item.identifier == identifier);
   if (key > -1) {
@@ -234,7 +251,8 @@ document.querySelector(".pizzaInfo--addButton").addEventListener("click", () => 
       size,
       price: currentData[modalKey].price[size],
       qt: modalQt,
-      type: modalType
+      type: modalType,
+      removedIngredients: removedIngredients
     });
   }
 
