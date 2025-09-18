@@ -19,6 +19,18 @@ header = header.innerHTML = `<div class="menu-area">
                     <i class="fa-solid fa-cart-shopping"></i>
                 </div>
             </div>
+            <div class="profile-area">
+                <div class="profile-icon" id="profileToggle">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+                <div class="profile-dropdown" id="profileDropdown">
+                    <ul>
+                        <li><a href="#"><i class="fa-solid fa-user-circle"></i> Meu Perfil</a></li>
+                        <li><a href="#"><i class="fa-solid fa-shopping-bag"></i> Meus Pedidos</a></li>
+                        <li><a href="#" class="logout"><i class="fa-solid fa-sign-out-alt"></i> Sair</a></li>
+                    </ul>
+                </div>
+            </div>
         </div>
         <div class="menu">
             <ul>
@@ -34,6 +46,20 @@ header = header.innerHTML = `<div class="menu-area">
                 <a href="https://github.com/pabloedusilva" target="_blank">
                     <li>Contato</li>
                 </a>
+                <li class="desktop-profile-menu">
+                    <div class="profile-area-desktop">
+                        <div class="profile-icon" id="profileToggleDesktop">
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                        <div class="profile-dropdown" id="profileDropdownDesktop">
+                            <ul>
+                                <li><a href="#"><i class="fa-solid fa-user-circle"></i> Meu Perfil</a></li>
+                                <li><a href="#"><i class="fa-solid fa-shopping-bag"></i> Meus Pedidos</a></li>
+                                <li><a href="#" class="logout"><i class="fa-solid fa-sign-out-alt"></i> Sair</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </li>
             </ul>
         </div>
     </nav>
@@ -51,4 +77,46 @@ let openMenu = document.querySelector(".menu");
 
 toggleMenu.addEventListener("click", () => {
   openMenu.classList.toggle("menu-opened");
+});
+
+// Profile dropdown functionality - Mobile
+let profileToggle = document.querySelector("#profileToggle");
+let profileDropdown = document.querySelector("#profileDropdown");
+
+// Profile dropdown functionality - Desktop
+let profileToggleDesktop = document.querySelector("#profileToggleDesktop");
+let profileDropdownDesktop = document.querySelector("#profileDropdownDesktop");
+
+// Mobile profile dropdown
+if (profileToggle && profileDropdown) {
+  profileToggle.addEventListener("click", (e) => {
+    e.stopPropagation();
+    profileDropdown.classList.toggle("show");
+  });
+}
+
+// Desktop profile dropdown
+if (profileToggleDesktop && profileDropdownDesktop) {
+  profileToggleDesktop.addEventListener("click", (e) => {
+    e.stopPropagation();
+    profileDropdownDesktop.classList.toggle("show");
+  });
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener("click", (e) => {
+  if (profileToggle && profileDropdown && !profileToggle.contains(e.target) && !profileDropdown.contains(e.target)) {
+    profileDropdown.classList.remove("show");
+  }
+  if (profileToggleDesktop && profileDropdownDesktop && !profileToggleDesktop.contains(e.target) && !profileDropdownDesktop.contains(e.target)) {
+    profileDropdownDesktop.classList.remove("show");
+  }
+});
+
+// Close dropdowns when pressing Escape
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    if (profileDropdown) profileDropdown.classList.remove("show");
+    if (profileDropdownDesktop) profileDropdownDesktop.classList.remove("show");
+  }
 });

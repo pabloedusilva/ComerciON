@@ -121,12 +121,109 @@ body {
     line-height: 46px;
     height: 45px;
     cursor: pointer;
-    align-items: center
+    align-items: center;
+    gap: 15px;
 }
 
 .menu-openner span, .fa-cart-shopping {
     color: #fab427;
     font-size: 1.2rem
+}
+
+/* Profile Styles para Home */
+.profile-area {
+    position: relative;
+    display: none;
+}
+
+.profile-icon {
+    width: 40px;
+    height: 40px;
+    background: #fab427;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #fff;
+    font-size: 16px;
+}
+
+.profile-icon:hover {
+    background: #e0a225;
+    transform: scale(1.05);
+}
+
+.profile-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    min-width: 180px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.profile-dropdown.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.profile-dropdown ul {
+    list-style: none;
+    padding: 8px 0;
+    margin: 0;
+}
+
+.profile-dropdown li {
+    padding: 0;
+}
+
+.profile-dropdown a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    text-decoration: none;
+    color: #333;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.profile-dropdown a::after {
+    display: none !important;
+}
+
+.profile-dropdown a:hover {
+    background: #f8f9fa;
+    color: #fab427;
+}
+
+.profile-dropdown a.logout:hover {
+    background: #fee;
+    color: #dc3545;
+}
+
+.profile-dropdown i {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+}
+
+/* Hide mobile profile area in desktop */
+@media (min-width: 821px) {
+    .profile-area {
+        display: none !important;
+    }
 }
 
 .menu ul {
@@ -159,6 +256,104 @@ body {
 .menu ul a:hover::after, .menu .active::after {
     left: 0%;
     width: 100%
+}
+
+/* Desktop profile styles para Home */
+.desktop-profile-menu {
+    display: flex;
+    align-items: center;
+    margin-left: 10px;
+}
+
+.profile-area-desktop {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.profile-area-desktop .profile-icon {
+    width: 32px;
+    height: 32px;
+    background: #fab427;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #fff;
+    font-size: 14px;
+}
+
+.profile-area-desktop .profile-icon:hover {
+    background: #e0a225;
+    transform: scale(1.05);
+}
+
+.profile-area-desktop .profile-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    min-width: 180px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+}
+
+.profile-area-desktop .profile-dropdown.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.profile-area-desktop .profile-dropdown ul {
+    list-style: none;
+    padding: 8px 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-area-desktop .profile-dropdown li {
+    padding: 0;
+}
+
+.profile-area-desktop .profile-dropdown a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    text-decoration: none;
+    color: #333;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.profile-area-desktop .profile-dropdown a::after {
+    display: none !important;
+}
+
+.profile-area-desktop .profile-dropdown a:hover {
+    background: #f8f9fa;
+    color: #fab427;
+}
+
+.profile-area-desktop .profile-dropdown a.logout:hover {
+    background: #fee;
+    color: #dc3545;
+}
+
+.profile-area-desktop .profile-dropdown i {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
 }
 
 .home {
@@ -424,6 +619,10 @@ footer a:hover::after {
         z-index: 99;
     }
 
+    .profile-area {
+        display: flex;
+    }
+
     .left-home {
         align-items: center;
         width: 100%
@@ -543,3 +742,40 @@ footer a:hover::after {
 
 /* Index: esconder o botão do carrinho no header (somente na home) */
 .menuMobile-area { display: none !important; }
+
+/* Profile responsive styles for mobile - matching style.css */
+@media (max-width: 820px) {
+    .profile-dropdown {
+        right: 20px;
+        width: 200px;
+    }
+
+    /* Hide desktop profile in mobile */
+    .desktop-profile-menu {
+        display: none !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .profile-area {
+        margin-right: 40px;
+    }
+    
+    .profile-dropdown {
+        right: 10px;
+        width: 180px;
+        font-size: 0.9em;
+    }
+    
+    .profile-dropdown a i {
+        width: 16px;
+    }
+}
+
+/* Regra global para remover linha dourada dos dropdowns em todos os tamanhos - HOME */
+.profile-dropdown a::after,
+.profile-area-desktop .profile-dropdown a::after,
+.profile-area .profile-dropdown a::after,
+.menu .profile-dropdown a::after {
+    display: none !important;
+}
