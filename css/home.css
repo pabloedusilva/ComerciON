@@ -444,7 +444,16 @@ body {
     width: auto;
     max-width: 100%;
     max-height: calc(100vh - 200px);
-    height: auto
+    height: auto;
+    display: block;
+    filter: blur(8px);
+    transform: translateZ(0);
+    transition: filter .4s ease;
+}
+
+/* Remove blur when the image has loaded */
+.right-image img.is-loaded {
+    filter: blur(0);
 }
 
 footer {
