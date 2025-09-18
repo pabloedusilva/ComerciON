@@ -112,11 +112,16 @@ body {
     opacity: 0
 }
 
+.mobile-left {
+    display: none;
+}
+
 .container-menu-mobile {
     display: none;
     line-height: 46px;
     height: 45px;
-    cursor: pointer
+    cursor: pointer;
+    align-items: center
 }
 
 .menu-openner span, .fa-cart-shopping {
@@ -352,18 +357,35 @@ footer a:hover::after {
         flex-direction: column-reverse
     }
 
+    .mobile-left {
+        display: flex;
+        align-items: center;
+    }
+
     .container-menu-mobile {
-        display: flex
+        display: flex;
     }
 
     .menu_hamburger {
         display: inline-flex
     }
 
+    .menu-area {
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+    }
+
+    .logo {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
     .menu {
         position: fixed;
         top: 0;
-        right: 0;
+        left: 0;
         z-index: 98;
         display: flex;
         justify-content: center;
@@ -384,7 +406,7 @@ footer a:hover::after {
 
     .menu ul {
         flex-direction: column;
-        padding-right: 40px
+        padding-left: 40px
     }
 
     .menu li {
@@ -400,7 +422,6 @@ footer a:hover::after {
     .menuMobile-area {
         display: flex;
         z-index: 99;
-        margin-right: 15px
     }
 
     .left-home {

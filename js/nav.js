@@ -1,5 +1,12 @@
 let header = document.querySelector(".header");
 header = header.innerHTML = `<div class="menu-area">
+    <div class="mobile-left">
+        <label for="checkbox" class="menu_hamburger">
+            <input type="checkbox" id="checkbox">
+            <span class="line line-main"></span>
+            <span class="line line-split"></span>
+        </label>
+    </div>
     <div class="logo">
         <a href="index.html">
             <img src="images/logo_pizza.png" alt="logo_pizza.png">
@@ -12,11 +19,6 @@ header = header.innerHTML = `<div class="menu-area">
                     <i class="fa-solid fa-cart-shopping"></i>
                 </div>
             </div>
-            <label for="checkbox" class="menu_hamburger">
-                <input type="checkbox" id="checkbox">
-                <span class="line line-main"></span>
-                <span class="line line-split"></span>
-            </label>
         </div>
         <div class="menu">
             <ul>
