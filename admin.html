@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="css/admin.css">
+    <title>Dashboard Admin - Pizzaria</title>
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <img src="images/logo_pizza.png" alt="Logo Pizzaria">
+                <h2>Admin Panel</h2>
+            </div>
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul>
+                <li>
+                    <a href="#dashboard" class="nav-link active" data-section="dashboard">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#produtos" class="nav-link" data-section="produtos">
+                        <i class="fas fa-pizza-slice"></i>
+                        <span>Produtos</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#pedidos" class="nav-link" data-section="pedidos">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>Pedidos</span>
+                        <span class="badge">12</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#relatorios" class="nav-link" data-section="relatorios">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Relatórios</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#clientes" class="nav-link" data-section="clientes">
+                        <i class="fas fa-users"></i>
+                        <span>Clientes</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#configuracoes" class="nav-link" data-section="configuracoes">
+                        <i class="fas fa-cog"></i>
+                        <span>Configurações</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="index.html" class="btn-logout">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Sair</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="admin-header">
+            <div class="header-left">
+                <button class="mobile-menu-toggle" id="mobileMenuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1 id="pageTitle">Dashboard</h1>
+            </div>
+            <div class="header-right">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Pesquisar...">
+                </div>
+                <div class="notifications">
+                    <button class="notification-btn">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge">3</span>
+                    </button>
+                </div>
+                <div class="admin-profile">
+                    <img src="images/logo_pizza.png" alt="Admin">
+                    <span>Admin</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="content">
+            <!-- Dashboard Section -->
+            <section id="dashboard-section" class="content-section active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon revenue">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>R$ 15.420,00</h3>
+                            <p>Receita do Mês</p>
+                            <span class="stat-trend positive">+12.5%</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon orders">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>342</h3>
+                            <p>Pedidos do Mês</p>
+                            <span class="stat-trend positive">+8.2%</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon customers">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>89</h3>
+                            <p>Novos Clientes</p>
+                            <span class="stat-trend positive">+15.3%</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon products">
+                            <i class="fas fa-pizza-slice"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>19</h3>
+                            <p>Produtos Ativos</p>
+                            <span class="stat-trend neutral">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Vendas dos Últimos 7 Dias</h3>
+                            <select class="chart-filter">
+                                <option>7 dias</option>
+                                <option>30 dias</option>
+                                <option>3 meses</option>
+                            </select>
+                        </div>
+                        <div class="chart-content">
+                            <canvas id="salesChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="recent-orders">
+                        <h3>Pedidos Recentes</h3>
+                        <div class="orders-list">
+                            <div class="order-item">
+                                <div class="order-info">
+                                    <strong>#001</strong>
+                                    <span>João Silva</span>
+                                    <span class="order-time">há 5 min</span>
+                                </div>
+                                <div class="order-status pending">
+                                    <span>Preparando</span>
+                                </div>
+                                <div class="order-value">R$ 45,99</div>
+                            </div>
+                            <div class="order-item">
+                                <div class="order-info">
+                                    <strong>#002</strong>
+                                    <span>Maria Santos</span>
+                                    <span class="order-time">há 12 min</span>
+                                </div>
+                                <div class="order-status delivered">
+                                    <span>Entregue</span>
+                                </div>
+                                <div class="order-value">R$ 32,50</div>
+                            </div>
+                            <div class="order-item">
+                                <div class="order-info">
+                                    <strong>#003</strong>
+                                    <span>Pedro Costa</span>
+                                    <span class="order-time">há 18 min</span>
+                                </div>
+                                <div class="order-status preparing">
+                                    <span>A caminho</span>
+                                </div>
+                                <div class="order-value">R$ 67,80</div>
+                            </div>
+                        </div>
+                        <a href="#pedidos" class="view-all-btn">Ver todos os pedidos</a>
+                    </div>
+                </div>
+
+                <div class="popular-products">
+                    <h3>Produtos Mais Vendidos</h3>
+                    <div class="products-grid">
+                        <div class="product-card">
+                            <img src="images/calabresa.png" alt="Pizza Calabresa">
+                            <div class="product-info">
+                                <h4>Pizza Calabresa</h4>
+                                <p>89 vendas</p>
+                                <span class="product-revenue">R$ 1.250,40</span>
+                            </div>
+                        </div>
+                        <div class="product-card">
+                            <img src="images/4queijos.png" alt="Pizza 4 Queijos">
+                            <div class="product-info">
+                                <h4>Pizza 4 Queijos</h4>
+                                <p>76 vendas</p>
+                                <span class="product-revenue">R$ 1.140,20</span>
+                            </div>
+                        </div>
+                        <div class="product-card">
+                            <img src="images/portuguesa.png" alt="Pizza Portuguesa">
+                            <div class="product-info">
+                                <h4>Pizza Portuguesa</h4>
+                                <p>65 vendas</p>
+                                <span class="product-revenue">R$ 980,60</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Produtos Section -->
+            <section id="produtos-section" class="content-section">
+                <div class="section-header">
+                    <h2>Gestão de Produtos</h2>
+                    <button class="btn-primary" id="addProductBtn">
+                        <i class="fas fa-plus"></i>
+                        Adicionar Produto
+                    </button>
+                </div>
+
+                <div class="filters-bar">
+                    <div class="filter-group">
+                        <select id="categoryFilter">
+                            <option value="">Todas as Categorias</option>
+                            <option value="pizza">Pizzas</option>
+                            <option value="drink">Bebidas</option>
+                        </select>
+                    </div>
+                    <div class="search-filter">
+                        <input type="text" id="productSearch" placeholder="Buscar produtos...">
+                        <i class="fas fa-search"></i>
+                    </div>
+                </div>
+
+                <div class="products-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Imagem</th>
+                                <th>Nome</th>
+                                <th>Categoria</th>
+                                <th>Preço</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsTableBody">
+                            <!-- Produtos serão inseridos via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Pedidos Section -->
+            <section id="pedidos-section" class="content-section">
+                <div class="section-header">
+                    <h2>Gestão de Pedidos</h2>
+                    <div class="header-actions">
+                        <button class="btn-secondary" id="exportOrdersBtn">
+                            <i class="fas fa-download"></i>
+                            Exportar
+                        </button>
+                        <button class="btn-primary" id="refreshOrdersBtn">
+                            <i class="fas fa-refresh"></i>
+                            Atualizar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="filters-bar">
+                    <div class="filter-group">
+                        <select id="statusFilter">
+                            <option value="">Todos os Status</option>
+                            <option value="pending">Pendente</option>
+                            <option value="preparing">Preparando</option>
+                            <option value="delivery">A caminho</option>
+                            <option value="delivered">Entregue</option>
+                            <option value="cancelled">Cancelado</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <input type="date" id="dateFilter">
+                    </div>
+                    <div class="search-filter">
+                        <input type="text" id="orderSearch" placeholder="Buscar por cliente ou pedido...">
+                        <i class="fas fa-search"></i>
+                    </div>
+                </div>
+
+                <div class="orders-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Pedido</th>
+                                <th>Cliente</th>
+                                <th>Data/Hora</th>
+                                <th>Items</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody">
+                            <!-- Pedidos serão inseridos via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Relatórios Section -->
+            <section id="relatorios-section" class="content-section">
+                <div class="section-header">
+                    <h2>Relatórios e Análises</h2>
+                    <div class="period-selector">
+                        <button class="period-btn active" data-period="7">7 dias</button>
+                        <button class="period-btn" data-period="30">30 dias</button>
+                        <button class="period-btn" data-period="90">3 meses</button>
+                        <button class="period-btn" data-period="365">1 ano</button>
+                    </div>
+                </div>
+
+                <div class="reports-grid">
+                    <div class="chart-box">
+                        <h3>Vendas por Período</h3>
+                        <canvas id="salesReportChart"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <h3>Produtos Mais Vendidos</h3>
+                        <canvas id="productsChart"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <h3>Horários de Pico</h3>
+                        <canvas id="peakHoursChart"></canvas>
+                    </div>
+                    <div class="metrics-box">
+                        <h3>Métricas Importantes</h3>
+                        <div class="metrics-list">
+                            <div class="metric-item">
+                                <span class="metric-label">Ticket Médio</span>
+                                <span class="metric-value">R$ 45,20</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Tempo Médio Entrega</span>
+                                <span class="metric-value">28 min</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Taxa de Cancelamento</span>
+                                <span class="metric-value">3.2%</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Avaliação Média</span>
+                                <span class="metric-value">4.7 ⭐</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Clientes Section -->
+            <section id="clientes-section" class="content-section">
+                <div class="section-header">
+                    <h2>Gestão de Clientes</h2>
+                    <button class="btn-primary" id="addClientBtn">
+                        <i class="fas fa-plus"></i>
+                        Adicionar Cliente
+                    </button>
+                </div>
+
+                <div class="filters-bar">
+                    <div class="search-filter">
+                        <input type="text" id="clientSearch" placeholder="Buscar clientes...">
+                        <i class="fas fa-search"></i>
+                    </div>
+                </div>
+
+                <div class="clients-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Email</th>
+                                <th>Telefone</th>
+                                <th>Pedidos</th>
+                                <th>Total Gasto</th>
+                                <th>Último Pedido</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientsTableBody">
+                            <!-- Clientes serão inseridos via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Configurações Section -->
+            <section id="configuracoes-section" class="content-section">
+                <div class="section-header">
+                    <h2>Configurações</h2>
+                </div>
+
+                <div class="config-grid">
+                    <div class="config-card">
+                        <h3>Informações da Pizzaria</h3>
+                        <form class="config-form">
+                            <div class="form-group">
+                                <label>Nome da Pizzaria</label>
+                                <input type="text" value="Pizzaria Deliciosa">
+                            </div>
+                            <div class="form-group">
+                                <label>Telefone</label>
+                                <input type="tel" value="(11) 99999-9999">
+                            </div>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" value="contato@pizzaria.com">
+                            </div>
+                            <div class="form-group">
+                                <label>Endereço</label>
+                                <textarea>Rua das Pizzas, 123 - São Paulo, SP</textarea>
+                            </div>
+                            <button type="submit" class="btn-primary">Salvar</button>
+                        </form>
+                    </div>
+
+                    <div class="config-card">
+                        <h3>Configurações de Entrega</h3>
+                        <form class="config-form">
+                            <div class="form-group">
+                                <label>Taxa de Entrega</label>
+                                <input type="number" step="0.01" value="5.00">
+                            </div>
+                            <div class="form-group">
+                                <label>Tempo Médio de Entrega (minutos)</label>
+                                <input type="number" value="30">
+                            </div>
+                            <div class="form-group">
+                                <label>Raio de Entrega (km)</label>
+                                <input type="number" value="15">
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" checked>
+                                    Aceitar pedidos online
+                                </label>
+                            </div>
+                            <button type="submit" class="btn-primary">Salvar</button>
+                        </form>
+                    </div>
+
+                    <div class="config-card">
+                        <h3>Horário de Funcionamento</h3>
+                        <form class="config-form">
+                            <div class="form-group">
+                                <label>Segunda a Sexta</label>
+                                <div class="time-inputs">
+                                    <input type="time" value="18:00">
+                                    <span>às</span>
+                                    <input type="time" value="23:00">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Sábado e Domingo</label>
+                                <div class="time-inputs">
+                                    <input type="time" value="18:00">
+                                    <span>às</span>
+                                    <input type="time" value="00:00">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn-primary">Salvar</button>
+                        </form>
+                    </div>
+
+                    <div class="config-card">
+                        <h3>Preferências do Sistema</h3>
+                        <form class="config-form">
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" checked>
+                                    Notificações por email
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" checked>
+                                    Som para novos pedidos
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox">
+                                    Modo escuro
+                                </label>
+                            </div>
+                            <button type="submit" class="btn-primary">Salvar</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <!-- Modal de Produto -->
+    <div class="modal" id="productModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="productModalTitle">Adicionar Produto</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="productForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nome do Produto *</label>
+                            <input type="text" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Categoria *</label>
+                            <select name="category" required>
+                                <option value="">Selecione...</option>
+                                <option value="pizza">Pizza</option>
+                                <option value="drink">Bebida</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Descrição *</label>
+                        <textarea name="description" required></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Preço Pequeno (R$)</label>
+                            <input type="number" step="0.01" name="price1">
+                        </div>
+                        <div class="form-group">
+                            <label>Preço Médio (R$)</label>
+                            <input type="number" step="0.01" name="price2">
+                        </div>
+                        <div class="form-group">
+                            <label>Preço Grande (R$) *</label>
+                            <input type="number" step="0.01" name="price3" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Imagem do Produto</label>
+                        <input type="file" name="image" accept="image/*">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" id="cancelProductBtn">Cancelar</button>
+                        <button type="submit" class="btn-primary">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Pedido Detalhes -->
+    <div class="modal" id="orderModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Detalhes do Pedido</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="orderModalBody">
+                <!-- Conteúdo será inserido via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+
+</html>
