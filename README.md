@@ -1,5 +1,5 @@
 <p align = "center">
-  <img src ="https://github.com/user-attachments/assets/211d424e-d9de-4161-a030-86552f90b896" alt = "mockup"/>
+  <img src ="https://github.com/user-attachments/assets/e8ec5cac-b361-4f4e-86d8-28c886c53e04" alt = "mockup"/>
 </p>
 <br>
 
