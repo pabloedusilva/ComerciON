@@ -88,6 +88,20 @@ function initializeApp() {
     setupCharts();
     loadMockData();
     showSection('dashboard');
+    
+    // Configurar layout inicial baseado no tamanho da tela
+    handleResize();
+    
+    // Adicionar loading overlay inicial se necessário
+    removeLoadingState();
+}
+
+// Remover estado de carregamento
+function removeLoadingState() {
+    const loadingElements = document.querySelectorAll('.loading, .skeleton');
+    loadingElements.forEach(element => {
+        element.classList.remove('loading', 'skeleton');
+    });
 }
 
 // Carregar produtos da API existente
@@ -130,7 +144,7 @@ function loadMockData() {
     renderClientsTable();
 }
 
-// Configuração de event listeners
+// Configuração de event listeners - Melhorada para responsividade
 function setupEventListeners() {
     // Navegação da sidebar
     document.querySelectorAll('.nav-link').forEach(link => {
@@ -142,6 +156,11 @@ function setupEventListeners() {
             // Atualizar link ativo
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             link.classList.add('active');
+            
+            // Fechar sidebar em mobile após seleção
+            if (window.innerWidth <= 768) {
+                closeMobileSidebar();
+            }
         });
     });
 
@@ -150,14 +169,20 @@ function setupEventListeners() {
     const mobileMenuToggle = document.getElementById('mobileMenuToggle');
     const sidebar = document.querySelector('.sidebar');
 
+    // Ambos os botões fazem a mesma ação: toggle da sidebar mobile
     sidebarToggle?.addEventListener('click', () => {
-        sidebar.classList.toggle('collapsed');
-        document.body.classList.toggle('sidebar-collapsed');
+        toggleMobileSidebar();
     });
 
     mobileMenuToggle?.addEventListener('click', () => {
-        sidebar.classList.toggle('mobile-open');
+        toggleMobileSidebar();
     });
+
+    // Configurar swipe gestures para mobile
+    setupMobileGestures();
+    
+    // Configurar eventos de redimensionamento
+    setupResizeHandlers();
 
     // Modais
     setupModals();
@@ -181,6 +206,243 @@ function setupEventListeners() {
 
     // Formulários de configuração
     setupConfigForms();
+}
+
+// Configurar gestos móveis
+function setupMobileGestures() {
+    const sidebar = document.querySelector('.sidebar');
+    let startX = 0;
+    let currentX = 0;
+    let isDragging = false;
+
+    // Touch events para swipe na sidebar
+    document.addEventListener('touchstart', (e) => {
+        if (window.innerWidth <= 768) {
+            startX = e.touches[0].clientX;
+            
+            // Se começar da borda esquerda, pode ser um swipe para abrir
+            if (startX < 20 && !sidebar.classList.contains('mobile-open')) {
+                isDragging = true;
+            }
+            // Se a sidebar estiver aberta e tocar fora dela
+            else if (sidebar.classList.contains('mobile-open') && startX > 280) {
+                closeMobileSidebar();
+            }
+        }
+    }, { passive: true });
+
+    document.addEventListener('touchmove', (e) => {
+        if (!isDragging || window.innerWidth > 768) return;
+        
+        currentX = e.touches[0].clientX;
+        const diff = currentX - startX;
+        
+        // Swipe para a direita para abrir
+        if (diff > 50 && !sidebar.classList.contains('mobile-open')) {
+            openMobileSidebar();
+            isDragging = false;
+        }
+    }, { passive: true });
+
+    document.addEventListener('touchend', () => {
+        isDragging = false;
+    }, { passive: true });
+}
+
+// Configurar handlers de redimensionamento
+function setupResizeHandlers() {
+    let resizeTimer;
+    
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            handleResize();
+        }, 250);
+    });
+    
+    // Escutar mudanças de orientação em mobile
+    window.addEventListener('orientationchange', () => {
+        setTimeout(() => {
+            handleResize();
+        }, 500);
+    });
+}
+
+// Manipular redimensionamento
+function handleResize() {
+    const sidebar = document.querySelector('.sidebar');
+    
+    // Fechar sidebar mobile se redimensionar para desktop
+    if (window.innerWidth > 768 && sidebar.classList.contains('mobile-open')) {
+        closeMobileSidebar();
+    }
+    
+    // Redimensionar gráficos
+    resizeCharts();
+    
+    // Atualizar layout de tabelas
+    updateTableLayout();
+}
+
+// Gerenciar sidebar mobile
+function toggleMobileSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    
+    if (sidebar.classList.contains('mobile-open')) {
+        closeMobileSidebar();
+    } else {
+        openMobileSidebar();
+    }
+}
+
+function openMobileSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    
+    // Criar overlay se não existir
+    if (!document.querySelector('.sidebar-overlay')) {
+        const overlay = document.createElement('div');
+        overlay.className = 'sidebar-overlay';
+        overlay.addEventListener('click', closeMobileSidebar);
+        document.body.appendChild(overlay);
+    }
+    
+    sidebar.classList.add('mobile-open');
+    document.querySelector('.sidebar-overlay').classList.add('show');
+    document.body.style.overflow = 'hidden'; // Prevenir scroll do body
+}
+
+function closeMobileSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    
+    sidebar.classList.remove('mobile-open');
+    overlay?.classList.remove('show');
+    document.body.style.overflow = ''; // Restaurar scroll do body
+    
+    // Remover overlay após animação
+    setTimeout(() => {
+        if (overlay && !overlay.classList.contains('show')) {
+            overlay.remove();
+        }
+    }, 300);
+}
+
+// Redimensionar gráficos
+function resizeCharts() {
+    Object.values(charts).forEach(chart => {
+        if (chart && typeof chart.resize === 'function') {
+            chart.resize();
+        }
+    });
+}
+
+// Atualizar layout de tabelas
+function updateTableLayout() {
+    const tables = document.querySelectorAll('.products-table, .orders-table, .clients-table');
+    
+    tables.forEach(tableContainer => {
+        const table = tableContainer.querySelector('table');
+        if (!table) return;
+        
+        // Envolver tabela em wrapper se necessário
+        if (!table.parentElement.classList.contains('table-wrapper')) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'table-wrapper';
+            table.parentNode.insertBefore(wrapper, table);
+            wrapper.appendChild(table);
+        }
+        
+        // Em mobile, mostrar versão de cards se disponível
+        if (window.innerWidth <= 768) {
+            showMobileCards(tableContainer);
+        } else {
+            showDesktopTable(tableContainer);
+        }
+    });
+}
+
+// Mostrar cards mobile
+function showMobileCards(tableContainer) {
+    const table = tableContainer.querySelector('table');
+    const existingCards = tableContainer.querySelector('.mobile-cards');
+    
+    if (existingCards) {
+        existingCards.style.display = 'block';
+        table.style.display = 'none';
+        return;
+    }
+    
+    // Criar cards mobile baseados na tabela
+    const mobileCards = document.createElement('div');
+    mobileCards.className = 'mobile-cards';
+    
+    const tbody = table.querySelector('tbody');
+    const headers = Array.from(table.querySelectorAll('th')).map(th => th.textContent.trim());
+    
+    Array.from(tbody.querySelectorAll('tr')).forEach((row, index) => {
+        const cells = Array.from(row.querySelectorAll('td'));
+        
+        const card = document.createElement('div');
+        card.className = 'mobile-card';
+        
+        const cardHeader = document.createElement('div');
+        cardHeader.className = 'mobile-card-header';
+        
+        const cardTitle = document.createElement('div');
+        cardTitle.className = 'mobile-card-title';
+        cardTitle.textContent = cells[1]?.textContent || `Item ${index + 1}`;
+        
+        cardHeader.appendChild(cardTitle);
+        card.appendChild(cardHeader);
+        
+        const cardBody = document.createElement('div');
+        cardBody.className = 'mobile-card-body';
+        
+        cells.forEach((cell, cellIndex) => {
+            if (cellIndex === 0 || cellIndex === cells.length - 1) return; // Skip image and actions
+            
+            const field = document.createElement('div');
+            field.className = 'mobile-field';
+            
+            const label = document.createElement('div');
+            label.className = 'mobile-field-label';
+            label.textContent = headers[cellIndex] || '';
+            
+            const value = document.createElement('div');
+            value.className = 'mobile-field-value';
+            value.innerHTML = cell.innerHTML;
+            
+            field.appendChild(label);
+            field.appendChild(value);
+            cardBody.appendChild(field);
+        });
+        
+        // Adicionar ações se existirem
+        const actionsCell = cells[cells.length - 1];
+        if (actionsCell && actionsCell.querySelector('.action-buttons')) {
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'mobile-actions';
+            actionsDiv.innerHTML = actionsCell.innerHTML;
+            card.appendChild(actionsDiv);
+        }
+        
+        card.appendChild(cardBody);
+        mobileCards.appendChild(card);
+    });
+    
+    tableContainer.appendChild(mobileCards);
+    table.style.display = 'none';
+}
+
+// Mostrar tabela desktop
+function showDesktopTable(tableContainer) {
+    const table = tableContainer.querySelector('table');
+    const mobileCards = tableContainer.querySelector('.mobile-cards');
+    
+    if (mobileCards) {
+        mobileCards.style.display = 'none';
+    }
+    table.style.display = 'table';
 }
 
 // Configurar modais
@@ -276,8 +538,14 @@ function showSection(sectionName) {
     }
 }
 
-// Configurar gráficos
+// Configurar gráficos - Melhorados para responsividade
 function setupCharts() {
+    // Configurações globais para todos os gráficos
+    Chart.defaults.font.family = 'Inter, sans-serif';
+    Chart.defaults.color = '#6c757d';
+    Chart.defaults.responsive = true;
+    Chart.defaults.maintainAspectRatio = false;
+    
     // Gráfico de vendas do dashboard
     const salesCtx = document.getElementById('salesChart');
     if (salesCtx) {
@@ -291,25 +559,69 @@ function setupCharts() {
                     borderColor: '#fab427',
                     backgroundColor: 'rgba(250, 180, 39, 0.1)',
                     tension: 0.4,
-                    fill: true
+                    fill: true,
+                    pointRadius: window.innerWidth <= 768 ? 2 : 4,
+                    pointHoverRadius: window.innerWidth <= 768 ? 4 : 6,
+                    borderWidth: window.innerWidth <= 768 ? 2 : 3
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
                 plugins: {
                     legend: {
                         display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(33, 37, 41, 0.9)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#fab427',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                return 'R$ ' + context.parsed.y.toLocaleString('pt-BR');
+                            }
+                        }
                     }
                 },
                 scales: {
-                    y: {
-                        beginAtZero: true,
+                    x: {
+                        display: true,
+                        grid: {
+                            display: false
+                        },
                         ticks: {
-                            callback: function(value) {
-                                return 'R$ ' + value;
+                            font: {
+                                size: window.innerWidth <= 768 ? 10 : 12
                             }
                         }
+                    },
+                    y: {
+                        display: true,
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            font: {
+                                size: window.innerWidth <= 768 ? 10 : 12
+                            },
+                            callback: function(value) {
+                                return 'R$ ' + value.toLocaleString('pt-BR');
+                            }
+                        }
+                    }
+                },
+                elements: {
+                    point: {
+                        hoverBackgroundColor: '#fab427'
                     }
                 }
             }
@@ -321,6 +633,8 @@ function setupCharts() {
 }
 
 function setupReportsCharts() {
+    const isMobile = window.innerWidth <= 768;
+    
     // Gráfico de vendas por período
     const salesReportCtx = document.getElementById('salesReportChart');
     if (salesReportCtx) {
@@ -331,7 +645,9 @@ function setupReportsCharts() {
                 datasets: [{
                     label: 'Vendas',
                     data: [12000, 15000, 18000, 14000, 20000, 22000],
-                    backgroundColor: '#fab427'
+                    backgroundColor: '#fab427',
+                    borderRadius: isMobile ? 4 : 6,
+                    borderSkipped: false
                 }]
             },
             options: {
@@ -340,6 +656,46 @@ function setupReportsCharts() {
                 plugins: {
                     legend: {
                         display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(33, 37, 41, 0.9)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#fab427',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                return 'R$ ' + context.parsed.y.toLocaleString('pt-BR');
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                size: isMobile ? 10 : 12
+                            }
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            font: {
+                                size: isMobile ? 10 : 12
+                            },
+                            callback: function(value) {
+                                return 'R$ ' + (value / 1000) + 'k';
+                            }
+                        }
                     }
                 }
             }
@@ -355,12 +711,41 @@ function setupReportsCharts() {
                 labels: ['Calabresa', '4 Queijos', 'Portuguesa', 'Margherita'],
                 datasets: [{
                     data: [30, 25, 20, 15],
-                    backgroundColor: ['#fab427', '#28a745', '#17a2b8', '#6c757d']
+                    backgroundColor: ['#fab427', '#28a745', '#17a2b8', '#6c757d'],
+                    borderWidth: 0,
+                    cutout: isMobile ? '60%' : '70%'
                 }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: isMobile ? 'bottom' : 'right',
+                        labels: {
+                            font: {
+                                size: isMobile ? 10 : 12
+                            },
+                            padding: isMobile ? 10 : 15,
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(33, 37, 41, 0.9)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#fab427',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.parsed + '%';
+                            }
+                        }
+                    }
+                }
             }
         });
     }
@@ -378,15 +763,60 @@ function setupReportsCharts() {
                     borderColor: '#17a2b8',
                     backgroundColor: 'rgba(23, 162, 184, 0.1)',
                     tension: 0.4,
-                    fill: true
+                    fill: true,
+                    pointRadius: isMobile ? 2 : 4,
+                    pointHoverRadius: isMobile ? 4 : 6,
+                    borderWidth: isMobile ? 2 : 3
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
                 plugins: {
                     legend: {
                         display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(33, 37, 41, 0.9)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#17a2b8',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y + ' pedidos';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                size: isMobile ? 10 : 12
+                            }
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            font: {
+                                size: isMobile ? 10 : 12
+                            },
+                            stepSize: 5
+                        }
                     }
                 }
             }
