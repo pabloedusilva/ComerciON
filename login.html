@@ -3,239 +3,109 @@
 
 <head>
   <meta charset="UTF-8">
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <link rel="stylesheet" href="css/style.css">
-  <link href="https://fonts.googleapis.com/css?family=Hepta+Slab:400,700|Lato:400,700&display=swap" rel="stylesheet">
-  <title>Pizzaria</title>
+  <title>Login - Pizzaria</title>
 </head>
 
 <body>
-  <div class="loader-content">
-    <div class="loader-circle"></div>
-    <!-- <span class="loader-text">enviando...</span> -->
-  </div>
-
-  <header class="header"></header>
   
-  <!-- Carousel clean abaixo do menu-area -->
-  <section class="hero-carousel" aria-label="Promoções">
-    <div class="carousel-track">
-      <div class="carousel-slide active">
-        <img src="images/banner1.jpg" alt="Banner 1">
-        <div class="carousel-caption">Clássicas irresistíveis</div>
-      </div>
-      <div class="carousel-slide">
-        <img src="images/banner2.jpg" alt="Banner 2">
-        <div class="carousel-caption">Promoções da semana</div>
-      </div>
-      <div class="carousel-slide">
-        <img src="images/banner1.jpg" alt="Banner 1 repetido">
-        <div class="carousel-caption">Sabor e qualidade</div>
-      </div>
-    </div>
-  </section>
+  <main class="auth">
+    <div class="auth-container">
+      <div class="auth-card">
+        <div class="auth-header">
+          <img src="images/logo_pizza.png" alt="Logo Pizzaria" class="auth-logo">
+          <h1>Bem-vindo</h1>
+          <p>Entre para continuar seu pedido</p>
+        </div>
 
-  <div class="container">
-    <div class="container-area">
-      <div class="models">
-        <div class="pizza-item">
-          <a href="">
-            <div class="pizza-item--img"><img src="" /></div>
-            <div class="pizza-item--add">+</div>
-            <div class="pizza-item--price">R$ --</div>
-            <div class="pizza-item--name">--</div>
-            <div class="pizza-item--desc">--</div>
-          </a>
-        </div>
-        <div class="cart--item">
-          <img src="" />
-          <div class="cart--item-nome">--</div>
-          <div class="cart--item--qtarea">
-            <button class="cart--item-qtmenos">-</button>
-            <div class="cart--item--qt">1</div>
-            <button class="cart--item-qtmais">+</button>
-          </div>
-        </div>
-      </div>
-      <main>
-        <h1 class="titulo--h1" id="pizzas">Pizzas</h1>
-        <div class="pizza-area"></div>
-        
-        <!-- Seção de Bebidas -->
-        <h1 class="titulo--h1" id="bebidas" style="margin-top: 60px;">Bebidas</h1>
-        <div class="drinks-area"></div>
-      </main>
-      <aside>
-        <div class="cart--area">
-          <div class="menu-closer">
-            <i class="fa-solid fa-arrow-left"></i>
-          </div>
-          <h1>Seu Carrinho</h1>
-          <div class="cart"></div>
-          <div class="cart--details">
-            <div class="cart--totalitem pizzasValor">
-              <span>Itens</span>
-              <span>R$ --</span>
+        <form class="auth-form" id="loginForm" novalidate>
+          <div class="form-group">
+            <label for="email">E-mail</label>
+            <div class="input-wrapper">
+              <i class="fas fa-envelope"></i>
+              <input type="email" id="email" name="email" placeholder="seuemail@exemplo.com" required>
             </div>
-            <div class="cart--totalitem entrega">
-              <span>Taxa de entrega</span>
-              <span>R$ --</span>
-            </div>
-            <div class="cart--totalitem subtotal">
-              <span>Subtotal</span>
-              <span>R$ --</span>
-            </div>
-            <div class="cart--totalitem desconto">
-              <span>Desconto (-10%)</span>
-              <span>R$ --</span>
-            </div>
-            <div class="cart--totalitem total big">
-              <span>Total</span>
-              <span>R$ --</span>
-            </div>
-            <div class="cart--finalizar">Finalizar a compra</div>
+            <small class="input-error" id="emailError"></small>
           </div>
-        </div>
-      </aside>
-      <div class="pizzaWindowArea">
-        <div class="pizzaWindowBody modal">
-          <div class="pizzaInfo--cancelMobileButton">
-            <i class="fa-solid fa-arrow-left"></i>
-          </div>
-          <div class="pizzaBig">
-            <img src="" />
-          </div>
-          <div class="pizzaInfo">
-            <h1>--</h1>
-            <div class="pizzaInfo--desc">--</div>
-            <div class="pizzaInfo--sizearea">
-              <div class="pizzaInfo--sector">Tamanho</div>
-              <div class="pizzaInfo--sizes">
-                <div data-key="0" class="pizzaInfo--size">
-                  PEQUENA <span>--</span>
-                </div>
-                <div data-key="1" class="pizzaInfo--size">
-                  MÉDIO <span>--</span>
-                </div>
-                <div data-key="2" class="pizzaInfo--size selected">
-                  GRANDE <span>--</span>
-                </div>
-              </div>
-            </div>
-            <div class="pizzaInfo--pricearea">
-              <div class="pizzaInfo--sector">Preço</div>
-              <div class="pizzaInfo--price">
-                <div class="pizzaInfo--actualPrice">R$ --</div>
-                <div class="pizzaInfo--qtarea">
-                  <button class="pizzaInfo--qtmenos">-</button>
-                  <div class="pizzaInfo--qt">1</div>
-                  <button class="pizzaInfo--qtmais">+</button>
-                </div>
-              </div>
-            </div>
-            <div class="pizzaInfo--addButton">Adicionar ao carrinho</div>
-            <div class="pizzaInfo--cancelButton">Cancelar</div>
-          </div>
-        </div>
-      </div>
-      <div class="success pizzaWindowArea">
-        <div class="pizzaWindowBody success">
-          <div class="pedido-finalizado">
-            <i class="fa-solid fa-circle-check success-img"></i>
-            <h1>Seu pedido foi finalizado!</h1>
-          </div>
-          <span>Previsão de entrega: 30 minutos!</span>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <footer class="modern-footer">
-    <div class="footer-container">
-      <div class="footer-content">
-        <div class="footer-brand">
-          <img src="images/logo_pizza.png" alt="Pizzaria Logo" class="footer-logo">
-          <p>Sabor que conquista</p>
-        </div>
-        
-        <div class="footer-links">
-          <div class="footer-section">
-            <h4>Menu</h4>
-            <ul>
-              <li><a href="menu.html#pizzas">Pizzas</a></li>
-              <li><a href="menu.html#bebidas">Bebidas</a></li>
-              <li><a href="index.html">Home</a></li>
-            </ul>
-          </div>
-          
-          <div class="footer-section">
-            <h4>Contato</h4>
-            <ul>
-              <li>
-                <a class="contact-link" href="tel:+5511999999999" aria-label="Ligar para (11) 99999-9999">
-                  <i class="fas fa-phone" aria-hidden="true"></i>
-                  <span>(11) 99999-9999</span>
-                </a>
-              </li>
-              <li>
-                <a class="contact-link" href="mailto:contato@pizzaria.com" aria-label="Enviar e-mail para contato@pizzaria.com">
-                  <i class="fas fa-envelope" aria-hidden="true"></i>
-                  <span>contato@pizzaria.com</span>
-                </a>
-              </li>
-              <li>
-                <a class="contact-link" href="https://www.google.com/maps/search/?api=1&query=S%C3%A3o%20Paulo%2C%20SP" target="_blank" rel="noopener noreferrer" aria-label="Abrir endereço no Google Maps">
-                  <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
-                  <span>São Paulo, SP</span>
-                </a>
-              </li>
-            </ul>
-          </div>
-          
-          <div class="footer-section">
-            <h4>Siga-nos</h4>
-            <div class="social-links">
-              <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
-              <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-              <a href="#" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+          <div class="form-group">
+            <label for="password">Senha</label>
+            <div class="input-wrapper">
+              <i class="fas fa-lock"></i>
+              <input type="password" id="password" name="password" placeholder="••••••••" required minlength="6">
+              <button type="button" class="toggle-password" aria-label="Mostrar/ocultar senha">
+                <i class="fas fa-eye"></i>
+              </button>
             </div>
+            <small class="input-error" id="passwordError"></small>
           </div>
-        </div>
-      </div>
-      
-      <div class="footer-bottom">
-        <div class="footer-credits">
-          <p>&copy; 2025 Pizzaria. Todos os direitos reservados.</p>
-          <p class="dev-credit">
-            <a href="https://github.com/pabloedusilva" target="_blank">
-              Desenvolvido por Pablo Silva
-            </a>
-          </p>
+
+          <div class="form-actions">
+            <a href="#" class="link-muted">Esqueceu a senha?</a>
+          </div>
+
+          <button type="submit" class="auth-submit">Entrar</button>
+        </form>
+
+        <div class="auth-footer">
+          <span>Não tem conta?</span>
+          <a href="#" class="link-accent">Crie uma agora</a>
         </div>
       </div>
     </div>
+  </main>
+  <footer>
+    <a href="https://github.com/pabloedusilva" target="_blank">© Developed by Pablo Silva</a>
   </footer>
+  
 
-  <script src="js/nav.js"></script>
   <script>
-    // Carousel autoplay simples (fade)
-    (function(){
-      const slides = document.querySelectorAll('.hero-carousel .carousel-slide');
-      if(!slides || slides.length === 0) return;
-      let idx = 0;
-      setInterval(()=>{
-        slides[idx].classList.remove('active');
-        idx = (idx + 1) % slides.length;
-        slides[idx].classList.add('active');
-      }, 3500);
-    })();
+    // Toggle password visibility
+    document.querySelector('.toggle-password').addEventListener('click', function(){
+      const input = document.getElementById('password');
+      const icon = this.querySelector('i');
+      const isPassword = input.getAttribute('type') === 'password';
+      input.setAttribute('type', isPassword ? 'text' : 'password');
+      icon.classList.toggle('fa-eye');
+      icon.classList.toggle('fa-eye-slash');
+    });
+
+    // Simple validation
+    const form = document.getElementById('loginForm');
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      const email = document.getElementById('email');
+      const password = document.getElementById('password');
+      const emailError = document.getElementById('emailError');
+      const passwordError = document.getElementById('passwordError');
+
+      let valid = true;
+      emailError.textContent = '';
+      passwordError.textContent = '';
+
+      if(!email.value || !/^\S+@\S+\.\S+$/.test(email.value)){
+        emailError.textContent = 'Informe um e-mail válido.';
+        valid = false;
+      }
+      if(!password.value || password.value.length < 6){
+        passwordError.textContent = 'A senha deve ter no mínimo 6 caracteres.';
+        valid = false;
+      }
+
+      if(valid){
+        // Simulação de login OK
+        this.querySelector('.auth-submit').classList.add('loading');
+        this.querySelector('.auth-submit').textContent = 'Entrando...';
+        setTimeout(()=>{
+          window.location.href = 'menu.html';
+        }, 1200);
+      }
+    });
   </script>
-  <script type="text/javascript" src="js/geral.js"></script>
-  <script type="text/javascript" src="js/cart.js"></script>
 </body>
 
 </html>
