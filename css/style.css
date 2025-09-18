@@ -1222,6 +1222,7 @@ h1 {
         position: absolute;
         left: 50%;
         transform: translateX(-50%);
+        height: 40px;
     }
 
     .menu {
@@ -1525,6 +1526,10 @@ h1 {
     .hero-carousel .carousel-caption {
         font-size: .9rem;
         padding: 10px 12px
+    }
+
+    .logo {
+        height: 35px;
     }
 }
 

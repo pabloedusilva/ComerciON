@@ -38,7 +38,7 @@ header = header.innerHTML = `<div class="menu-area">
                     <li>Início</li>
                 </a>
                 <a href="menu.html">
-                    <li>Pizzas</li>
+                    <li>Cardápio</li>
                 </a>
                 <a href="sobre.html">
                     <li>Sobre</li>

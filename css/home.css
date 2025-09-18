@@ -575,6 +575,7 @@ footer a:hover::after {
         position: absolute;
         left: 50%;
         transform: translateX(-50%);
+        height: 40px;
     }
 
     .menu {
@@ -769,6 +770,10 @@ footer a:hover::after {
     
     .profile-dropdown a i {
         width: 16px;
+    }
+
+    .logo {
+        height: 35px;
     }
 }
 
