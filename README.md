@@ -29,3 +29,14 @@ Entre em contato através dos links a seguir!
 <br>
 <br>
 <br>
+
+## Novidades (2025-09-18)
+
+- Pré-visualização de imagem no modal de Produtos (admin):
+  - Área de preview minimalista e centralizada, com placeholder (ícone + instruções).
+  - Clique ou arraste/solte uma imagem (JPG, PNG, WEBP, GIF) até 2MB.
+  - Botão de limpar imagem.
+  - Validação de tipo e tamanho com notificações amigáveis.
+  - Ao salvar, se houver upload, a imagem é usada; em edição, mantém a imagem anterior caso nenhum arquivo seja selecionado.
+
+Observação: No desktop, a área aceita Enter/Espaço para abrir o seletor de arquivos.

@@ -578,7 +578,16 @@
                     </div>
                     <div class="form-group">
                         <label>Imagem do Produto</label>
-                        <input type="file" name="image" accept="image/*">
+                        <input type="file" name="image" id="productImageInput" accept="image/*">
+                        <div class="image-preview" id="productImagePreviewWrapper" tabindex="0" aria-label="Pré-visualização da imagem; clique para selecionar ou arraste uma imagem">
+                            <div class="placeholder" aria-hidden="true">
+                                <i class="fas fa-image"></i>
+                                <span>Clique para selecionar ou arraste uma imagem</span>
+                                <small>JPG, PNG, WEBP ou GIF até 2MB</small>
+                            </div>
+                            <img id="productImagePreview" alt="Pré-visualização" />
+                            <button type="button" class="clear-image-btn" id="clearProductImageBtn" aria-label="Remover imagem">&times;</button>
+                        </div>
                     </div>
                     <div class="form-actions">
                         <button type="button" class="btn-secondary" id="cancelProductBtn">Cancelar</button>

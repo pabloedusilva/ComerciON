@@ -535,6 +535,21 @@ function showSection(sectionName) {
             };
             pageTitle.textContent = titles[sectionName] || 'Admin Panel';
         }
+
+        // Ajustes específicos por seção
+        if (sectionName === 'relatorios') {
+            // Criar gráficos se não existirem
+            if (!charts.salesReport || !charts.products || !charts.peakHours) {
+                setupReportsCharts();
+            }
+            // Garantir que redimensionem e atualizem após ficarem visíveis
+            setTimeout(() => {
+                resizeCharts();
+                updateReportsCharts();
+            }, 50);
+        } else {
+            setTimeout(() => resizeCharts(), 50);
+        }
     }
 }
 
@@ -825,11 +840,54 @@ function setupReportsCharts() {
 }
 
 function updateReportsCharts() {
-    // Atualizar dados dos gráficos baseado no período selecionado
-    const activePeriod = document.querySelector('.period-btn.active')?.dataset.period || '7';
-    
-    // Aqui você implementaria a lógica para buscar dados do período
-    console.log('Atualizando gráficos para período:', activePeriod);
+    const activePeriod = (document.querySelector('.period-btn.active')?.dataset.period || '7');
+
+    const genArray = (len, base = 1000, variance = 0.4) =>
+        Array.from({ length: len }, (_, i) => Math.round(base * (1 + (Math.sin(i / 2) * variance)) + (Math.random() - 0.5) * base * variance));
+
+    const getSalesDataset = (period) => {
+        if (period === '7') {
+            const labels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            return { labels, data: genArray(7, 1800) };
+        }
+        if (period === '30') {
+            const labels = Array.from({ length: 30 }, (_, i) => `${i + 1}`);
+            return { labels, data: genArray(30, 1400) };
+        }
+        if (period === '90') {
+            const labels = Array.from({ length: 12 }, (_, i) => `Sem ${i + 1}`);
+            return { labels, data: genArray(12, 800) };
+        }
+        const labels = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+        return { labels, data: genArray(12, 12000) };
+    };
+
+    if (charts.salesReport) {
+        const { labels, data } = getSalesDataset(activePeriod);
+        charts.salesReport.data.labels = labels;
+        charts.salesReport.data.datasets[0].data = data;
+        charts.salesReport.update('none');
+    }
+
+    if (charts.products) {
+        const base = activePeriod === '7' ? [32, 26, 22, 20] :
+                     activePeriod === '30' ? [31, 25, 23, 21] :
+                     activePeriod === '90' ? [29, 24, 23, 22] :
+                     [28, 23, 22, 21];
+        const total = base.reduce((a,b)=>a+b,0);
+        const normalized = base.map(v => Math.round(v * (100/total)));
+        charts.products.data.labels = ['Calabresa', '4 Queijos', 'Portuguesa', 'Margherita'];
+        charts.products.data.datasets[0].data = normalized;
+        charts.products.update('none');
+    }
+
+    if (charts.peakHours) {
+        const scale = activePeriod === '7' ? 1.0 : activePeriod === '30' ? 1.2 : activePeriod === '90' ? 1.35 : 1.5;
+        const base = [5, 15, 25, 30, 20, 8].map(v => Math.round(v * scale));
+        charts.peakHours.data.labels = ['18h', '19h', '20h', '21h', '22h', '23h'];
+        charts.peakHours.data.datasets[0].data = base;
+        charts.peakHours.update('none');
+    }
 }
 
 // Renderizar tabela de produtos
@@ -1099,6 +1157,19 @@ function openProductModal(productId = null) {
     const modal = document.getElementById('productModal');
     const form = document.getElementById('productForm');
     const title = document.getElementById('productModalTitle');
+    const imgInput = document.getElementById('productImageInput');
+    const imgEl = document.getElementById('productImagePreview');
+    const previewBox = document.getElementById('productImagePreviewWrapper');
+    const clearBtn = document.getElementById('clearProductImageBtn');
+    // Reset preview state
+    if (imgEl) {
+        imgEl.src = '';
+        imgEl.classList.remove('show');
+        imgEl.style.display = 'none';
+    }
+    previewBox?.classList.remove('has-image');
+    previewBox?.querySelector('.placeholder')?.classList.remove('hidden');
+    form.dataset.imageData = '';
 
     if (productId) {
         const product = products.find(p => p.id === productId);
@@ -1112,6 +1183,14 @@ function openProductModal(productId = null) {
         form.price3.value = product.price[2] || '';
         
         form.dataset.editId = productId;
+        // Pre-fill preview with current product image if available
+        if (imgEl && product?.img) {
+            imgEl.src = product.img;
+            imgEl.onload = () => imgEl.classList.add('show');
+            imgEl.style.display = 'block';
+            previewBox?.classList.add('has-image');
+            previewBox?.querySelector('.placeholder')?.classList.add('hidden');
+        }
     } else {
         title.textContent = 'Adicionar Produto';
         form.reset();
@@ -1119,12 +1198,108 @@ function openProductModal(productId = null) {
     }
 
     modal.classList.add('show');
+
+    // Bind change handler once per open to show preview
+    if (imgInput) {
+        imgInput.onchange = (e) => handleImageInput(e, { imgEl, previewBox, form });
+    }
+
+    // Bind preview interactions once
+    if (previewBox && !previewBox.dataset.bound) {
+        previewBox.addEventListener('click', () => imgInput?.click());
+        previewBox.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                imgInput?.click();
+            }
+        });
+        ['dragenter','dragover'].forEach(evt => {
+            previewBox.addEventListener(evt, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                previewBox.classList.add('drag-over');
+            });
+        });
+        ['dragleave','dragend','drop'].forEach(evt => {
+            previewBox.addEventListener(evt, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                previewBox.classList.remove('drag-over');
+            });
+        });
+        previewBox.addEventListener('drop', (e) => {
+            const file = e.dataTransfer?.files?.[0];
+            if (file) {
+                processSelectedFile(file, { imgEl, previewBox, form });
+            }
+        });
+        previewBox.dataset.bound = '1';
+    }
+
+    // Clear button
+    if (clearBtn) clearBtn.onclick = (e) => {
+        e.stopPropagation();
+        imgInput.value = '';
+        imgEl.src = '';
+        imgEl.classList.remove('show');
+        imgEl.style.display = 'none';
+        previewBox.classList.remove('has-image');
+        previewBox.querySelector('.placeholder')?.classList.remove('hidden');
+        form.dataset.imageData = '';
+    };
+}
+
+// Validate and show image from input change
+function handleImageInput(e, ctx) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) {
+        clearPreview(ctx);
+        return;
+    }
+    processSelectedFile(file, ctx);
+}
+
+function processSelectedFile(file, { imgEl, previewBox, form }) {
+    const validTypes = ['image/jpeg','image/png','image/webp','image/gif'];
+    const maxSize = 2 * 1024 * 1024; // 2MB
+    if (!validTypes.includes(file.type)) {
+        showNotification('Formato inválido. Use JPG, PNG, WEBP ou GIF.', 'error');
+        return;
+    }
+    if (file.size > maxSize) {
+        showNotification('Imagem muito grande. Tamanho máximo: 2MB.', 'warning');
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        if (imgEl) {
+            imgEl.src = ev.target.result;
+            imgEl.style.display = 'block';
+            requestAnimationFrame(() => imgEl.classList.add('show'));
+        }
+        previewBox?.classList.add('has-image');
+        previewBox?.querySelector('.placeholder')?.classList.add('hidden');
+        if (form) form.dataset.imageData = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearPreview({ imgEl, previewBox, form }) {
+    if (imgEl) {
+        imgEl.src = '';
+        imgEl.classList.remove('show');
+        imgEl.style.display = 'none';
+    }
+    previewBox?.classList.remove('has-image');
+    previewBox?.querySelector('.placeholder')?.classList.remove('hidden');
+    if (form) form.dataset.imageData = '';
 }
 
 function saveProduct() {
     const form = document.getElementById('productForm');
     const formData = new FormData(form);
     
+    const uploadedImage = form.dataset.imageData;
     const productData = {
         name: formData.get('name'),
         category: formData.get('category'),
@@ -1135,7 +1310,7 @@ function saveProduct() {
             parseFloat(formData.get('price3'))
         ],
         sizes: ['320g', '530g', '860g'],
-        img: 'images/pizza-desenho.png', // Placeholder
+        img: uploadedImage || 'images/pizza-desenho.png',
         status: 'active'
     };
 
@@ -1143,10 +1318,14 @@ function saveProduct() {
         // Editar produto existente
         const id = parseInt(form.dataset.editId);
         const index = products.findIndex(p => p.id === id);
+        if (!uploadedImage) {
+            productData.img = products[index]?.img || productData.img;
+        }
         products[index] = { ...products[index], ...productData };
     } else {
         // Adicionar novo produto
-        productData.id = Math.max(...products.map(p => p.id)) + 1;
+        const nextId = products.length ? Math.max(...products.map(p => parseInt(p.id) || 0)) + 1 : 1;
+        productData.id = nextId;
         products.push(productData);
     }
 
