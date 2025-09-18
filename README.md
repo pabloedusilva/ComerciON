@@ -1,63 +1,6 @@
-<div>
-<h1>Sistema de compra de pizzas</h1>
-</div>
-
-<h3>
-  Projeto desenvolvido para portifólio pessoal.
-</h3>
-<br>
-
-<p>
- <a href="#api">• Exemplo API de Pizzas</a> 
- <br>
- <!-- <a href="#visao">• Visão geral</a> <br> -->
- <a href="#leng">• Skills utilizadas</a>
- <br>
- <a href="#contato">• Contato</a>
-</p>
-<br>
-
-<div id="visao">
-<h1>Visão geral</h1>
-Aplicação simulando um sistema de <strong>Pizzaria</strong>, onde é possível escolher o sabor da pizza desejada, tamanho e quantidade, tudo sendo calculado e exibido <strong>automaticamente</strong> em um modal na tela do usuário. As pizzas são obtidas através de uma requisição na API que contém todas as pizzas. Também foi trabalhado as funções de um carrinho de compras, onde é possível acrescentar ou remover a quantidade de pizzas, sendo <strong>calculado em tempo real</strong> o total que o usuário deve pagar, além de um modal confirmando o pedido.
-</div>
-<br>
-<br>
-
-<h1 align="center">
-<!-- <h1> -->
-<a href="#" target="_blank">Testar</a> 
-</h1>
-
 <p align = "center">
-  <img src ="images/img_readme.jpg" alt = "mockup"/>
+  <img src ="https://github.com/user-attachments/assets/211d424e-d9de-4161-a030-86552f90b896" alt = "mockup"/>
 </p>
-<br>
-
-<h1 align="center" id="api"> Exemplo dos dados da API (em JSON):</h1>
-
-```
-[
-  {
-    "id": 1,
-    "name": "Atum",
-    "img": "images/atum.png",
-    "price": [14.49, 19.99, 29.99],
-    "sizes": ["320g", "530g", "860g"],
-    "description": "Molho, muçarela, atum, cebola fatiada e orégano."
-  },
-  {
-    "id": 2,
-    "name": "Calabresa",
-    "img": "images/calabresa.png",
-    "price": [14.5, 19.99, 27.99],
-    "sizes": ["320g", "530g", "860g"],
-    "description": "Molho, muçarela, calabresa fatiada, cebola fatiada e orégano."
-  }
-]
-
-```
-<br>
 <br>
 
 <div id="leng">
