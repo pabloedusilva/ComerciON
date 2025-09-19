@@ -118,12 +118,61 @@ function initializeApp() {
     setupCharts();
     loadMockData();
     showSection('dashboard');
+    setupModernSidebar(); // Adicionar configuração da sidebar moderna
     
     // Configurar layout inicial baseado no tamanho da tela
     handleResize();
     
     // Adicionar loading overlay inicial se necessário
     removeLoadingState();
+}
+
+// Configuração da sidebar moderna
+function setupModernSidebar() {
+    // Adicionar efeito ripple nos links (simplificado)
+    document.querySelectorAll('.nav-link, .btn-logout').forEach(element => {
+        element.addEventListener('click', function(e) {
+            createRipple(e, this);
+        });
+    });
+    
+    // Animação suave ao carregar
+    setTimeout(() => {
+        const sidebar = document.querySelector('.sidebar');
+        if (sidebar) {
+            sidebar.style.animation = 'slideInRight 0.4s ease-out';
+        }
+    }, 100);
+    
+    // Hover effects simplificados nos ícones
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('mouseenter', function() {
+            const icon = this.querySelector('.nav-icon');
+            if (icon) {
+                icon.style.transition = 'background-color 0.2s ease';
+            }
+        });
+    });
+}
+
+// Função para criar efeito ripple
+function createRipple(event, element) {
+    const rect = element.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const x = event.clientX - rect.left - size / 2;
+    const y = event.clientY - rect.top - size / 2;
+    
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple';
+    ripple.style.width = ripple.style.height = size + 'px';
+    ripple.style.left = x + 'px';
+    ripple.style.top = y + 'px';
+    
+    element.appendChild(ripple);
+    
+    setTimeout(() => {
+        ripple.remove();
+    }, 600);
 }
 
 // Remover estado de carregamento
@@ -691,12 +740,37 @@ function setupReportsCharts() {
                     data: [12000, 15000, 18000, 14000, 20000, 22000],
                     backgroundColor: '#fab427',
                     borderRadius: isMobile ? 4 : 6,
-                    borderSkipped: false
+                    borderSkipped: false,
+                    maxBarThickness: isMobile ? 30 : 50,
+                    categoryPercentage: 0.8,
+                    barPercentage: 0.9
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                animation: {
+                    duration: 1000,
+                    easing: 'easeInOutQuart',
+                    delay: (context) => {
+                        return context.dataIndex * 100;
+                    }
+                },
+                animations: {
+                    y: {
+                        from: 0,
+                        duration: 1000,
+                        easing: 'easeInOutQuart'
+                    }
+                },
+                layout: {
+                    padding: {
+                        left: 10,
+                        right: 10,
+                        top: 10,
+                        bottom: 10
+                    }
+                },
                 plugins: {
                     legend: {
                         display: false
@@ -724,7 +798,9 @@ function setupReportsCharts() {
                         ticks: {
                             font: {
                                 size: isMobile ? 10 : 12
-                            }
+                            },
+                            maxRotation: 0,
+                            minRotation: 0
                         }
                     },
                     y: {
@@ -756,38 +832,98 @@ function setupReportsCharts() {
                 datasets: [{
                     data: [30, 25, 20, 15],
                     backgroundColor: ['#fab427', '#28a745', '#17a2b8', '#6c757d'],
-                    borderWidth: 0,
-                    cutout: isMobile ? '60%' : '70%'
+                    borderWidth: 2,
+                    borderColor: '#ffffff',
+                    cutout: isMobile ? '60%' : '70%',
+                    hoverBackgroundColor: ['#e0a225', '#218838', '#138496', '#545b62'],
+                    hoverBorderWidth: 3,
+                    hoverBorderColor: '#ffffff',
+                    hoverOffset: 8
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'nearest'
+                },
+                animation: {
+                    animateRotate: true,
+                    animateScale: false,
+                    duration: 800,
+                    easing: 'easeInOutQuart'
+                },
                 plugins: {
                     legend: {
                         position: isMobile ? 'bottom' : 'right',
                         labels: {
                             font: {
-                                size: isMobile ? 10 : 12
+                                size: isMobile ? 10 : 12,
+                                family: 'Inter, sans-serif'
                             },
                             padding: isMobile ? 10 : 15,
                             usePointStyle: true,
-                            pointStyle: 'circle'
+                            pointStyle: 'circle',
+                            color: '#2c3e50',
+                            boxWidth: 12,
+                            boxHeight: 12
                         }
                     },
                     tooltip: {
-                        backgroundColor: 'rgba(33, 37, 41, 0.9)',
-                        titleColor: '#fff',
-                        bodyColor: '#fff',
+                        enabled: true,
+                        backgroundColor: 'rgba(33, 37, 41, 0.95)',
+                        titleColor: '#ffffff',
+                        bodyColor: '#ffffff',
                         borderColor: '#fab427',
-                        borderWidth: 1,
-                        cornerRadius: 8,
-                        displayColors: false,
+                        borderWidth: 2,
+                        cornerRadius: 12,
+                        displayColors: true,
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        titleFont: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            size: 13
+                        },
+                        padding: 12,
+                        caretSize: 6,
                         callbacks: {
+                            title: function(context) {
+                                return context[0].label;
+                            },
                             label: function(context) {
-                                return context.label + ': ' + context.parsed + '%';
+                                const value = context.parsed;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return [
+                                    `Vendas: ${value}%`,
+                                    `Total: ${percentage}% do mercado`
+                                ];
+                            },
+                            labelColor: function(context) {
+                                return {
+                                    borderColor: context.dataset.backgroundColor[context.dataIndex],
+                                    backgroundColor: context.dataset.backgroundColor[context.dataIndex]
+                                };
                             }
+                        },
+                        filter: function(tooltipItem) {
+                            return tooltipItem.parsed > 0;
                         }
+                    }
+                },
+                onHover: (event, activeElements, chart) => {
+                    event.native.target.style.cursor = activeElements.length > 0 ? 'pointer' : 'default';
+                },
+                onClick: (event, activeElements, chart) => {
+                    if (activeElements.length > 0) {
+                        const dataIndex = activeElements[0].index;
+                        const label = chart.data.labels[dataIndex];
+                        console.log(`Produto selecionado: ${label}`);
+                        // Aqui você pode adicionar ações ao clicar no produto
                     }
                 }
             }
@@ -876,8 +1012,13 @@ function updateReportsCharts() {
 
     const getSalesDataset = (period) => {
         if (period === '7') {
-            const labels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-            return { labels, data: genArray(7, 1800) };
+            const labels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+            const data = genArray(7, 1800);
+            // Garantir que todos os valores sejam válidos
+            return { 
+                labels, 
+                data: data.map(value => Math.max(100, Math.round(value)))
+            };
         }
         if (period === '30') {
             const labels = Array.from({ length: 30 }, (_, i) => `${i + 1}`);
@@ -893,9 +1034,102 @@ function updateReportsCharts() {
 
     if (charts.salesReport) {
         const { labels, data } = getSalesDataset(activePeriod);
-        charts.salesReport.data.labels = labels;
-        charts.salesReport.data.datasets[0].data = data;
-        charts.salesReport.update('none');
+        
+        // Destruir e recriar o gráfico para garantir animações consistentes
+        charts.salesReport.destroy();
+        
+        const salesReportCtx = document.getElementById('salesReportChart');
+        const isMobile = window.innerWidth <= 768;
+        
+        charts.salesReport = new Chart(salesReportCtx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Vendas',
+                    data: data,
+                    backgroundColor: '#fab427',
+                    borderRadius: isMobile ? 4 : 6,
+                    borderSkipped: false,
+                    maxBarThickness: isMobile ? 30 : 50,
+                    categoryPercentage: 0.8,
+                    barPercentage: 0.9
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 1000,
+                    easing: 'easeInOutQuart',
+                    delay: (context) => {
+                        return context.dataIndex * 100;
+                    }
+                },
+                animations: {
+                    y: {
+                        from: 0,
+                        duration: 1000,
+                        easing: 'easeInOutQuart'
+                    }
+                },
+                layout: {
+                    padding: {
+                        left: 10,
+                        right: 10,
+                        top: 10,
+                        bottom: 10
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(33, 37, 41, 0.9)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#fab427',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                return 'R$ ' + context.parsed.y.toLocaleString('pt-BR');
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                size: isMobile ? 10 : 12
+                            },
+                            maxRotation: 0,
+                            minRotation: 0
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            font: {
+                                size: isMobile ? 10 : 12
+                            },
+                            callback: function(value) {
+                                return 'R$ ' + (value / 1000) + 'k';
+                            }
+                        }
+                    }
+                }
+            }
+        });
     }
 
     if (charts.products) {
@@ -907,7 +1141,14 @@ function updateReportsCharts() {
         const normalized = base.map(v => Math.round(v * (100/total)));
         charts.products.data.labels = ['Calabresa', '4 Queijos', 'Portuguesa', 'Margherita'];
         charts.products.data.datasets[0].data = normalized;
-        charts.products.update('none');
+        
+        // Manter as configurações de hover ao atualizar
+        charts.products.data.datasets[0].hoverBackgroundColor = ['#e0a225', '#218838', '#138496', '#545b62'];
+        charts.products.data.datasets[0].hoverBorderWidth = 3;
+        charts.products.data.datasets[0].hoverBorderColor = '#ffffff';
+        charts.products.data.datasets[0].hoverOffset = 8;
+        
+        charts.products.update('active');
     }
 
     if (charts.peakHours) {
