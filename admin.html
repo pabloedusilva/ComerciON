@@ -449,7 +449,7 @@
                                 <label>Endereço</label>
                                 <textarea>Rua das Pizzas, 123 - São Paulo, SP</textarea>
                             </div>
-                            <!-- botão individual removido; salva tudo em um só lugar -->
+                            <button type="submit" class="btn-primary">Salvar</button>
                         </form>
                     </div>
 
@@ -474,7 +474,7 @@
                                     Aceitar pedidos online
                                 </label>
                             </div>
-                            <!-- botão individual removido; salva tudo em um só lugar -->
+                            <button type="submit" class="btn-primary">Salvar</button>
                         </form>
                     </div>
 
@@ -497,7 +497,7 @@
                                     <input type="time" value="00:00">
                                 </div>
                             </div>
-                            <!-- botão individual removido; salva tudo em um só lugar -->
+                            <button type="submit" class="btn-primary">Salvar</button>
                         </form>
                     </div>
 
@@ -522,13 +522,9 @@
                                     Modo escuro
                                 </label>
                             </div>
-                            <!-- botão individual removido; salva tudo em um só lugar -->
+                            <button type="submit" class="btn-primary">Salvar</button>
                         </form>
                     </div>
-                </div>
-                <div class="config-actions" style="margin-top:1rem; display:flex; justify-content:flex-end; gap:0.5rem;">
-                    <button class="btn-secondary" id="resetConfigBtn">Resetar</button>
-                    <button class="btn-primary" id="saveAllConfigBtn">Salvar tudo</button>
                 </div>
             </section>
         </div>
@@ -620,23 +616,6 @@
             </div>
             <div class="modal-body" id="clientModalBody">
                 <!-- Conteúdo será inserido via JavaScript -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Confirmar saída sem salvar -->
-    <div class="modal" id="confirmLeaveModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Alterações não salvas</h3>
-                <button class="modal-close">&times;</button>
-            </div>
-            <div class="modal-body" id="confirmLeaveBody">
-                <p>Você possui alterações não salvas. Tem certeza de que deseja sair sem salvar?</p>
-                <div style="display:flex; gap:0.5rem; justify-content:flex-end; margin-top:1rem;">
-                    <button class="btn-secondary" id="cancelLeaveBtn">Cancelar</button>
-                    <button class="btn-primary" id="confirmLeaveBtn">Sair sem salvar</button>
-                </div>
             </div>
         </div>
     </div>

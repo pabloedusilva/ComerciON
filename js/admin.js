@@ -176,60 +176,55 @@ function loadMockData() {
 
 // Configuração de event listeners - Melhorada para responsividade
 function setupEventListeners() {
-    // Config forms tracking
-    const configForms = Array.from(document.querySelectorAll('.config-form'));
-    configForms.forEach(form => {
-        form.addEventListener('submit', (e) => e.preventDefault());
-        if (!form.dataset.initial) form.dataset.initial = serializeForm(form);
-        form.dataset.dirty = form.dataset.dirty || 'false';
-        form.querySelectorAll('input, textarea, select').forEach(ctrl => {
-            ctrl.addEventListener('input', () => markFormDirty(form));
-            ctrl.addEventListener('change', () => markFormDirty(form));
-        });
-    });
-
-    // Save All and Reset
-    document.getElementById('saveAllConfigBtn')?.addEventListener('click', () => saveAllConfigs(configForms));
-    document.getElementById('resetConfigBtn')?.addEventListener('click', () => resetAllConfigs(configForms));
-
-    // Navigation links
+    // Navegação da sidebar
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const section = link.dataset.section;
-
-            if (currentSection === 'configuracoes' && hasDirtyConfig(configForms)) {
-                openConfirmLeave(() => {
-                    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-                    link.classList.add('active');
-                    showSection(section);
-                });
-                return;
-            }
-
+            showSection(section);
+            
+            // Atualizar link ativo
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             link.classList.add('active');
-            showSection(section);
-
-            if (window.innerWidth <= 768) closeMobileSidebar();
+            
+            // Fechar sidebar em mobile após seleção
+            if (window.innerWidth <= 768) {
+                closeMobileSidebar();
+            }
         });
     });
 
-    // Toggle sidebar buttons
+    // Toggle sidebar
     const sidebarToggle = document.getElementById('sidebarToggle');
     const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-    sidebarToggle?.addEventListener('click', () => toggleMobileSidebar());
-    mobileMenuToggle?.addEventListener('click', () => toggleMobileSidebar());
+    const sidebar = document.querySelector('.sidebar');
 
-    // Mobile gestures, resize handlers, modals, actions and filters
+    // Ambos os botões fazem a mesma ação: toggle da sidebar mobile
+    sidebarToggle?.addEventListener('click', () => {
+        toggleMobileSidebar();
+    });
+
+    mobileMenuToggle?.addEventListener('click', () => {
+        toggleMobileSidebar();
+    });
+
+    // Configurar swipe gestures para mobile
     setupMobileGestures();
+    
+    // Configurar eventos de redimensionamento
     setupResizeHandlers();
+
+    // Modais
     setupModals();
+
+    // Botões de ação
     document.getElementById('addProductBtn')?.addEventListener('click', () => openProductModal());
     document.getElementById('refreshOrdersBtn')?.addEventListener('click', () => loadMockData());
+
+    // Filtros
     setupFilters();
 
-    // Period buttons for reports
+    // Período dos relatórios
     document.querySelectorAll('.period-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
@@ -238,10 +233,9 @@ function setupEventListeners() {
         });
     });
 
-    // Initialize config forms (ensure listeners)
+    // Formulários de configuração
     setupConfigForms();
 }
-
 
 // Configurar gestos móveis
 function setupMobileGestures() {
@@ -337,12 +331,136 @@ function openMobileSidebar() {
     if (!document.querySelector('.sidebar-overlay')) {
         const overlay = document.createElement('div');
         overlay.className = 'sidebar-overlay';
-        overlay.addEventListener('click', () => closeMobileSidebar());
+        overlay.addEventListener('click', closeMobileSidebar);
         document.body.appendChild(overlay);
     }
-
+    
     sidebar.classList.add('mobile-open');
-    document.body.classList.add('no-scroll');
+    document.querySelector('.sidebar-overlay').classList.add('show');
+    document.body.style.overflow = 'hidden'; // Prevenir scroll do body
+}
+
+function closeMobileSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    
+    sidebar.classList.remove('mobile-open');
+    overlay?.classList.remove('show');
+    document.body.style.overflow = ''; // Restaurar scroll do body
+    
+    // Remover overlay após animação
+    setTimeout(() => {
+        if (overlay && !overlay.classList.contains('show')) {
+            overlay.remove();
+        }
+    }, 300);
+}
+
+// Redimensionar gráficos
+function resizeCharts() {
+    Object.values(charts).forEach(chart => {
+        if (chart && typeof chart.resize === 'function') {
+            chart.resize();
+        }
+    });
+}
+
+// Atualizar layout de tabelas
+function updateTableLayout() {
+    const tables = document.querySelectorAll('.products-table, .orders-table, .clients-table');
+    
+    tables.forEach(tableContainer => {
+        const table = tableContainer.querySelector('table');
+        if (!table) return;
+        
+        // Envolver tabela em wrapper se necessário
+        if (!table.parentElement.classList.contains('table-wrapper')) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'table-wrapper';
+            table.parentNode.insertBefore(wrapper, table);
+            wrapper.appendChild(table);
+        }
+        
+        // Em mobile, mostrar versão de cards se disponível
+        if (window.innerWidth <= 768) {
+            showMobileCards(tableContainer);
+        } else {
+            showDesktopTable(tableContainer);
+        }
+    });
+}
+
+// Mostrar cards mobile
+function showMobileCards(tableContainer) {
+    const table = tableContainer.querySelector('table');
+    const existingCards = tableContainer.querySelector('.mobile-cards');
+    
+    if (existingCards) {
+        existingCards.style.display = 'block';
+        table.style.display = 'none';
+        return;
+    }
+    
+    // Criar cards mobile baseados na tabela
+    const mobileCards = document.createElement('div');
+    mobileCards.className = 'mobile-cards';
+    
+    const tbody = table.querySelector('tbody');
+    const headers = Array.from(table.querySelectorAll('th')).map(th => th.textContent.trim());
+    
+    Array.from(tbody.querySelectorAll('tr')).forEach((row, index) => {
+        const cells = Array.from(row.querySelectorAll('td'));
+        
+        const card = document.createElement('div');
+        card.className = 'mobile-card';
+        
+        const cardHeader = document.createElement('div');
+        cardHeader.className = 'mobile-card-header';
+        
+        const cardTitle = document.createElement('div');
+        cardTitle.className = 'mobile-card-title';
+        cardTitle.textContent = cells[1]?.textContent || `Item ${index + 1}`;
+        
+        cardHeader.appendChild(cardTitle);
+        card.appendChild(cardHeader);
+        
+        const cardBody = document.createElement('div');
+        cardBody.className = 'mobile-card-body';
+        
+        cells.forEach((cell, cellIndex) => {
+            if (cellIndex === 0 || cellIndex === cells.length - 1) return; // Skip image and actions
+            
+            const field = document.createElement('div');
+            field.className = 'mobile-field';
+            
+            const label = document.createElement('div');
+            label.className = 'mobile-field-label';
+            label.textContent = headers[cellIndex] || '';
+            
+            const value = document.createElement('div');
+            value.className = 'mobile-field-value';
+            value.innerHTML = cell.innerHTML;
+            
+            field.appendChild(label);
+            field.appendChild(value);
+            cardBody.appendChild(field);
+        });
+        
+        // Adicionar ações se existirem
+        const actionsCell = cells[cells.length - 1];
+        if (actionsCell && actionsCell.querySelector('.action-buttons')) {
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'mobile-actions';
+            actionsDiv.innerHTML = actionsCell.innerHTML;
+            card.appendChild(actionsDiv);
+        }
+        
+        card.appendChild(cardBody);
+        mobileCards.appendChild(card);
+    });
+    
+    tableContainer.appendChild(mobileCards);
+    table.style.display = 'none';
 }
 
 // Mostrar tabela desktop
@@ -354,62 +472,6 @@ function showDesktopTable(tableContainer) {
         mobileCards.style.display = 'none';
     }
     table.style.display = 'table';
-}
-
-// Build mobile card view for tables (used on small screens)
-function buildMobileCards(tableContainer) {
-    const table = tableContainer.querySelector('table');
-    if (!table) return;
-
-    const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
-    const rows = Array.from(table.querySelectorAll('tbody tr'));
-
-    const mobileCards = document.createElement('div');
-    mobileCards.className = 'mobile-cards';
-
-    rows.forEach((row) => {
-        const cells = Array.from(row.children);
-        const card = document.createElement('div');
-        card.className = 'mobile-card';
-
-        const cardBody = document.createElement('div');
-        cardBody.className = 'mobile-card-body';
-
-        cells.forEach((cell, cellIndex) => {
-            // skip hidden columns
-            if (cell.style.display === 'none') return;
-
-            const field = document.createElement('div');
-            field.className = 'mobile-field';
-
-            const label = document.createElement('div');
-            label.className = 'mobile-field-label';
-            label.textContent = headers[cellIndex] || '';
-
-            const value = document.createElement('div');
-            value.className = 'mobile-field-value';
-            value.innerHTML = cell.innerHTML;
-
-            field.appendChild(label);
-            field.appendChild(value);
-            cardBody.appendChild(field);
-        });
-
-        // Adicionar ações se existirem
-        const actionsCell = cells[cells.length - 1];
-        if (actionsCell && actionsCell.querySelector('.action-buttons')) {
-            const actionsDiv = document.createElement('div');
-            actionsDiv.className = 'mobile-actions';
-            actionsDiv.innerHTML = actionsCell.innerHTML;
-            card.appendChild(actionsDiv);
-        }
-
-        card.appendChild(cardBody);
-        mobileCards.appendChild(card);
-    });
-
-    tableContainer.appendChild(mobileCards);
-    table.style.display = 'none';
 }
 
 // Configurar modais
@@ -468,25 +530,12 @@ function setupFilters() {
 
 // Configurar formulários de configuração
 function setupConfigForms() {
-    const forms = Array.from(document.querySelectorAll('.config-form'));
-    forms.forEach(form => {
-        // prevent default per-form submit (we save all at once)
-        form.addEventListener('submit', (e) => e.preventDefault());
-
-        // initialize dataset.initial if not set
-        if (!form.dataset.initial) form.dataset.initial = serializeForm(form);
-        if (!form.dataset.dirty) form.dataset.dirty = 'false';
-
-        // listen for input changes to mark dirty
-        form.querySelectorAll('input, textarea, select').forEach(ctrl => {
-            ctrl.addEventListener('input', () => markFormDirty(form));
-            ctrl.addEventListener('change', () => markFormDirty(form));
+    document.querySelectorAll('.config-form').forEach(form => {
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            showNotification('Configurações salvas com sucesso!', 'success');
         });
     });
-
-    // Wire Save All / Reset buttons if present
-    document.getElementById('saveAllConfigBtn')?.addEventListener('click', () => saveAllConfigs(forms));
-    document.getElementById('resetConfigBtn')?.addEventListener('click', () => resetAllConfigs(forms));
 }
 
 // Mostrar seção
@@ -1668,80 +1717,3 @@ function exportData(type) {
 
 // Event listener para exportação
 document.getElementById('exportOrdersBtn')?.addEventListener('click', () => exportData('orders'));
-
-// --- Config helpers: serialize, dirty-tracking, save all, reset all, confirm-leave ---
-function serializeForm(form) {
-    const data = {};
-    new FormData(form).forEach((value, key) => {
-        data[key] = value;
-    });
-    return JSON.stringify(data);
-}
-
-function markFormDirty(form) {
-    const now = serializeForm(form);
-    form.dataset.dirty = (now !== form.dataset.initial).toString();
-}
-
-function hasDirtyConfig(forms) {
-    return forms.some(f => f.dataset.dirty === 'true');
-}
-
-function saveAllConfigs(forms) {
-    // Simple simulation: persist serialized data to localStorage
-    const all = {};
-    forms.forEach(f => {
-        all[f.id || f.name || `form-${Math.random()}`] = JSON.parse(serializeForm(f));
-        // mark as clean
-        f.dataset.initial = serializeForm(f);
-        f.dataset.dirty = 'false';
-    });
-    localStorage.setItem('pizzaria.configs', JSON.stringify(all));
-    showNotification('Todas as configurações foram salvas.', 'success');
-}
-
-function resetAllConfigs(forms) {
-    forms.forEach(f => {
-        if (f.dataset.initial) {
-            const data = JSON.parse(f.dataset.initial);
-            Object.keys(data).forEach(k => {
-                const el = f.querySelector(`[name="${k}"]`);
-                if (!el) return;
-                if (el.type === 'checkbox') el.checked = !!data[k];
-                else el.value = data[k];
-            });
-            f.dataset.dirty = 'false';
-        }
-    });
-    showNotification('Configurações restauradas.', 'info');
-}
-
-function openConfirmLeave(onConfirm) {
-    const modal = document.getElementById('confirmLeaveModal');
-    if (!modal) {
-        // If modal doesn't exist, just proceed
-        onConfirm?.();
-        return;
-    }
-    modal.classList.add('show');
-    const confirmBtn = modal.querySelector('#confirmLeaveBtn');
-    const cancelBtn = modal.querySelector('#cancelLeaveBtn');
-
-    function cleanup() {
-        modal.classList.remove('show');
-        confirmBtn.removeEventListener('click', onConfirmClick);
-        cancelBtn.removeEventListener('click', onCancelClick);
-    }
-
-    function onConfirmClick() {
-        cleanup();
-        onConfirm?.();
-    }
-
-    function onCancelClick() {
-        cleanup();
-    }
-
-    confirmBtn.addEventListener('click', onConfirmClick);
-    cancelBtn.addEventListener('click', onCancelClick);
-}

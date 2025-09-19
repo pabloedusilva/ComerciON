@@ -1302,20 +1302,6 @@ tbody tr:hover {
     margin-top: 1.5rem;
 }
 
-.config-actions .btn-primary,
-.config-actions .btn-secondary {
-    min-width: 120px;
-}
-
-/* Ensure confirm modal buttons look consistent */
-#confirmLeaveModal .btn-primary {
-    background-color: var(--danger-color);
-    border-color: var(--danger-color);
-}
-#confirmLeaveModal .btn-primary:hover {
-    background-color: #c82333;
-}
-
 /* Responsive Design - Melhorada */
 /* Tablets e Laptops pequenos */
 @media (max-width: 1400px) {
