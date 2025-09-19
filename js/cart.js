@@ -118,6 +118,109 @@ function updateCart() {
   }
 }
 
+// Controla a sequência de modais: sucesso -> avaliação
+let ratingState = {
+  value: 0,
+  openedAfterSuccess: false,
+  inited: false
+};
+
+function openRatingModal() {
+  const ratingArea = document.querySelector('.rating.pizzaWindowArea');
+  if (!ratingArea) return;
+  // Reset estado visual
+  ratingState.value = 0;
+  document.querySelectorAll('.rating-stars .star').forEach(s => {
+    s.classList.remove('active');
+    s.classList.remove('fa-solid');
+    s.classList.add('fa-regular');
+  });
+  const ta = document.getElementById('ratingComment');
+  if (ta) ta.value = '';
+  const submitBtn = document.getElementById('ratingSubmit');
+  if (submitBtn) submitBtn.disabled = true;
+
+  // Abrir modal com mesma transição
+  ratingArea.style.opacity = 0;
+  ratingArea.style.display = 'flex';
+  setTimeout(() => { ratingArea.style.opacity = 1; }, 200);
+}
+
+function closeRatingModal() {
+  const ratingArea = document.querySelector('.rating.pizzaWindowArea');
+  if (!ratingArea) return;
+  ratingArea.style.opacity = 0;
+  setTimeout(() => { ratingArea.style.display = 'none'; }, 200);
+}
+
+function initRatingInteractionsOnce() {
+  if (ratingState.inited) return;
+  ratingState.inited = true;
+
+  // Clique nas estrelas
+  document.querySelectorAll('.rating-stars .star').forEach(star => {
+    star.addEventListener('click', () => {
+      const val = parseInt(star.getAttribute('data-value')) || 0;
+      ratingState.value = val;
+      // marca todas até o valor como ativas
+      document.querySelectorAll('.rating-stars .star').forEach(s => {
+        const sVal = parseInt(s.getAttribute('data-value')) || 0;
+        s.classList.toggle('active', sVal <= val);
+        // troca para sólido quando ativo
+        if (s.classList.contains('active')) {
+          s.classList.remove('fa-regular');
+          s.classList.add('fa-solid');
+        } else {
+          s.classList.add('fa-regular');
+          s.classList.remove('fa-solid');
+        }
+      });
+      const submitBtn = document.getElementById('ratingSubmit');
+      if (submitBtn) submitBtn.disabled = ratingState.value === 0;
+    });
+  });
+
+  // Acessibilidade: Enter/Space seleciona estrela focada
+  document.querySelectorAll('.rating-stars .star').forEach(star => {
+    star.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        star.click();
+      }
+    });
+  });
+
+  // Submit
+  const submitBtn = document.getElementById('ratingSubmit');
+  if (submitBtn) {
+    submitBtn.addEventListener('click', () => {
+      if (ratingState.value === 0) return;
+      // Simples feedback: fechar modal e logar
+      const comment = (document.getElementById('ratingComment')?.value || '').trim();
+      try {
+        const payload = { stars: ratingState.value, comment, ts: Date.now() };
+        // Poderíamos enviar para backend aqui; por enquanto, salva local
+        const prev = JSON.parse(localStorage.getItem('last_rating') || 'null');
+        localStorage.setItem('last_rating', JSON.stringify(payload));
+        if (window && window.console) console.log('Avaliação registrada:', payload, 'Anterior:', prev);
+      } catch (_) {}
+      closeRatingModal();
+    });
+  }
+
+  // Fechar mobile/back
+  document.querySelector('.rating-close')?.addEventListener('click', closeRatingModal);
+  // Pular avaliação
+  document.getElementById('ratingSkip')?.addEventListener('click', closeRatingModal);
+  // Fechar com ESC quando aberto
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const ratingArea = document.querySelector('.rating.pizzaWindowArea');
+      if (ratingArea && ratingArea.style.display === 'flex') closeRatingModal();
+    }
+  });
+}
+
 document.querySelector(".cart--finalizar").addEventListener("click", () => {
   cart = [];
   localStorage.clear();
@@ -142,6 +245,10 @@ document.querySelector(".cart--finalizar").addEventListener("click", () => {
           "none";
         updateCart();
         closeModal();
+        // Abrir avaliação após fechar sucesso
+        ratingState.openedAfterSuccess = true;
+        initRatingInteractionsOnce();
+        openRatingModal();
       }, 200);
     }, 4000);
   }, 2100);
