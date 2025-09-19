@@ -136,6 +136,13 @@ body {
     background-color: rgba(255, 255, 255, 0.1);
 }
 
+/* Ocultar botão hambúrguer da sidebar em telas grandes */
+@media (min-width: 769px) {
+    .sidebar-toggle {
+        display: none;
+    }
+}
+
 .sidebar-nav {
     flex: 1;
     padding: 1rem 0;
@@ -976,6 +983,11 @@ tbody tr:hover {
     color: var(--primary-color);
 }
 
+.metric-star {
+    color: var(--primary-color);
+    margin-left: 0.25rem;
+}
+
 /* Config Grid */
 .config-grid {
     display: grid;
@@ -1243,11 +1255,65 @@ tbody tr:hover {
     padding: 1.5rem;
 }
 
+/* Client details modal layout */
+.client-details {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+.client-details .cd-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.client-details .cd-sub {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+.client-details .cd-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+.client-details .cd-card {
+    background: var(--light-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+}
+.client-details .cd-card h5 {
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+}
+.client-details .cd-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.25rem 0;
+}
+.client-details .cd-row label {
+    color: var(--text-secondary);
+}
+
 .form-actions {
     display: flex;
     gap: 1rem;
     justify-content: flex-end;
     margin-top: 1.5rem;
+}
+
+.config-actions .btn-primary,
+.config-actions .btn-secondary {
+    min-width: 120px;
+}
+
+/* Ensure confirm modal buttons look consistent */
+#confirmLeaveModal .btn-primary {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+}
+#confirmLeaveModal .btn-primary:hover {
+    background-color: #c82333;
 }
 
 /* Responsive Design - Melhorada */

@@ -54,7 +54,17 @@ const mockData = {
             telefone: '(11) 99999-1111',
             pedidos: 15,
             totalGasto: 567.80,
-            ultimoPedido: '2025-09-18'
+            ultimoPedido: '2025-09-18',
+            endereco: {
+                rua: 'Rua das Pizzas',
+                numero: '123',
+                bairro: 'Centro',
+                cidade: 'São Paulo',
+                estado: 'SP',
+                cep: '01000-000',
+                complemento: 'Apto 12'
+            },
+            preferenciaSabores: ['Calabresa', '4 Queijos']
         },
         {
             id: 2,
@@ -63,7 +73,17 @@ const mockData = {
             telefone: '(11) 99999-2222',
             pedidos: 22,
             totalGasto: 890.50,
-            ultimoPedido: '2025-09-18'
+            ultimoPedido: '2025-09-18',
+            endereco: {
+                rua: 'Av. Paulista',
+                numero: '1000',
+                bairro: 'Bela Vista',
+                cidade: 'São Paulo',
+                estado: 'SP',
+                cep: '01310-100',
+                complemento: ''
+            },
+            preferenciaSabores: ['Portuguesa', 'Margherita']
         },
         {
             id: 3,
@@ -72,7 +92,17 @@ const mockData = {
             telefone: '(11) 99999-3333',
             pedidos: 8,
             totalGasto: 345.20,
-            ultimoPedido: '2025-09-17'
+            ultimoPedido: '2025-09-17',
+            endereco: {
+                rua: 'Rua do Comércio',
+                numero: '789',
+                bairro: 'Centro',
+                cidade: 'São Paulo',
+                estado: 'SP',
+                cep: '01020-020',
+                complemento: 'Casa'
+            },
+            preferenciaSabores: ['Portuguesa']
         }
     ]
 };
@@ -146,56 +176,60 @@ function loadMockData() {
 
 // Configuração de event listeners - Melhorada para responsividade
 function setupEventListeners() {
-    // Navegação da sidebar
+    // Config forms tracking
+    const configForms = Array.from(document.querySelectorAll('.config-form'));
+    configForms.forEach(form => {
+        form.addEventListener('submit', (e) => e.preventDefault());
+        if (!form.dataset.initial) form.dataset.initial = serializeForm(form);
+        form.dataset.dirty = form.dataset.dirty || 'false';
+        form.querySelectorAll('input, textarea, select').forEach(ctrl => {
+            ctrl.addEventListener('input', () => markFormDirty(form));
+            ctrl.addEventListener('change', () => markFormDirty(form));
+        });
+    });
+
+    // Save All and Reset
+    document.getElementById('saveAllConfigBtn')?.addEventListener('click', () => saveAllConfigs(configForms));
+    document.getElementById('resetConfigBtn')?.addEventListener('click', () => resetAllConfigs(configForms));
+
+    // Navigation links
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const section = link.dataset.section;
-            showSection(section);
-            
-            // Atualizar link ativo
+
+            if (currentSection === 'configuracoes' && hasDirtyConfig(configForms)) {
+                openConfirmLeave(() => {
+                    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+                    showSection(section);
+                });
+                return;
+            }
+
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             link.classList.add('active');
-            
-            // Fechar sidebar em mobile após seleção
-            if (window.innerWidth <= 768) {
-                closeMobileSidebar();
-            }
+            showSection(section);
+
+            if (window.innerWidth <= 768) closeMobileSidebar();
         });
     });
 
-    // Toggle sidebar
+    // Toggle sidebar buttons
     const sidebarToggle = document.getElementById('sidebarToggle');
     const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-    const sidebar = document.querySelector('.sidebar');
+    sidebarToggle?.addEventListener('click', () => toggleMobileSidebar());
+    mobileMenuToggle?.addEventListener('click', () => toggleMobileSidebar());
 
-    // Ambos os botões fazem a mesma ação: toggle da sidebar mobile
-    sidebarToggle?.addEventListener('click', () => {
-        toggleMobileSidebar();
-    });
-
-    mobileMenuToggle?.addEventListener('click', () => {
-        toggleMobileSidebar();
-    });
-
-    // Configurar swipe gestures para mobile
+    // Mobile gestures, resize handlers, modals, actions and filters
     setupMobileGestures();
-    
-    // Configurar eventos de redimensionamento
     setupResizeHandlers();
-
-    // Modais
     setupModals();
-
-    // Botões de ação
     document.getElementById('addProductBtn')?.addEventListener('click', () => openProductModal());
     document.getElementById('refreshOrdersBtn')?.addEventListener('click', () => loadMockData());
-    document.getElementById('addClientBtn')?.addEventListener('click', () => openClientModal());
-
-    // Filtros
     setupFilters();
 
-    // Período dos relatórios
+    // Period buttons for reports
     document.querySelectorAll('.period-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
@@ -204,9 +238,10 @@ function setupEventListeners() {
         });
     });
 
-    // Formulários de configuração
+    // Initialize config forms (ensure listeners)
     setupConfigForms();
 }
+
 
 // Configurar gestos móveis
 function setupMobileGestures() {
@@ -302,136 +337,12 @@ function openMobileSidebar() {
     if (!document.querySelector('.sidebar-overlay')) {
         const overlay = document.createElement('div');
         overlay.className = 'sidebar-overlay';
-        overlay.addEventListener('click', closeMobileSidebar);
+        overlay.addEventListener('click', () => closeMobileSidebar());
         document.body.appendChild(overlay);
     }
-    
+
     sidebar.classList.add('mobile-open');
-    document.querySelector('.sidebar-overlay').classList.add('show');
-    document.body.style.overflow = 'hidden'; // Prevenir scroll do body
-}
-
-function closeMobileSidebar() {
-    const sidebar = document.querySelector('.sidebar');
-    const overlay = document.querySelector('.sidebar-overlay');
-    
-    sidebar.classList.remove('mobile-open');
-    overlay?.classList.remove('show');
-    document.body.style.overflow = ''; // Restaurar scroll do body
-    
-    // Remover overlay após animação
-    setTimeout(() => {
-        if (overlay && !overlay.classList.contains('show')) {
-            overlay.remove();
-        }
-    }, 300);
-}
-
-// Redimensionar gráficos
-function resizeCharts() {
-    Object.values(charts).forEach(chart => {
-        if (chart && typeof chart.resize === 'function') {
-            chart.resize();
-        }
-    });
-}
-
-// Atualizar layout de tabelas
-function updateTableLayout() {
-    const tables = document.querySelectorAll('.products-table, .orders-table, .clients-table');
-    
-    tables.forEach(tableContainer => {
-        const table = tableContainer.querySelector('table');
-        if (!table) return;
-        
-        // Envolver tabela em wrapper se necessário
-        if (!table.parentElement.classList.contains('table-wrapper')) {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'table-wrapper';
-            table.parentNode.insertBefore(wrapper, table);
-            wrapper.appendChild(table);
-        }
-        
-        // Em mobile, mostrar versão de cards se disponível
-        if (window.innerWidth <= 768) {
-            showMobileCards(tableContainer);
-        } else {
-            showDesktopTable(tableContainer);
-        }
-    });
-}
-
-// Mostrar cards mobile
-function showMobileCards(tableContainer) {
-    const table = tableContainer.querySelector('table');
-    const existingCards = tableContainer.querySelector('.mobile-cards');
-    
-    if (existingCards) {
-        existingCards.style.display = 'block';
-        table.style.display = 'none';
-        return;
-    }
-    
-    // Criar cards mobile baseados na tabela
-    const mobileCards = document.createElement('div');
-    mobileCards.className = 'mobile-cards';
-    
-    const tbody = table.querySelector('tbody');
-    const headers = Array.from(table.querySelectorAll('th')).map(th => th.textContent.trim());
-    
-    Array.from(tbody.querySelectorAll('tr')).forEach((row, index) => {
-        const cells = Array.from(row.querySelectorAll('td'));
-        
-        const card = document.createElement('div');
-        card.className = 'mobile-card';
-        
-        const cardHeader = document.createElement('div');
-        cardHeader.className = 'mobile-card-header';
-        
-        const cardTitle = document.createElement('div');
-        cardTitle.className = 'mobile-card-title';
-        cardTitle.textContent = cells[1]?.textContent || `Item ${index + 1}`;
-        
-        cardHeader.appendChild(cardTitle);
-        card.appendChild(cardHeader);
-        
-        const cardBody = document.createElement('div');
-        cardBody.className = 'mobile-card-body';
-        
-        cells.forEach((cell, cellIndex) => {
-            if (cellIndex === 0 || cellIndex === cells.length - 1) return; // Skip image and actions
-            
-            const field = document.createElement('div');
-            field.className = 'mobile-field';
-            
-            const label = document.createElement('div');
-            label.className = 'mobile-field-label';
-            label.textContent = headers[cellIndex] || '';
-            
-            const value = document.createElement('div');
-            value.className = 'mobile-field-value';
-            value.innerHTML = cell.innerHTML;
-            
-            field.appendChild(label);
-            field.appendChild(value);
-            cardBody.appendChild(field);
-        });
-        
-        // Adicionar ações se existirem
-        const actionsCell = cells[cells.length - 1];
-        if (actionsCell && actionsCell.querySelector('.action-buttons')) {
-            const actionsDiv = document.createElement('div');
-            actionsDiv.className = 'mobile-actions';
-            actionsDiv.innerHTML = actionsCell.innerHTML;
-            card.appendChild(actionsDiv);
-        }
-        
-        card.appendChild(cardBody);
-        mobileCards.appendChild(card);
-    });
-    
-    tableContainer.appendChild(mobileCards);
-    table.style.display = 'none';
+    document.body.classList.add('no-scroll');
 }
 
 // Mostrar tabela desktop
@@ -443,6 +354,62 @@ function showDesktopTable(tableContainer) {
         mobileCards.style.display = 'none';
     }
     table.style.display = 'table';
+}
+
+// Build mobile card view for tables (used on small screens)
+function buildMobileCards(tableContainer) {
+    const table = tableContainer.querySelector('table');
+    if (!table) return;
+
+    const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+    const rows = Array.from(table.querySelectorAll('tbody tr'));
+
+    const mobileCards = document.createElement('div');
+    mobileCards.className = 'mobile-cards';
+
+    rows.forEach((row) => {
+        const cells = Array.from(row.children);
+        const card = document.createElement('div');
+        card.className = 'mobile-card';
+
+        const cardBody = document.createElement('div');
+        cardBody.className = 'mobile-card-body';
+
+        cells.forEach((cell, cellIndex) => {
+            // skip hidden columns
+            if (cell.style.display === 'none') return;
+
+            const field = document.createElement('div');
+            field.className = 'mobile-field';
+
+            const label = document.createElement('div');
+            label.className = 'mobile-field-label';
+            label.textContent = headers[cellIndex] || '';
+
+            const value = document.createElement('div');
+            value.className = 'mobile-field-value';
+            value.innerHTML = cell.innerHTML;
+
+            field.appendChild(label);
+            field.appendChild(value);
+            cardBody.appendChild(field);
+        });
+
+        // Adicionar ações se existirem
+        const actionsCell = cells[cells.length - 1];
+        if (actionsCell && actionsCell.querySelector('.action-buttons')) {
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'mobile-actions';
+            actionsDiv.innerHTML = actionsCell.innerHTML;
+            card.appendChild(actionsDiv);
+        }
+
+        card.appendChild(cardBody);
+        mobileCards.appendChild(card);
+    });
+
+    tableContainer.appendChild(mobileCards);
+    table.style.display = 'none';
 }
 
 // Configurar modais
@@ -501,12 +468,25 @@ function setupFilters() {
 
 // Configurar formulários de configuração
 function setupConfigForms() {
-    document.querySelectorAll('.config-form').forEach(form => {
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            showNotification('Configurações salvas com sucesso!', 'success');
+    const forms = Array.from(document.querySelectorAll('.config-form'));
+    forms.forEach(form => {
+        // prevent default per-form submit (we save all at once)
+        form.addEventListener('submit', (e) => e.preventDefault());
+
+        // initialize dataset.initial if not set
+        if (!form.dataset.initial) form.dataset.initial = serializeForm(form);
+        if (!form.dataset.dirty) form.dataset.dirty = 'false';
+
+        // listen for input changes to mark dirty
+        form.querySelectorAll('input, textarea, select').forEach(ctrl => {
+            ctrl.addEventListener('input', () => markFormDirty(form));
+            ctrl.addEventListener('change', () => markFormDirty(form));
         });
     });
+
+    // Wire Save All / Reset buttons if present
+    document.getElementById('saveAllConfigBtn')?.addEventListener('click', () => saveAllConfigs(forms));
+    document.getElementById('resetConfigBtn')?.addEventListener('click', () => resetAllConfigs(forms));
 }
 
 // Mostrar seção
@@ -987,11 +967,8 @@ function renderClientsTable() {
             <td>${formatDate(client.ultimoPedido)}</td>
             <td>
                 <div class="action-buttons">
-                    <button class="action-btn edit" onclick="editClient(${client.id})">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="action-btn delete" onclick="deleteClient(${client.id})">
-                        <i class="fas fa-trash"></i>
+                    <button class="action-btn edit" onclick="viewClient(${client.id})" title="Ver detalhes">
+                        <i class="fas fa-eye"></i>
                     </button>
                 </div>
             </td>
@@ -1139,11 +1116,8 @@ function renderFilteredClients(filteredClients) {
             <td>${formatDate(client.ultimoPedido)}</td>
             <td>
                 <div class="action-buttons">
-                    <button class="action-btn edit" onclick="editClient(${client.id})">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="action-btn delete" onclick="deleteClient(${client.id})">
-                        <i class="fas fa-trash"></i>
+                    <button class="action-btn edit" onclick="viewClient(${client.id})" title="Ver detalhes">
+                        <i class="fas fa-eye"></i>
                     </button>
                 </div>
             </td>
@@ -1438,13 +1412,59 @@ function updateOrderStatusFromModal(orderId) {
 }
 
 // Funções de cliente
-function openClientModal(clientId = null) {
-    // Implementar modal de cliente
-    showNotification('Funcionalidade em desenvolvimento', 'info');
+
+
+function viewClient(id) {
+    const client = clients.find(c => c.id === id);
+    if (!client) return;
+
+    const modal = document.getElementById('clientModal');
+    const body = document.getElementById('clientModalBody');
+
+    const addr = client.endereco || {};
+    const fullAddress = [addr.rua, addr.numero && `, ${addr.numero}`, addr.bairro && ` - ${addr.bairro}`, '<br>', addr.cidade, addr.estado && ` - ${addr.estado}`, addr.cep && `, CEP: ${addr.cep}`, addr.complemento ? `, ${addr.complemento}` : '']
+        .filter(Boolean)
+        .join('');
+
+    body.innerHTML = `
+        <div class="client-details">
+            <div class="cd-header">
+                <div>
+                    <h4>${client.nome}</h4>
+                    <div class="cd-sub">Cliente desde ${new Date().getFullYear()}</div>
+                </div>
+                <span class="status-badge active">${client.pedidos} pedidos</span>
+            </div>
+            <div class="cd-grid">
+                <div class="cd-card">
+                    <h5>Contato</h5>
+                    <div class="cd-row"><label>Email:</label><span>${client.email}</span></div>
+                    <div class="cd-row"><label>Telefone:</label><span>${client.telefone}</span></div>
+                </div>
+                <div class="cd-card">
+                    <h5>Endereço</h5>
+                    <div class="cd-row"><span>${fullAddress}</span></div>
+                </div>
+                <div class="cd-card">
+                    <h5>Resumo</h5>
+                    <div class="cd-row"><label>Total gasto:</label><span>R$ ${client.totalGasto.toFixed(2)}</span></div>
+                    <div class="cd-row"><label>Último pedido:</label><span>${formatDate(client.ultimoPedido)}</span></div>
+                </div>
+                <div class="cd-card">
+                    <h5>Preferências</h5>
+                    <div class="cd-row"><span>${(client.preferenciaSabores||[]).join(', ') || '—'}</span></div>
+                </div>
+                
+            </div>
+        </div>
+    `;
+
+    modal.classList.add('show');
 }
 
 function editClient(id) {
-    openClientModal(id);
+    // Redireciona para visualização de cliente (para compatibilidade)
+    viewClient(id);
 }
 
 function deleteClient(id) {
@@ -1648,3 +1668,80 @@ function exportData(type) {
 
 // Event listener para exportação
 document.getElementById('exportOrdersBtn')?.addEventListener('click', () => exportData('orders'));
+
+// --- Config helpers: serialize, dirty-tracking, save all, reset all, confirm-leave ---
+function serializeForm(form) {
+    const data = {};
+    new FormData(form).forEach((value, key) => {
+        data[key] = value;
+    });
+    return JSON.stringify(data);
+}
+
+function markFormDirty(form) {
+    const now = serializeForm(form);
+    form.dataset.dirty = (now !== form.dataset.initial).toString();
+}
+
+function hasDirtyConfig(forms) {
+    return forms.some(f => f.dataset.dirty === 'true');
+}
+
+function saveAllConfigs(forms) {
+    // Simple simulation: persist serialized data to localStorage
+    const all = {};
+    forms.forEach(f => {
+        all[f.id || f.name || `form-${Math.random()}`] = JSON.parse(serializeForm(f));
+        // mark as clean
+        f.dataset.initial = serializeForm(f);
+        f.dataset.dirty = 'false';
+    });
+    localStorage.setItem('pizzaria.configs', JSON.stringify(all));
+    showNotification('Todas as configurações foram salvas.', 'success');
+}
+
+function resetAllConfigs(forms) {
+    forms.forEach(f => {
+        if (f.dataset.initial) {
+            const data = JSON.parse(f.dataset.initial);
+            Object.keys(data).forEach(k => {
+                const el = f.querySelector(`[name="${k}"]`);
+                if (!el) return;
+                if (el.type === 'checkbox') el.checked = !!data[k];
+                else el.value = data[k];
+            });
+            f.dataset.dirty = 'false';
+        }
+    });
+    showNotification('Configurações restauradas.', 'info');
+}
+
+function openConfirmLeave(onConfirm) {
+    const modal = document.getElementById('confirmLeaveModal');
+    if (!modal) {
+        // If modal doesn't exist, just proceed
+        onConfirm?.();
+        return;
+    }
+    modal.classList.add('show');
+    const confirmBtn = modal.querySelector('#confirmLeaveBtn');
+    const cancelBtn = modal.querySelector('#cancelLeaveBtn');
+
+    function cleanup() {
+        modal.classList.remove('show');
+        confirmBtn.removeEventListener('click', onConfirmClick);
+        cancelBtn.removeEventListener('click', onCancelClick);
+    }
+
+    function onConfirmClick() {
+        cleanup();
+        onConfirm?.();
+    }
+
+    function onCancelClick() {
+        cleanup();
+    }
+
+    confirmBtn.addEventListener('click', onConfirmClick);
+    cancelBtn.addEventListener('click', onCancelClick);
+}
