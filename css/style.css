@@ -645,6 +645,62 @@ h1 {
     padding: 10px 50px
 }
 
+/* Rating modal */
+.pizzaWindowBody.modal.rating {
+    max-width: 560px;
+    width: 96%;
+    margin: 20px;
+    padding: 26px 28px;
+    display: block;
+}
+
+.rating-content { text-align: center; }
+.rating-title { margin: 10px 0 6px; font-size: 22px; font-weight: 700; color: #333; }
+.rating-subtitle { margin: 0 0 14px; font-size: 14px; color: #777; }
+
+.rating-stars { display: inline-flex; gap: 10px; padding: 12px 0 6px; }
+.rating-stars .star { font-size: 28px; color: #ddd; cursor: pointer; transition: color .2s ease, transform .15s ease; }
+.rating-stars .star:hover { transform: translateY(-1px); }
+.rating-stars .star.active { color: #fab427; }
+
+.rating-note { margin: 12px 0 6px; }
+.rating-textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #555;
+    background: #fafafa;
+    outline: none;
+    transition: all .2s ease;
+    resize: vertical;
+}
+.rating-textarea:focus { border-color: #fab427; background: #fff; box-shadow: 0 0 0 3px rgba(250,180,39,.12); }
+
+.rating-submit[disabled] { opacity: .6; cursor: not-allowed; filter: grayscale(.15); }
+
+.rating .pizzaInfo--cancelMobileButton.rating-close { display: none; }
+
+.rating-skip {
+    display: inline-block;
+    margin-top: 10px;
+    background: transparent;
+    border: none;
+    color: #888;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: color .2s ease;
+}
+.rating-skip:hover { color: #666; }
+
+@media (max-width: 820px) {
+    .pizzaWindowBody.modal.rating { height: auto; padding: 24px 22px; }
+    .rating .pizzaInfo--cancelMobileButton.rating-close { display: block; margin-bottom: 8px; }
+}
+
 .pizzaBig {
     flex: 1;
     display: flex;
@@ -773,6 +829,7 @@ h1 {
     padding: 20px 30px;
     border-radius: 20px;
     background-color: #fab427;
+    border: none; /* remove borda padrão quando usado como <button> */
     color: #fff;
     display: inline-block;
     cursor: pointer;
@@ -1307,9 +1364,11 @@ h1 {
         margin-bottom: 25px
     }
 
+    /* Garanta que todos os modais fiquem centralizados também no mobile */
     .pizzaWindowArea {
-        justify-content: flex-start;
-        align-items: flex-start
+        justify-content: center;
+        align-items: center;
+        padding: 20px; /* padding horizontal evita que a sombra seja cortada nas bordas */
     }
 
     .success {
@@ -1339,14 +1398,15 @@ h1 {
         width: 100vw;
         display: block;
         border-radius: 0;
-        box-shadow: none;
+        /* manter sombra também no mobile */
+        box-shadow: 0px 10px 25px rgba(153, 153, 153, .342);
         margin: 0;
         z-index: 99
     }
 
     .pizzaWindowBody.modal {
-        padding: 25px 40px;
-        height: 100vh
+        padding: 25px 20px;
+        height: auto;
     }
 
     .pizzaBig img {
