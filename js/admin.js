@@ -295,6 +295,11 @@ function loadMockData() {
     clients = mockData.clients;
     renderOrdersTable();
     renderClientsTable();
+    
+    // Update cards if in fullscreen mode
+    if (document.body.classList.contains('orders-fullscreen')) {
+        renderOrdersCards();
+    }
 }
 
 // Configuração de event listeners - Melhorada para responsividade
@@ -379,6 +384,8 @@ function setupOrdersFullscreen() {
             body.classList.add('orders-fullscreen');
             icon.className = 'fas fa-compress';
             fullscreenBtn.title = 'Sair da tela cheia';
+            // Render orders as cards when entering fullscreen
+            renderOrdersCards();
         } else {
             body.classList.remove('orders-fullscreen');
             icon.className = 'fas fa-expand';
@@ -1491,6 +1498,102 @@ function renderOrdersTable() {
     });
 }
 
+// Renderizar pedidos em cards para modo fullscreen
+function renderOrdersCards() {
+    const ordersGrid = document.getElementById('ordersGrid');
+    if (!ordersGrid) return;
+
+    ordersGrid.innerHTML = '';
+
+    const statusTexts = {
+        pending: 'Pendente',
+        preparing: 'Preparando',
+        delivery: 'A caminho',
+        delivered: 'Entregue',
+        cancelled: 'Cancelado'
+    };
+
+    orders.forEach(order => {
+        const orderCard = document.createElement('div');
+        orderCard.className = 'order-card';
+        
+        // Format date and time
+        const orderDate = new Date(order.data);
+        const dateStr = orderDate.toLocaleDateString('pt-BR');
+        const timeStr = orderDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        
+        // Generate items HTML
+        const itemsHTML = order.items.map(item => `
+            <div class="item-row">
+                <div class="item-details">
+                    <div class="item-name">${item.nome}</div>
+                    <div class="item-quantity">Qtd: ${item.quantidade}</div>
+                </div>
+                <div class="item-price">R$ ${item.preco.toFixed(2)}</div>
+            </div>
+        `).join('');
+
+        orderCard.innerHTML = `
+            <div class="order-card-header">
+                <div>
+                    <div class="order-number">#${order.id}</div>
+                    <div class="order-time">${dateStr} às ${timeStr}</div>
+                </div>
+                <div class="order-status-card ${order.status}">
+                    ${statusTexts[order.status] || order.status}
+                </div>
+            </div>
+
+            <div class="order-customer">
+                <div class="customer-name">
+                    <i class="fas fa-user"></i>
+                    ${order.cliente}
+                </div>
+                <div class="customer-contact">
+                    <div class="contact-item phone-contact" onclick="openWhatsApp('${order.telefone}')">
+                        <i class="fab fa-whatsapp"></i>
+                        ${order.telefone}
+                    </div>
+                    <div class="contact-item address-contact" onclick="openMaps('${order.endereco}')">
+                        <i class="fas fa-map-marker-alt"></i>
+                        ${order.endereco}
+                    </div>
+                </div>
+            </div>
+
+            <div class="order-items">
+                <h4>
+                    <i class="fas fa-pizza-slice"></i>
+                    Items do Pedido
+                </h4>
+                <div class="items-list">
+                    ${itemsHTML}
+                </div>
+            </div>
+
+            <div class="order-total">
+                <div class="total-row">
+                    <span class="total-label">Total do Pedido</span>
+                    <span class="total-value">R$ ${order.total.toFixed(2)}</span>
+                </div>
+            </div>
+
+            <div class="order-actions">
+                <button class="action-btn-card view" onclick="viewOrder('${order.id}')">
+                    <i class="fas fa-eye"></i>
+                    Ver Detalhes
+                </button>
+                <button class="action-btn-card edit" onclick="updateOrderStatusFromModal('${order.id}')">
+                    <i class="fas fa-edit"></i>
+                    Atualizar Status
+                </button>
+            </div>
+        `;
+
+        ordersGrid.appendChild(orderCard);
+    });
+}
+
 // Renderizar tabela de clientes
 function renderClientsTable() {
     const tbody = document.getElementById('clientsTableBody');
@@ -2157,7 +2260,6 @@ style.textContent = `
         text-align: right;
         font-size: 1.1rem;
         padding: 1rem 0;
-        border-top: 2px solid #fab427;
     }
     
     .order-actions {
@@ -4429,4 +4531,31 @@ class SoundSettings {
             console.log('Error loading sound settings:', error);
         }
     }
+}
+
+// Funções para abrir WhatsApp e Maps
+function openWhatsApp(phoneNumber) {
+    // Remove caracteres especiais e espaços do número
+    const cleanPhone = phoneNumber.replace(/\D/g, '');
+    
+    // Adiciona código do país se não tiver (55 para Brasil)
+    let formattedPhone = cleanPhone;
+    if (!cleanPhone.startsWith('55') && cleanPhone.length === 11) {
+        formattedPhone = '55' + cleanPhone;
+    } else if (!cleanPhone.startsWith('55') && cleanPhone.length === 10) {
+        formattedPhone = '55' + cleanPhone;
+    }
+    
+    // Abre o WhatsApp
+    const whatsappUrl = `https://wa.me/${formattedPhone}`;
+    window.open(whatsappUrl, '_blank');
+}
+
+function openMaps(address) {
+    // Codifica o endereço para URL
+    const encodedAddress = encodeURIComponent(address);
+    
+    // Abre o Google Maps
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+    window.open(mapsUrl, '_blank');
 }
