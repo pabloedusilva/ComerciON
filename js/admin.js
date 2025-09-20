@@ -2045,6 +2045,10 @@ const layoutManager = {
         showNotification('Layout salvo com sucesso!', 'success');
     },
 
+    saveLayoutSilent() {
+        localStorage.setItem('pizzaria_layout', JSON.stringify(this.currentLayout));
+    },
+
     updatePreviews() {
         this.updateBackgroundPreview();
         this.updateLogoPreview();
@@ -2079,7 +2083,7 @@ const layoutManager = {
     resetBackground() {
         this.currentLayout.background = 'images/background.jpg';
         this.updateBackgroundPreview();
-        this.saveLayout();
+        this.saveLayoutSilent();
         showNotification('Background restaurado!', 'info');
     },
 
@@ -2109,7 +2113,7 @@ const layoutManager = {
     resetLogo() {
         this.currentLayout.logo = 'images/logo_pizza.png';
         this.updateLogoPreview();
-        this.saveLayout();
+        this.saveLayoutSilent();
         showNotification('Logo restaurada!', 'info');
     },
 
@@ -2136,12 +2140,6 @@ const layoutManager = {
         if (previewTitle) previewTitle.textContent = this.currentLayout.title;
         if (previewSubtitle) previewSubtitle.textContent = this.currentLayout.subtitle;
         if (previewDescription) previewDescription.textContent = this.currentLayout.description;
-
-        // Update background preview overlay as well
-        const previewOverlay = document.querySelector('.preview-content h4');
-        const previewOverlayP = document.querySelector('.preview-content p');
-        if (previewOverlay) previewOverlay.textContent = this.currentLayout.title;
-        if (previewOverlayP) previewOverlayP.textContent = this.currentLayout.subtitle;
     },
 
     saveTexts() {
@@ -2156,7 +2154,7 @@ const layoutManager = {
         
         this.updateTextInputs();
         this.updateTextPreview();
-        this.saveLayout();
+        this.saveLayoutSilent();
         showNotification('Textos restaurados!', 'info');
     },
 
@@ -2280,7 +2278,7 @@ const layoutManager = {
                 { image: 'images/banner2.jpg', caption: 'Promoções da semana' }
             ];
             this.updateCarouselPreview();
-            this.saveLayout();
+            this.saveLayoutSilent();
             showNotification('Carousel restaurado!', 'info');
         }
     },
