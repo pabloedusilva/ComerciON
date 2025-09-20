@@ -148,9 +148,27 @@ function openRatingModal() {
 
 function closeRatingModal() {
   const ratingArea = document.querySelector('.rating.pizzaWindowArea');
+  const successAnimation = document.getElementById('ratingSuccessAnimation');
   if (!ratingArea) return;
+  
+  // Remover animação de sucesso se estiver visível
+  if (successAnimation) {
+    successAnimation.classList.remove('show');
+  }
+  
+  // Fechar modal com transição
   ratingArea.style.opacity = 0;
-  setTimeout(() => { ratingArea.style.display = 'none'; }, 200);
+  setTimeout(() => { 
+    ratingArea.style.display = 'none'; 
+    ratingState.openedAfterSuccess = false;
+  }, 200);
+}
+
+function showRatingSuccessAnimation() {
+  const successAnimation = document.getElementById('ratingSuccessAnimation');
+  if (successAnimation) {
+    successAnimation.classList.add('show');
+  }
 }
 
 function initRatingInteractionsOnce() {
@@ -195,7 +213,11 @@ function initRatingInteractionsOnce() {
   if (submitBtn) {
     submitBtn.addEventListener('click', () => {
       if (ratingState.value === 0) return;
-      // Simples feedback: fechar modal e logar
+      
+      // Mostrar animação de sucesso
+      showRatingSuccessAnimation();
+      
+      // Salvar dados da avaliação
       const comment = (document.getElementById('ratingComment')?.value || '').trim();
       try {
         const payload = { stars: ratingState.value, comment, ts: Date.now() };
@@ -204,7 +226,11 @@ function initRatingInteractionsOnce() {
         localStorage.setItem('last_rating', JSON.stringify(payload));
         if (window && window.console) console.log('Avaliação registrada:', payload, 'Anterior:', prev);
       } catch (_) {}
-      closeRatingModal();
+      
+      // Fechar modal após a animação
+      setTimeout(() => {
+        closeRatingModal();
+      }, 2000);
     });
   }
 
