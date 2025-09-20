@@ -19,6 +19,10 @@
                 <div class="logo-text">
                     <h2>Admin Panel</h2>
                     <span class="logo-subtitle">Gestão completa</span>
+                    <!-- Status da loja (dinâmico) -->
+                    <span id="sidebarStatusPill" class="status-pill open" aria-live="polite" title="Status da loja">
+                        <i class="fas fa-circle"></i> Aberta
+                    </span>
                 </div>
             </div>
             <button class="sidebar-toggle" id="sidebarToggle">
@@ -88,6 +92,15 @@
             <div class="nav-section">
                 <span class="nav-section-title">Sistema</span>
                 <ul>
+                    <li>
+                        <a href="#funcionamento" class="nav-link" data-section="funcionamento">
+                            <div class="nav-icon">
+                                <i class="fas fa-store"></i>
+                            </div>
+                            <span class="nav-text">Funcionamento</span>
+                            <div class="nav-indicator"></div>
+                        </a>
+                    </li>
                     <li>
                         <a href="#layout" class="nav-link" data-section="layout">
                             <div class="nav-icon">
@@ -533,28 +546,7 @@
                         </form>
                     </div>
 
-                    <div class="config-card">
-                        <h3>Horário de Funcionamento</h3>
-                        <form class="config-form">
-                            <div class="form-group">
-                                <label>Segunda a Sexta</label>
-                                <div class="time-inputs">
-                                    <input type="time" value="18:00">
-                                    <span>às</span>
-                                    <input type="time" value="23:00">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Sábado e Domingo</label>
-                                <div class="time-inputs">
-                                    <input type="time" value="18:00">
-                                    <span>às</span>
-                                    <input type="time" value="00:00">
-                                </div>
-                            </div>
-                            <button type="submit" class="btn-primary">Salvar</button>
-                        </form>
-                    </div>
+                    
 
                     <div class="config-card">
                         <h3>Preferências do Sistema</h3>
@@ -730,6 +722,74 @@
                                         </button>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Funcionamento Section -->
+            <section id="funcionamento-section" class="content-section">
+                <div class="section-header">
+                    <h2>Funcionamento da Pizzaria</h2>
+                    <p class="section-description">Feche temporariamente a loja por imprevistos, feriados ou manutenções</p>
+                </div>
+
+                <div class="status-grid">
+                    <!-- Status Atual -->
+                    <div class="status-card">
+                        <div class="status-card-header">
+                            <h3><i class="fas fa-door-closed"></i> Status Atual</h3>
+                            <span id="statusPill" class="status-pill open"><i class="fas fa-circle"></i> Aberta</span>
+                        </div>
+                        <div class="status-card-content">
+                            <div class="status-row">
+                                <label class="switch">
+                                    <input type="checkbox" id="closeNowToggle">
+                                    <span class="slider"></span>
+                                </label>
+                                <div class="switch-text">
+                                    <strong>Fechar agora</strong>
+                                    <small>Use para fechar a loja imediatamente</small>
+                                </div>
+                            </div>
+
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="closeReason">Motivo (opcional)</label>
+                                    <input type="text" id="closeReason" placeholder="Ex.: Manutenção no forno, equipe reduzida, feriado...">
+                                </div>
+                                <div class="form-group">
+                                    <label for="reopenAt">Reabrir em (opcional)</label>
+                                    <input type="datetime-local" id="reopenAt">
+                                    <small>Deixe vazio para fechamento por tempo indeterminado</small>
+                                </div>
+                            </div>
+
+                            <div class="layout-controls">
+                                <button class="btn-primary" id="saveStatusBtn">
+                                    <i class="fas fa-save"></i> Salvar Status
+                                </button>
+                                <button class="btn-outline" id="clearStatusBtn">
+                                    <i class="fas fa-undo"></i> Limpar / Reabrir
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Horários de Funcionamento -->
+                    <div class="status-card full-width">
+                        <div class="status-card-header">
+                            <h3><i class="fas fa-clock"></i> Horários de Funcionamento</h3>
+                            <p>Defina o expediente de cada dia da semana</p>
+                        </div>
+                        <div class="status-card-content">
+                            <div class="hours-grid" id="hoursGrid">
+                                <!-- Linhas renderizadas pelo JS -->
+                            </div>
+                            <div class="layout-controls">
+                                <button class="btn-primary" id="saveHoursBtn"><i class="fas fa-save"></i> Salvar horários</button>
+                                <button class="btn-outline" id="resetHoursBtn"><i class="fas fa-undo"></i> Restaurar padrão</button>
                             </div>
                         </div>
                     </div>

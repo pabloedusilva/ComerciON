@@ -125,6 +125,9 @@ function initializeApp() {
     
     // Adicionar loading overlay inicial se necessário
     removeLoadingState();
+
+    // Iniciar status dinâmico no header da sidebar
+    initSidebarStatusPill();
 }
 
 // Configuração da sidebar moderna
@@ -153,6 +156,59 @@ function setupModernSidebar() {
             }
         });
     });
+}
+
+// Atualizador do status na sidebar (tempo real)
+function initSidebarStatusPill() {
+    const pill = document.getElementById('sidebarStatusPill');
+    if (!pill) return;
+
+    const update = () => {
+        // garantir que statusManager tenha estado carregado
+        try { statusManager.load?.(); } catch(e) {}
+        const closed = safeIsClosedNow();
+        pill.classList.toggle('closed', closed);
+        pill.classList.toggle('open', !closed);
+        pill.innerHTML = closed ? '<i class="fas fa-circle"></i> Fechada' : '<i class="fas fa-circle"></i> Aberta';
+        pill.setAttribute('title', closed ? 'Loja fechada' : 'Loja aberta');
+        pill.setAttribute('aria-label', closed ? 'Loja fechada' : 'Loja aberta');
+    };
+
+    // Helper seguro para não depender de seção ativa
+    function safeIsClosedNow() {
+        try {
+            const now = new Date();
+            if (statusManager && typeof statusManager.isClosedAt === 'function') {
+                // garantir que horas existam
+                if (!statusManager.state?.hours) {
+                    statusManager.state = statusManager.state || {};
+                    statusManager.state.hours = statusManager.getDefaultHours();
+                }
+                return !!statusManager.isClosedAt(now);
+            }
+        } catch (e) { /* noop */ }
+        return false;
+    }
+
+    // Atualização inicial
+    update();
+
+    // Atualizar a cada minuto para refletir mudanças de horário
+    setInterval(update, 60 * 1000);
+
+    // Atualizar quando localStorage mudar (outra aba/parte do app)
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'pizzaria_status') update();
+    });
+
+    // Atualizar também após ações internas que salvam estado
+    const origSave = statusManager.save?.bind(statusManager);
+    if (origSave) {
+        statusManager.save = function() {
+            origSave();
+            update();
+        };
+    }
 }
 
 // Função para criar efeito ripple
@@ -610,7 +666,8 @@ function showSection(sectionName) {
                 relatorios: 'Relatórios',
                 clientes: 'Clientes',
                 configuracoes: 'Configurações',
-                layout: 'Layout'
+                layout: 'Layout',
+                funcionamento: 'Funcionamento'
             };
             pageTitle.textContent = titles[sectionName] || 'Admin Panel';
         }
@@ -630,9 +687,11 @@ function showSection(sectionName) {
             setTimeout(() => resizeCharts(), 50);
         }
         
-        // Inicializar layout manager quando seção de layout for acessada
+        // Inicializar gerenciadores específicos
         if (sectionName === 'layout') {
             initLayoutSection();
+        } else if (sectionName === 'funcionamento') {
+            initFuncionamentoSection();
         }
     }
 }
@@ -2317,5 +2376,222 @@ window.removeSlide = (index) => layoutManager.removeSlide(index);
 function initLayoutSection() {
     if (document.getElementById('layout-section')) {
         layoutManager.init();
+    }
+}
+
+// Funcionamento (Status) Management
+const statusManager = {
+    state: {
+        closedNow: false,
+        reason: '',
+        reopenAt: '', // ISO string
+        schedules: [] // [{ start: ISO, end: ISO, reason }]
+    },
+
+    init() {
+        this.load();
+        this.bindUI();
+        this.render();
+    },
+
+    bindUI() {
+        const closeNowToggle = document.getElementById('closeNowToggle');
+        const closeReason = document.getElementById('closeReason');
+        const reopenAt = document.getElementById('reopenAt');
+        const saveBtn = document.getElementById('saveStatusBtn');
+        const clearBtn = document.getElementById('clearStatusBtn');
+    const saveHoursBtn = document.getElementById('saveHoursBtn');
+    const resetHoursBtn = document.getElementById('resetHoursBtn');
+    const hoursGrid = document.getElementById('hoursGrid');
+
+        closeNowToggle?.addEventListener('change', () => {
+            this.state.closedNow = closeNowToggle.checked;
+            this.renderPill();
+        });
+        saveBtn?.addEventListener('click', () => {
+            this.state.reason = closeReason?.value?.trim() || '';
+            this.state.reopenAt = reopenAt?.value ? new Date(reopenAt.value).toISOString() : '';
+            this.save();
+            this.render();
+            showNotification('Status de funcionamento atualizado!', 'success');
+        });
+        clearBtn?.addEventListener('click', () => {
+            this.state.closedNow = false;
+            this.state.reason = '';
+            this.state.reopenAt = '';
+            this.save();
+            this.render();
+            showNotification('Loja reaberta. Status limpo!', 'info');
+        });
+
+        // Hours save/reset
+        saveHoursBtn?.addEventListener('click', () => {
+            this.collectHoursFromUI();
+            this.save();
+            showNotification('Horários de funcionamento salvos!', 'success');
+        });
+        resetHoursBtn?.addEventListener('click', () => {
+            if (confirm('Restaurar horários padrão?')) {
+                this.state.hours = this.getDefaultHours();
+                this.save();
+                this.renderHours();
+                showNotification('Horários restaurados!', 'info');
+            }
+        });
+
+        // Atualizar cor da linha ao alternar Atender
+        hoursGrid?.addEventListener('change', (e) => {
+            const target = e.target;
+            if (target && target.matches('input[type="checkbox"][data-kind="enabled"]')) {
+                const row = target.closest('.hours-row');
+                if (!row) return;
+                if (target.checked) {
+                    row.classList.add('open');
+                    row.classList.remove('closed');
+                } else {
+                    row.classList.add('closed');
+                    row.classList.remove('open');
+                }
+            }
+        });
+    },
+
+    // Business hours helpers
+    daysOrder: [0,1,2,3,4,5,6],
+    dayNames: ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'],
+    getDefaultHours() {
+        return {
+            0: { enabled: true, open: '18:00', close: '23:00' },
+            1: { enabled: true, open: '18:00', close: '23:00' },
+            2: { enabled: true, open: '18:00', close: '23:00' },
+            3: { enabled: true, open: '18:00', close: '23:00' },
+            4: { enabled: true, open: '18:00', close: '23:59' },
+            5: { enabled: true, open: '18:00', close: '23:59' },
+            6: { enabled: true, open: '18:00', close: '23:00' },
+        };
+    },
+
+    render() {
+        // Inputs
+        const closeNowToggle = document.getElementById('closeNowToggle');
+        const closeReason = document.getElementById('closeReason');
+        const reopenAt = document.getElementById('reopenAt');
+        if (closeNowToggle) closeNowToggle.checked = !!this.state.closedNow;
+        if (closeReason) closeReason.value = this.state.reason || '';
+        if (reopenAt) reopenAt.value = this.state.reopenAt ? this.toLocalDatetime(this.state.reopenAt) : '';
+        this.renderPill();
+        this.renderHours();
+    },
+
+    renderPill() {
+        const pill = document.getElementById('statusPill');
+        if (!pill) return;
+        const now = new Date();
+        const effectiveClosed = this.isClosedAt(now);
+        pill.classList.toggle('closed', effectiveClosed);
+        pill.classList.toggle('open', !effectiveClosed);
+        pill.innerHTML = effectiveClosed
+            ? '<i class="fas fa-circle"></i> Fechada'
+            : '<i class="fas fa-circle"></i> Aberta';
+    },
+
+    renderHours() {
+        const grid = document.getElementById('hoursGrid');
+        if (!grid) return;
+        grid.innerHTML = '';
+        const hours = this.state.hours || this.getDefaultHours();
+        this.state.hours = hours;
+        this.daysOrder.forEach(d => {
+            const row = document.createElement('div');
+            row.className = 'hours-row';
+            const cfg = hours[d] || { enabled: false, open: '18:00', close: '23:00' };
+            // aplicar cor condicional
+            if (cfg.enabled) row.classList.add('open'); else row.classList.add('closed');
+            row.innerHTML = `
+                <div class="hours-day">${this.dayNames[d]}</div>
+                <div><input type="time" data-day="${d}" data-kind="open" value="${cfg.open}"></div>
+                <div><input type="time" data-day="${d}" data-kind="close" value="${cfg.close}"></div>
+                <label class="closed-toggle"><input type="checkbox" data-day="${d}" data-kind="enabled" ${cfg.enabled ? 'checked' : ''}> Atender</label>
+            `;
+            grid.appendChild(row);
+        });
+    },
+
+    collectHoursFromUI() {
+        const hours = this.state.hours || this.getDefaultHours();
+        const inputs = document.querySelectorAll('#hoursGrid input');
+        inputs.forEach(input => {
+            const day = input.getAttribute('data-day');
+            const kind = input.getAttribute('data-kind');
+            hours[day] = hours[day] || { enabled: false, open: '18:00', close: '23:00' };
+            if (kind === 'enabled') {
+                hours[day].enabled = input.checked;
+            } else if (kind === 'open') {
+                hours[day].open = input.value || '18:00';
+            } else if (kind === 'close') {
+                hours[day].close = input.value || '23:00';
+            }
+        });
+        this.state.hours = hours;
+    },
+
+    isClosedAt(date) {
+        // Fechamento manual imediato
+        if (this.state.closedNow) {
+            if (this.state.reopenAt) {
+                return date < new Date(this.state.reopenAt);
+            }
+            return true;
+        }
+        // Horários de atendimento
+        const hours = this.state.hours || this.getDefaultHours();
+        const d = new Date(date);
+        const day = d.getDay();
+        const cfg = hours[day];
+        // Se o dia não atende (enabled=false), considerar FECHADA
+        if (!cfg || !cfg.enabled) return true;
+        const [oH,oM] = (cfg.open||'00:00').split(':').map(n=>parseInt(n,10));
+        const [cH,cM] = (cfg.close||'23:59').split(':').map(n=>parseInt(n,10));
+        const currentMinutes = d.getHours()*60 + d.getMinutes();
+        const openMinutes = oH*60 + oM;
+        const closeMinutes = cH*60 + cM;
+        const openNow = currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
+        // Fechada quando está fora do horário
+        return !openNow;
+    },
+
+    load() {
+        try {
+            const raw = localStorage.getItem('pizzaria_status');
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                this.state = { hours: this.getDefaultHours(), ...this.state, ...parsed };
+            }
+            if (!this.state.hours) this.state.hours = this.getDefaultHours();
+        } catch (e) {
+            console.warn('Falha ao carregar status:', e);
+        }
+    },
+
+    save() {
+        localStorage.setItem('pizzaria_status', JSON.stringify(this.state));
+    },
+
+    toLocalDatetime(iso) {
+        // Convert ISO to yyyy-MM-ddThh:mm for input value respecting local timezone
+        const d = new Date(iso);
+        const pad = (n) => String(n).padStart(2, '0');
+        const yyyy = d.getFullYear();
+        const mm = pad(d.getMonth() + 1);
+        const dd = pad(d.getDate());
+        const hh = pad(d.getHours());
+        const mi = pad(d.getMinutes());
+        return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+    }
+};
+
+function initFuncionamentoSection() {
+    if (document.getElementById('funcionamento-section')) {
+        statusManager.init();
     }
 }
