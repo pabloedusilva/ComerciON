@@ -171,12 +171,21 @@ function initSidebarStatusPill() {
     const pill = document.getElementById('sidebarStatusPill');
     if (!pill) return;
 
+    // Estado inicial de carregamento
+    pill.classList.add('loading');
+    pill.classList.remove('open', 'closed');
+    pill.innerHTML = '<i class="fas fa-circle"></i> Carregando...';
+    pill.setAttribute('title', 'Verificando status da loja');
+    pill.setAttribute('aria-label', 'Verificando status da loja');
+
     const update = () => {
         // garantir que statusManager tenha estado carregado
         try { statusManager.load?.(); } catch(e) {}
         const closed = safeIsClosedNow();
-        pill.classList.toggle('closed', closed);
-        pill.classList.toggle('open', !closed);
+        
+        // Remover estado de carregamento e aplicar o real
+        pill.classList.remove('loading', 'closed', 'open');
+        pill.classList.add(closed ? 'closed' : 'open');
         pill.innerHTML = closed ? '<i class="fas fa-circle"></i> Fechada' : '<i class="fas fa-circle"></i> Aberta';
         pill.setAttribute('title', closed ? 'Loja fechada' : 'Loja aberta');
         pill.setAttribute('aria-label', closed ? 'Loja fechada' : 'Loja aberta');
@@ -198,8 +207,8 @@ function initSidebarStatusPill() {
         return false;
     }
 
-    // Atualização inicial
-    update();
+    // Aguardar um momento para carregar o estado real
+    setTimeout(update, 500);
 
     // Atualizar a cada minuto para refletir mudanças de horário
     setInterval(update, 60 * 1000);
@@ -2392,10 +2401,22 @@ const statusManager = {
     },
 
     init() {
+        // Mostrar estado de carregamento primeiro
+        this.showLoadingState();
+        
         this.load();
         this.bindUI();
         this.render();
         console.log('StatusManager iniciado com estado do localStorage:', this.state);
+    },
+
+    showLoadingState() {
+        const pill = document.getElementById('statusPill');
+        if (pill) {
+            pill.classList.add('loading');
+            pill.classList.remove('open', 'closed');
+            pill.innerHTML = '<i class="fas fa-circle"></i> Carregando...';
+        }
     },
 
     bindUI() {
@@ -2513,7 +2534,8 @@ const statusManager = {
             pillElement: pill
         });
         
-        pill.classList.remove('closed', 'open');
+        // Remover estado de loading e aplicar o estado real
+        pill.classList.remove('loading', 'closed', 'open');
         pill.classList.add(effectiveClosed ? 'closed' : 'open');
         pill.innerHTML = effectiveClosed
             ? '<i class="fas fa-circle"></i> Fechada'
@@ -2535,7 +2557,8 @@ const statusManager = {
             effectiveClosed 
         });
         
-        sidebarPill.classList.remove('closed', 'open');
+        // Remover estado de loading e aplicar o estado real
+        sidebarPill.classList.remove('loading', 'closed', 'open');
         sidebarPill.classList.add(effectiveClosed ? 'closed' : 'open');
         sidebarPill.innerHTML = effectiveClosed
             ? '<i class="fas fa-circle"></i> Fechada'

@@ -2426,6 +2426,17 @@ tbody tr:hover {
     color: #c62828;
 }
 
+.status-pill.loading { 
+    background: rgba(108,117,125,.12); 
+    color: #6c757d;
+    animation: pulse-loading 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-loading {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(200px, 1fr)); gap: 1rem; }
 .form-grid .form-group.full { grid-column: 1 / -1; }
 .form-grid .form-group input { width: 100%; }
