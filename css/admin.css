@@ -2977,24 +2977,38 @@ tbody tr:hover {
     padding: 25px 30px;
     border-radius: 16px;
     background: transparent;
+    border: none;
     cursor: default;
+    position: relative;
+    overflow: hidden;
+    /* Por padrão desabilita interação no preview */
     pointer-events: none;
 }
 
+/* Quando a seção estiver habilitada no toggle, permitir hover exatamente como no site */
+.instagram-section-preview.enabled .instagram-link-preview {
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+/* Ícone com o mesmo comportamento do menu (sem preenchimento inicial; preenche no hover) */
 .instagram-icon-preview {
     width: 60px;
     height: 60px;
     fill: #333;
+    transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    position: relative;
+    z-index: 2;
     background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%);
-    background-size: 100% 100%;
+    background-size: 0% 100%;
+    background-repeat: no-repeat;
+    background-position: left;
     border-radius: 12px;
     padding: 8px;
     box-sizing: border-box;
 }
 
-.instagram-icon-preview path {
-    fill: white;
-}
+/* O path herda o fill do SVG; sem estilos fixos aqui para manter idêntico ao site */
 
 .instagram-text-preview {
     display: flex;
@@ -3008,6 +3022,7 @@ tbody tr:hover {
     font-weight: 400;
     margin: 0;
     line-height: 1.2;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .instagram-handle-preview {
@@ -3016,6 +3031,33 @@ tbody tr:hover {
     color: #333;
     margin: 0;
     line-height: 1.2;
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Hovers idênticos aos do menu quando habilitado */
+.instagram-section-preview.enabled .instagram-link-preview:hover {
+    color: #333;
+    transform: none;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+.instagram-section-preview.enabled .instagram-link-preview:hover .instagram-icon-preview {
+    fill: #fff;
+    background-size: 100% 100%;
+    transform: scale(1.08) rotate(5deg);
+    filter: drop-shadow(0 4px 15px rgba(228, 64, 95, 0.25));
+}
+
+.instagram-section-preview.enabled .instagram-link-preview:hover .instagram-follow-preview {
+    color: #666;
+    transform: scale(1.02);
+}
+
+.instagram-section-preview.enabled .instagram-link-preview:hover .instagram-handle-preview {
+    color: #333;
+    transform: scale(1.03);
 }
 
 /* Preview responsivo */

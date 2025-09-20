@@ -2696,6 +2696,8 @@ const instagramManager = {
         // Mostrar/ocultar preview baseado no estado
         previewSection.style.opacity = this.state.enabled ? '1' : '0.3';
         previewSection.style.filter = this.state.enabled ? 'none' : 'grayscale(100%)';
+        // Controla hovers idênticos ao site no preview
+        previewSection.classList.toggle('enabled', !!this.state.enabled);
 
         // Atualizar textos do preview
         if (previewFollowText) previewFollowText.textContent = this.state.text || 'Siga-nos no Instagram';
