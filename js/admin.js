@@ -3763,3 +3763,267 @@ document.addEventListener('DOMContentLoaded', () => {
         deliveryManager = new DeliveryManager();
     }
 });
+
+// ============================================
+// ORDER NOTIFICATIONS SYSTEM
+// ============================================
+
+class OrderNotificationSystem {
+    constructor() {
+        this.container = document.getElementById('orderNotificationContainer');
+        this.notificationSound = document.getElementById('notificationSound');
+        this.notifications = [];
+        this.isPermissionGranted = false;
+        this.soundEnabled = true;
+        this.init();
+    }
+
+    async init() {
+        await this.requestNotificationPermission();
+        this.setupSoundSettings();
+        this.startOrderSimulation();
+    }
+
+    async requestNotificationPermission() {
+        if ('Notification' in window) {
+            try {
+                const permission = await Notification.requestPermission();
+                this.isPermissionGranted = permission === 'granted';
+            } catch (error) {
+                console.log('Notification permission error:', error);
+            }
+        }
+    }
+
+    setupSoundSettings() {
+        // Check if sound is enabled in settings
+        const settings = JSON.parse(localStorage.getItem('pizzariaConfig')) || {};
+        this.soundEnabled = settings.soundNotifications !== false;
+        
+        if (this.notificationSound) {
+            this.notificationSound.volume = 0.7;
+        }
+    }
+
+    generateMockOrder() {
+        const customers = [
+            { name: 'Maria Silva', address: 'Rua das Flores, 123 - Centro' },
+            { name: 'João Santos', address: 'Av. Paulista, 456 - Bela Vista' },
+            { name: 'Ana Costa', address: 'Rua Augusta, 789 - Consolação' },
+            { name: 'Pedro Oliveira', address: 'Rua da Liberdade, 321 - Liberdade' },
+            { name: 'Carmen Rodriguez', address: 'Av. Ipiranga, 654 - República' },
+            { name: 'Lucas Ferreira', address: 'Rua Teodoro Sampaio, 987 - Pinheiros' }
+        ];
+
+        const pizzas = [
+            'Pizza Margherita', 'Pizza Calabresa', 'Pizza Portuguesa',
+            'Pizza 4 Queijos', 'Pizza Pepperoni', 'Pizza Frango Catupiry'
+        ];
+
+        const customer = customers[Math.floor(Math.random() * customers.length)];
+        const pizza = pizzas[Math.floor(Math.random() * pizzas.length)];
+        const value = (Math.random() * 40 + 25).toFixed(2);
+        const orderId = '#' + (Math.floor(Math.random() * 9000) + 1000);
+
+        return {
+            id: orderId,
+            customer: customer,
+            items: [pizza],
+            value: parseFloat(value),
+            time: new Date(),
+            status: 'novo'
+        };
+    }
+
+    async showNotification(order) {
+        // Play sound
+        await this.playNotificationSound();
+
+        // Show in-app notification
+        this.createInAppNotification(order);
+
+        // Show browser notification if permission granted and tab is not visible
+        if (this.isPermissionGranted && document.hidden) {
+            this.createBrowserNotification(order);
+        }
+    }
+
+    async playNotificationSound() {
+        if (!this.soundEnabled || !this.notificationSound) return;
+
+        try {
+            // Reset audio to start
+            this.notificationSound.currentTime = 0;
+            
+            // Play sound
+            await this.notificationSound.play();
+        } catch (error) {
+            console.log('Error playing notification sound:', error);
+        }
+    }
+
+    createInAppNotification(order) {
+        const notification = document.createElement('div');
+        notification.className = 'order-notification';
+        notification.id = `notification-${Date.now()}`;
+
+        const customerInitial = order.customer.name.charAt(0).toUpperCase();
+        const timeString = order.time.toLocaleTimeString('pt-BR', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+
+        notification.innerHTML = `
+            <div class="notification-header">
+                <div class="notification-logo">
+                    <img src="images/logo_pizza.png" alt="Logo">
+                </div>
+                <div class="notification-title">
+                    <h4>Novo Pedido Recebido!</h4>
+                    <span>Acabou de chegar</span>
+                </div>
+                <button class="notification-close" onclick="orderNotificationSystem.removeNotification('${notification.id}')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="notification-body">
+                <div class="notification-order-info">
+                    <span class="order-id">${order.id}</span>
+                    <span class="order-value">R$ ${order.value.toFixed(2)}</span>
+                    <span class="order-time">${timeString}</span>
+                </div>
+                <div class="notification-customer">
+                    <div class="customer-avatar">${customerInitial}</div>
+                    <div class="customer-info">
+                        <div class="customer-name">${order.customer.name}</div>
+                        <div class="customer-address">${order.customer.address}</div>
+                    </div>
+                </div>
+                <div class="notification-actions">
+                    <button class="notification-btn secondary" onclick="orderNotificationSystem.viewOrder('${order.id}')">
+                        <i class="fas fa-eye"></i> Ver
+                    </button>
+                    <button class="notification-btn primary" onclick="orderNotificationSystem.acceptOrder('${order.id}')">
+                        <i class="fas fa-check"></i> Aceitar
+                    </button>
+                </div>
+                <div class="notification-progress">
+                    <div class="notification-progress-bar"></div>
+                </div>
+            </div>
+        `;
+
+        this.container.appendChild(notification);
+        this.notifications.push({
+            id: notification.id,
+            element: notification,
+            order: order,
+            timestamp: Date.now()
+        });
+
+        // Show notification with animation
+        setTimeout(() => {
+            notification.classList.add('show');
+            
+            // Start progress bar animation and remove when it completes
+            const progressBar = notification.querySelector('.notification-progress-bar');
+            progressBar.addEventListener('animationend', () => {
+                if (document.getElementById(notification.id)) {
+                    this.removeNotification(notification.id);
+                }
+            });
+        }, 100);
+
+        // Limit to 3 notifications
+        if (this.notifications.length > 3) {
+            const oldest = this.notifications[0];
+            this.removeNotification(oldest.id);
+        }
+    }
+
+    createBrowserNotification(order) {
+        if (!this.isPermissionGranted) return;
+
+        const notification = new Notification('Novo Pedido - Pizzaria', {
+            body: `${order.customer.name} - R$ ${order.value.toFixed(2)}`,
+            icon: 'images/logo_pizza.png',
+            badge: 'images/logo_pizza.png',
+            tag: 'new-order',
+            requireInteraction: true,
+            actions: [
+                { action: 'view', title: 'Ver Pedido' },
+                { action: 'accept', title: 'Aceitar' }
+            ]
+        });
+
+        notification.onclick = () => {
+            window.focus();
+            this.viewOrder(order.id);
+            notification.close();
+        };
+
+        // Auto close after 20 seconds
+        setTimeout(() => notification.close(), 20000);
+    }
+
+    removeNotification(notificationId) {
+        const notification = document.getElementById(notificationId);
+        if (notification) {
+            notification.classList.add('hide');
+            setTimeout(() => {
+                notification.remove();
+                this.notifications = this.notifications.filter(n => n.id !== notificationId);
+            }, 400);
+        }
+    }
+
+    viewOrder(orderId) {
+        // Navigate to orders section and highlight the order
+        showSection('pedidos');
+        showNotification(`Visualizando pedido ${orderId}`, 'info');
+    }
+
+    acceptOrder(orderId) {
+        // Accept the order and remove notification
+        const notification = this.notifications.find(n => n.order.id === orderId);
+        if (notification) {
+            this.removeNotification(notification.id);
+            showNotification(`Pedido ${orderId} aceito com sucesso!`, 'success');
+        }
+    }
+
+    startOrderSimulation() {
+        // Simulate new orders every 15-30 seconds for demonstration
+        const simulateOrder = () => {
+            const order = this.generateMockOrder();
+            this.showNotification(order);
+            
+            // Schedule next order
+            const nextOrderDelay = Math.random() * 15000 + 15000; // 15-30 seconds
+            setTimeout(simulateOrder, nextOrderDelay);
+        };
+
+        // Start simulation after 5 seconds
+        setTimeout(simulateOrder, 5000);
+    }
+
+    toggleSound() {
+        this.soundEnabled = !this.soundEnabled;
+        
+        // Update settings
+        const settings = JSON.parse(localStorage.getItem('pizzariaConfig')) || {};
+        settings.soundNotifications = this.soundEnabled;
+        localStorage.setItem('pizzariaConfig', JSON.stringify(settings));
+        
+        showNotification(
+            `Som das notificações ${this.soundEnabled ? 'ativado' : 'desativado'}`,
+            this.soundEnabled ? 'success' : 'info'
+        );
+    }
+}
+
+// Initialize notification system
+let orderNotificationSystem;
+document.addEventListener('DOMContentLoaded', () => {
+    orderNotificationSystem = new OrderNotificationSystem();
+});

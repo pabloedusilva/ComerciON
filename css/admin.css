@@ -2523,7 +2523,7 @@ tbody tr:hover {
 .status-pill.loading { 
     background: rgba(108,117,125,.12); 
     color: #6c757d;
-    animation: pulse-loading 1.5s ease-in-out infinite;
+    animation: pulse-loading 3s ease-in-out infinite;
 }
 
 @keyframes pulse-loading {
@@ -4687,5 +4687,295 @@ tbody tr:hover {
     
     .search-wrapper {
         max-width: none;
+    }
+}
+
+/* ============================================
+   ORDER NOTIFICATIONS SYSTEM
+   ============================================ */
+
+/* Notification Container */
+.notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    pointer-events: none;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Individual Notification */
+.order-notification {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    pointer-events: auto;
+    transform: translateX(100%);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    max-width: 400px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.order-notification.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.order-notification.hide {
+    transform: translateX(100%);
+    opacity: 0;
+}
+
+/* Notification Header */
+.notification-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: white;
+}
+
+.notification-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.notification-logo img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+}
+
+.notification-title {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.notification-title h4 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.notification-title span {
+    font-size: 0.75rem;
+    opacity: 0.9;
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+    flex-shrink: 0;
+}
+
+.notification-close:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Notification Body */
+.notification-body {
+    padding: 16px;
+    background: white;
+}
+
+.notification-order-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.order-id {
+    background: var(--light-color);
+    color: var(--primary-color);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.order-value {
+    font-weight: 700;
+    color: var(--success-color);
+    font-size: 1rem;
+}
+
+.order-time {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-left: auto;
+}
+
+.notification-customer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.customer-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--primary-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-color);
+    font-size: 0.8rem;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.customer-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.customer-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    margin-bottom: 2px;
+    line-height: 1.2;
+}
+
+.customer-address {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Notification Actions */
+.notification-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.notification-btn {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.notification-btn.primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.notification-btn.primary:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+.notification-btn.secondary {
+    background: var(--light-color);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.notification-btn.secondary:hover {
+    background: var(--border-color);
+    transform: translateY(-1px);
+}
+
+/* Notification Progress Bar */
+.notification-progress {
+    height: 3px;
+    background: var(--light-color);
+    overflow: hidden;
+    margin-top: 12px;
+}
+
+.notification-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
+    width: 100%;
+    transform: translateX(-100%);
+    animation: notificationProgress 12s linear forwards;
+}
+
+@keyframes notificationProgress {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(0);
+    }
+}
+
+/* Notification Sound Animation - Removed */
+
+/* Responsive Design for Notifications */
+@media (max-width: 768px) {
+    .notification-container {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+    
+    .order-notification {
+        max-width: none;
+    }
+    
+    .notification-header {
+        padding: 10px 12px;
+    }
+    
+    .notification-body {
+        padding: 12px;
+    }
+    
+    .notification-title h4 {
+        font-size: 0.85rem;
+    }
+    
+    .notification-actions {
+        flex-direction: column;
+    }
+    
+    .notification-btn {
+        padding: 10px 12px;
     }
 }
