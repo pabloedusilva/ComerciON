@@ -1,1 +1,0 @@
-Data e hora de todo o servidor: http://worldtimeapi.org/api/timezone/America/Sao_Paulo
