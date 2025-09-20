@@ -2376,6 +2376,7 @@ window.removeSlide = (index) => layoutManager.removeSlide(index);
 function initLayoutSection() {
     if (document.getElementById('layout-section')) {
         layoutManager.init();
+        instagramManager.init();
     }
 }
 
@@ -2595,3 +2596,131 @@ function initFuncionamentoSection() {
         statusManager.init();
     }
 }
+
+// Instagram Section Management
+const instagramManager = {
+    state: {
+        enabled: true,
+        handle: 'pizzaria_deliciosa',
+        text: 'Siga-nos no Instagram'
+    },
+
+    init() {
+        this.load();
+        this.bindUI();
+        this.render();
+        this.updatePreview();
+    },
+
+    bindUI() {
+        const enabledToggle = document.getElementById('instagramEnabled');
+        const headerSwitch = document.querySelector('.header-switch');
+        const handleInput = document.getElementById('instagramHandle');
+        const textInput = document.getElementById('instagramText');
+        const saveBtn = document.getElementById('saveInstagramBtn');
+        const resetBtn = document.getElementById('resetInstagramBtn');
+
+        // Toggle de ativação/desativação
+        enabledToggle?.addEventListener('change', () => {
+            this.state.enabled = enabledToggle.checked;
+            this.updatePreview();
+            this.updateInstagramSection();
+        });
+
+        // Clique no container do switch
+        headerSwitch?.addEventListener('click', (e) => {
+            if (e.target === headerSwitch || e.target.classList.contains('slider')) {
+                enabledToggle.checked = !enabledToggle.checked;
+                this.state.enabled = enabledToggle.checked;
+                this.updatePreview();
+                this.updateInstagramSection();
+            }
+        });
+
+        // Handle do Instagram
+        handleInput?.addEventListener('input', () => {
+            let value = handleInput.value.replace(/[^a-zA-Z0-9._]/g, '');
+            if (value.startsWith('@')) value = value.substring(1);
+            handleInput.value = value;
+            this.state.handle = value;
+            this.updatePreview();
+        });
+
+        // Texto de chamada
+        textInput?.addEventListener('input', () => {
+            this.state.text = textInput.value;
+            this.updatePreview();
+        });
+
+        // Botão salvar
+        saveBtn?.addEventListener('click', () => {
+            this.save();
+            this.updateInstagramSection();
+            showNotification('Configurações do Instagram salvas!', 'success');
+        });
+
+        // Botão reset
+        resetBtn?.addEventListener('click', () => {
+            if (confirm('Restaurar configurações padrão do Instagram?')) {
+                this.state = {
+                    enabled: true,
+                    handle: 'pizzaria_deliciosa',
+                    text: 'Siga-nos no Instagram'
+                };
+                this.save();
+                this.render();
+                this.updatePreview();
+                this.updateInstagramSection();
+                showNotification('Configurações restauradas!', 'info');
+            }
+        });
+    },
+
+    render() {
+        const enabledToggle = document.getElementById('instagramEnabled');
+        const handleInput = document.getElementById('instagramHandle');
+        const textInput = document.getElementById('instagramText');
+
+        if (enabledToggle) enabledToggle.checked = this.state.enabled;
+        if (handleInput) handleInput.value = this.state.handle;
+        if (textInput) textInput.value = this.state.text;
+    },
+
+    updatePreview() {
+        const previewSection = document.querySelector('.instagram-section-preview');
+        const previewFollowText = document.getElementById('previewFollowText');
+        const previewHandle = document.getElementById('previewHandle');
+
+        if (!previewSection) return;
+
+        // Mostrar/ocultar preview baseado no estado
+        previewSection.style.opacity = this.state.enabled ? '1' : '0.3';
+        previewSection.style.filter = this.state.enabled ? 'none' : 'grayscale(100%)';
+
+        // Atualizar textos do preview
+        if (previewFollowText) previewFollowText.textContent = this.state.text || 'Siga-nos no Instagram';
+        if (previewHandle) previewHandle.textContent = `@${this.state.handle || 'pizzaria_deliciosa'}`;
+    },
+
+    updateInstagramSection() {
+        // Esta função pode ser usada para atualizar a seção real do Instagram
+        // no menu.html em tempo real se necessário
+        console.log('Instagram section updated:', this.state);
+    },
+
+    load() {
+        try {
+            const raw = localStorage.getItem('pizzaria_instagram');
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                this.state = { ...this.state, ...parsed };
+            }
+        } catch (e) {
+            console.warn('Falha ao carregar configurações do Instagram:', e);
+        }
+    },
+
+    save() {
+        localStorage.setItem('pizzaria_instagram', JSON.stringify(this.state));
+    }
+};

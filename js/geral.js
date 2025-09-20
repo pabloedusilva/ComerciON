@@ -285,3 +285,56 @@ document.querySelector(".menu-openner").addEventListener("click", () => {
 document.querySelector(".menu-closer").addEventListener("click", () => {
   document.querySelector("aside").classList.remove("show");
 });
+
+// Aplicar configurações do Instagram salvas no admin
+function applyInstagramSettings() {
+  try {
+    const instagramSettings = localStorage.getItem('pizzaria_instagram');
+    if (!instagramSettings) return;
+    
+    const settings = JSON.parse(instagramSettings);
+    const instagramSection = document.querySelector('.instagram-section');
+    
+    if (!instagramSection) return;
+    
+    // Mostrar/ocultar seção baseado na configuração
+    if (!settings.enabled) {
+      instagramSection.style.display = 'none';
+      return;
+    } else {
+      instagramSection.style.display = 'block';
+    }
+    
+    // Atualizar textos
+    const followText = instagramSection.querySelector('.instagram-follow');
+    const handleText = instagramSection.querySelector('.instagram-handle');
+    const instagramLink = instagramSection.querySelector('.instagram-link');
+    
+    if (followText && settings.text) {
+      followText.textContent = settings.text;
+    }
+    
+    if (handleText && settings.handle) {
+      handleText.textContent = `@${settings.handle}`;
+    }
+    
+    if (instagramLink && settings.handle) {
+      const url = `https://www.instagram.com/${settings.handle}/`;
+      instagramLink.href = url;
+      instagramLink.setAttribute('aria-label', `Instagram ${settings.handle || 'Pizzaria'}`);
+    }
+    
+  } catch (e) {
+    console.warn('Erro ao aplicar configurações do Instagram:', e);
+  }
+}
+
+// Aplicar configurações quando a página carregar
+document.addEventListener('DOMContentLoaded', applyInstagramSettings);
+
+// Escutar mudanças no localStorage para atualizar em tempo real
+window.addEventListener('storage', (e) => {
+  if (e.key === 'pizzaria_instagram') {
+    applyInstagramSettings();
+  }
+});
