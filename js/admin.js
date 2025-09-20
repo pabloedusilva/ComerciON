@@ -609,7 +609,8 @@ function showSection(sectionName) {
                 pedidos: 'Pedidos',
                 relatorios: 'Relatórios',
                 clientes: 'Clientes',
-                configuracoes: 'Configurações'
+                configuracoes: 'Configurações',
+                layout: 'Layout'
             };
             pageTitle.textContent = titles[sectionName] || 'Admin Panel';
         }
@@ -627,6 +628,11 @@ function showSection(sectionName) {
             }, 50);
         } else {
             setTimeout(() => resizeCharts(), 50);
+        }
+        
+        // Inicializar layout manager quando seção de layout for acessada
+        if (sectionName === 'layout') {
+            initLayoutSection();
         }
     }
 }
@@ -1958,3 +1964,360 @@ function exportData(type) {
 
 // Event listener para exportação
 document.getElementById('exportOrdersBtn')?.addEventListener('click', () => exportData('orders'));
+
+// Layout Management Functions
+const layoutManager = {
+    // State management
+    currentLayout: {
+        background: 'images/background.jpg',
+        logo: 'images/logo_pizza.png',
+        title: 'Pizzas 10% OFF',
+        subtitle: 'Confira no cardápio',
+        description: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Incidunt, vitae beatae sint magnam, libero harum quae nobis veritatis iure hic provident illo porro.',
+        carouselSlides: [
+            { image: 'images/banner1.jpg', caption: 'Clássicas irresistíveis' },
+            { image: 'images/banner2.jpg', caption: 'Promoções da semana' }
+        ]
+    },
+
+    init() {
+        this.setupEventListeners();
+        this.loadStoredLayout();
+        this.updatePreviews();
+    },
+
+    setupEventListeners() {
+        // Background image upload
+        const backgroundInput = document.getElementById('backgroundInput');
+        if (backgroundInput) {
+            backgroundInput.addEventListener('change', (e) => this.handleBackgroundUpload(e));
+        }
+
+        // Logo upload
+        const logoInput = document.getElementById('logoInput');
+        if (logoInput) {
+            logoInput.addEventListener('change', (e) => this.handleLogoUpload(e));
+        }
+
+        // Text inputs
+        const titleInput = document.getElementById('titleText');
+        const subtitleInput = document.getElementById('subtitleText');
+        const descriptionInput = document.getElementById('descriptionText');
+
+        if (titleInput) {
+            titleInput.addEventListener('input', (e) => this.updateTextPreview('title', e.target.value));
+        }
+        if (subtitleInput) {
+            subtitleInput.addEventListener('input', (e) => this.updateTextPreview('subtitle', e.target.value));
+        }
+        if (descriptionInput) {
+            descriptionInput.addEventListener('input', (e) => this.updateTextPreview('description', e.target.value));
+        }
+
+        // Carousel image upload
+        const carouselInput = document.getElementById('carouselInput');
+        if (carouselInput) {
+            carouselInput.addEventListener('change', (e) => this.handleCarouselUpload(e));
+        }
+
+        // Carousel slide clicks
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.carousel-slide-preview')) {
+                const slide = e.target.closest('.carousel-slide-preview');
+                this.selectSlide(slide);
+            }
+        });
+    },
+
+    loadStoredLayout() {
+        const stored = localStorage.getItem('pizzaria_layout');
+        if (stored) {
+            try {
+                this.currentLayout = { ...this.currentLayout, ...JSON.parse(stored) };
+            } catch (e) {
+                console.warn('Failed to load stored layout:', e);
+            }
+        }
+    },
+
+    saveLayout() {
+        localStorage.setItem('pizzaria_layout', JSON.stringify(this.currentLayout));
+        showNotification('Layout salvo com sucesso!', 'success');
+    },
+
+    updatePreviews() {
+        this.updateBackgroundPreview();
+        this.updateLogoPreview();
+        this.updateTextInputs();
+        this.updateTextPreview();
+        this.updateCarouselPreview();
+    },
+
+    // Background functions
+    handleBackgroundUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (!this.validateImageFile(file)) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            this.currentLayout.background = e.target.result;
+            this.updateBackgroundPreview();
+            this.saveLayout();
+        };
+        reader.readAsDataURL(file);
+    },
+
+    updateBackgroundPreview() {
+        const bgImg = document.getElementById('backgroundImg');
+        if (bgImg) {
+            bgImg.src = this.currentLayout.background;
+        }
+    },
+
+    resetBackground() {
+        this.currentLayout.background = 'images/background.jpg';
+        this.updateBackgroundPreview();
+        this.saveLayout();
+        showNotification('Background restaurado!', 'info');
+    },
+
+    // Logo functions
+    handleLogoUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (!this.validateImageFile(file)) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            this.currentLayout.logo = e.target.result;
+            this.updateLogoPreview();
+            this.saveLayout();
+        };
+        reader.readAsDataURL(file);
+    },
+
+    updateLogoPreview() {
+        const logoImg = document.getElementById('logoImg');
+        if (logoImg) {
+            logoImg.src = this.currentLayout.logo;
+        }
+    },
+
+    resetLogo() {
+        this.currentLayout.logo = 'images/logo_pizza.png';
+        this.updateLogoPreview();
+        this.saveLayout();
+        showNotification('Logo restaurada!', 'info');
+    },
+
+    // Text functions
+    updateTextInputs() {
+        const titleInput = document.getElementById('titleText');
+        const subtitleInput = document.getElementById('subtitleText');
+        const descriptionInput = document.getElementById('descriptionText');
+
+        if (titleInput) titleInput.value = this.currentLayout.title;
+        if (subtitleInput) subtitleInput.value = this.currentLayout.subtitle;
+        if (descriptionInput) descriptionInput.value = this.currentLayout.description;
+    },
+
+    updateTextPreview(type, value) {
+        if (type) {
+            this.currentLayout[type] = value;
+        }
+
+        const previewTitle = document.getElementById('previewTitle');
+        const previewSubtitle = document.getElementById('previewSubtitle');
+        const previewDescription = document.getElementById('previewDescription');
+
+        if (previewTitle) previewTitle.textContent = this.currentLayout.title;
+        if (previewSubtitle) previewSubtitle.textContent = this.currentLayout.subtitle;
+        if (previewDescription) previewDescription.textContent = this.currentLayout.description;
+
+        // Update background preview overlay as well
+        const previewOverlay = document.querySelector('.preview-content h4');
+        const previewOverlayP = document.querySelector('.preview-content p');
+        if (previewOverlay) previewOverlay.textContent = this.currentLayout.title;
+        if (previewOverlayP) previewOverlayP.textContent = this.currentLayout.subtitle;
+    },
+
+    saveTexts() {
+        this.saveLayout();
+        showNotification('Textos salvos com sucesso!', 'success');
+    },
+
+    resetTexts() {
+        this.currentLayout.title = 'Pizzas 10% OFF';
+        this.currentLayout.subtitle = 'Confira no cardápio';
+        this.currentLayout.description = 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Incidunt, vitae beatae sint magnam, libero harum quae nobis veritatis iure hic provident illo porro.';
+        
+        this.updateTextInputs();
+        this.updateTextPreview();
+        this.saveLayout();
+        showNotification('Textos restaurados!', 'info');
+    },
+
+    // Carousel functions
+    handleCarouselUpload(event) {
+        const files = Array.from(event.target.files);
+        if (!files.length) return;
+
+        files.forEach(file => {
+            if (!this.validateImageFile(file)) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.currentLayout.carouselSlides.push({
+                    image: e.target.result,
+                    caption: 'Nova imagem'
+                });
+                this.updateCarouselPreview();
+                this.saveLayout();
+            };
+            reader.readAsDataURL(file);
+        });
+
+        showNotification(`${files.length} imagem(ns) adicionada(s) ao carousel!`, 'success');
+    },
+
+    updateCarouselPreview() {
+        const carouselPreview = document.getElementById('carouselPreview');
+        if (!carouselPreview) return;
+
+        carouselPreview.innerHTML = '';
+
+        this.currentLayout.carouselSlides.forEach((slide, index) => {
+            const slideElement = document.createElement('div');
+            slideElement.className = `carousel-slide-preview ${index === 0 ? 'active' : ''}`;
+            slideElement.dataset.index = index;
+            
+            slideElement.innerHTML = `
+                <img src="${slide.image}" alt="Slide ${index + 1}">
+                <div class="slide-caption">${slide.caption}</div>
+                <button class="remove-slide" onclick="layoutManager.removeSlide(${index})">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+
+            carouselPreview.appendChild(slideElement);
+        });
+    },
+
+    selectSlide(slideElement) {
+        // Remove active class from all slides
+        document.querySelectorAll('.carousel-slide-preview').forEach(s => s.classList.remove('active'));
+        
+        // Add active class to selected slide
+        slideElement.classList.add('active');
+        
+        const index = parseInt(slideElement.dataset.index);
+        const slide = this.currentLayout.carouselSlides[index];
+        
+        if (slide) {
+            this.showSlideEditor(index, slide);
+        }
+    },
+
+    showSlideEditor(index, slide) {
+        const editor = document.getElementById('slideEditor');
+        const captionInput = document.getElementById('slideCaption');
+        
+        if (editor && captionInput) {
+            captionInput.value = slide.caption;
+            editor.style.display = 'block';
+            editor.dataset.editingIndex = index;
+        }
+    },
+
+    updateSlide() {
+        const editor = document.getElementById('slideEditor');
+        const captionInput = document.getElementById('slideCaption');
+        const index = parseInt(editor.dataset.editingIndex);
+        
+        if (this.currentLayout.carouselSlides[index]) {
+            this.currentLayout.carouselSlides[index].caption = captionInput.value;
+            this.updateCarouselPreview();
+            this.cancelSlideEdit();
+            this.saveLayout();
+            showNotification('Slide atualizado!', 'success');
+        }
+    },
+
+    cancelSlideEdit() {
+        const editor = document.getElementById('slideEditor');
+        if (editor) {
+            editor.style.display = 'none';
+            delete editor.dataset.editingIndex;
+        }
+    },
+
+    removeSlide(index) {
+        if (this.currentLayout.carouselSlides.length <= 1) {
+            showNotification('Deve haver pelo menos uma imagem no carousel!', 'error');
+            return;
+        }
+
+        if (confirm('Tem certeza que deseja remover esta imagem?')) {
+            this.currentLayout.carouselSlides.splice(index, 1);
+            this.updateCarouselPreview();
+            this.saveLayout();
+            showNotification('Imagem removida do carousel!', 'info');
+        }
+    },
+
+    saveCarousel() {
+        this.saveLayout();
+        showNotification('Carousel salvo com sucesso!', 'success');
+    },
+
+    resetCarousel() {
+        if (confirm('Tem certeza que deseja restaurar o carousel para as imagens padrão?')) {
+            this.currentLayout.carouselSlides = [
+                { image: 'images/banner1.jpg', caption: 'Clássicas irresistíveis' },
+                { image: 'images/banner2.jpg', caption: 'Promoções da semana' }
+            ];
+            this.updateCarouselPreview();
+            this.saveLayout();
+            showNotification('Carousel restaurado!', 'info');
+        }
+    },
+
+    // Utility functions
+    validateImageFile(file) {
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        const maxSize = 5 * 1024 * 1024; // 5MB
+
+        if (!validTypes.includes(file.type)) {
+            showNotification('Tipo de arquivo inválido! Use JPG, PNG, GIF ou WEBP.', 'error');
+            return false;
+        }
+
+        if (file.size > maxSize) {
+            showNotification('Arquivo muito grande! Máximo 5MB.', 'error');
+            return false;
+        }
+
+        return true;
+    }
+};
+
+// Global functions for HTML onclick events
+window.resetBackground = () => layoutManager.resetBackground();
+window.resetLogo = () => layoutManager.resetLogo();
+window.saveTexts = () => layoutManager.saveTexts();
+window.resetTexts = () => layoutManager.resetTexts();
+window.saveCarousel = () => layoutManager.saveCarousel();
+window.resetCarousel = () => layoutManager.resetCarousel();
+window.updateSlide = () => layoutManager.updateSlide();
+window.cancelSlideEdit = () => layoutManager.cancelSlideEdit();
+window.removeSlide = (index) => layoutManager.removeSlide(index);
+
+// Initialize layout manager when layout section is accessed
+function initLayoutSection() {
+    if (document.getElementById('layout-section')) {
+        layoutManager.init();
+    }
+}

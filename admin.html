@@ -89,6 +89,15 @@
                 <span class="nav-section-title">Sistema</span>
                 <ul>
                     <li>
+                        <a href="#layout" class="nav-link" data-section="layout">
+                            <div class="nav-icon">
+                                <i class="fas fa-palette"></i>
+                            </div>
+                            <span class="nav-text">Layout</span>
+                            <div class="nav-indicator"></div>
+                        </a>
+                    </li>
+                    <li>
                         <a href="#configuracoes" class="nav-link" data-section="configuracoes">
                             <div class="nav-icon">
                                 <i class="fas fa-cog"></i>
@@ -570,6 +579,165 @@
                             </div>
                             <button type="submit" class="btn-primary">Salvar</button>
                         </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Layout Section -->
+            <section id="layout-section" class="content-section">
+                <div class="section-header">
+                    <h2>Gestão de Layout</h2>
+                    <p class="section-description">Personalize a aparência visual do seu site</p>
+                </div>
+
+                <div class="layout-grid">
+                    <!-- Background Editor -->
+                    <div class="layout-card">
+                        <div class="layout-card-header">
+                            <h3><i class="fas fa-image"></i> Background da Home</h3>
+                            <p>Altere a imagem de fundo da página inicial</p>
+                        </div>
+                        <div class="layout-card-content">
+                            <div class="background-preview" id="backgroundPreview">
+                                <img src="images/background.jpg" alt="Background atual" id="backgroundImg">
+                                <div class="preview-overlay">
+                                    <div class="preview-content">
+                                        <h4>Pizzas 10% OFF</h4>
+                                        <p>Confira no cardápio</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="layout-controls">
+                                <input type="file" id="backgroundInput" accept="image/*" style="display: none;">
+                                <button class="btn-secondary" onclick="document.getElementById('backgroundInput').click()">
+                                    <i class="fas fa-upload"></i> Alterar Background
+                                </button>
+                                <button class="btn-outline" onclick="resetBackground()">
+                                    <i class="fas fa-undo"></i> Restaurar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Logo Editor -->
+                    <div class="layout-card">
+                        <div class="layout-card-header">
+                            <h3><i class="fas fa-star"></i> Logo do Site</h3>
+                            <p>Personalize a logo da pizzaria</p>
+                        </div>
+                        <div class="layout-card-content">
+                            <div class="logo-preview" id="logoPreview">
+                                <img src="images/logo_pizza.png" alt="Logo atual" id="logoImg">
+                            </div>
+                            <div class="layout-controls">
+                                <input type="file" id="logoInput" accept="image/*" style="display: none;">
+                                <button class="btn-secondary" onclick="document.getElementById('logoInput').click()">
+                                    <i class="fas fa-upload"></i> Alterar Logo
+                                </button>
+                                <button class="btn-outline" onclick="resetLogo()">
+                                    <i class="fas fa-undo"></i> Restaurar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Text Editor -->
+                    <div class="layout-card full-width">
+                        <div class="layout-card-header">
+                            <h3><i class="fas fa-font"></i> Textos da Home</h3>
+                            <p>Edite os textos principais da página inicial</p>
+                        </div>
+                        <div class="layout-card-content">
+                            <div class="text-editor-grid">
+                                <div class="text-field">
+                                    <label for="titleText">Título Principal</label>
+                                    <input type="text" id="titleText" value="Pizzas 10% OFF" placeholder="Digite o título">
+                                    <small>Texto grande e em destaque</small>
+                                </div>
+                                <div class="text-field">
+                                    <label for="subtitleText">Subtítulo</label>
+                                    <input type="text" id="subtitleText" value="Confira no cardápio" placeholder="Digite o subtítulo">
+                                    <small>Texto secundário abaixo do título</small>
+                                </div>
+                                <div class="text-field full-width">
+                                    <label for="descriptionText">Descrição</label>
+                                    <textarea id="descriptionText" rows="3" placeholder="Digite a descrição">Lorem ipsum dolor sit amet consectetur adipisicing elit. Incidunt, vitae beatae sint magnam, libero harum quae nobis veritatis iure hic provident illo porro.</textarea>
+                                    <small>Texto descritivo mais longo</small>
+                                </div>
+                            </div>
+                            <div class="text-preview">
+                                <div class="text-preview-content">
+                                    <h1 id="previewTitle">Pizzas 10% OFF</h1>
+                                    <h2 id="previewSubtitle">Confira no cardápio</h2>
+                                    <p id="previewDescription">Lorem ipsum dolor sit amet consectetur adipisicing elit. Incidunt, vitae beatae sint magnam, libero harum quae nobis veritatis iure hic provident illo porro.</p>
+                                </div>
+                            </div>
+                            <div class="layout-controls">
+                                <button class="btn-primary" onclick="saveTexts()">
+                                    <i class="fas fa-save"></i> Salvar Textos
+                                </button>
+                                <button class="btn-outline" onclick="resetTexts()">
+                                    <i class="fas fa-undo"></i> Restaurar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Carousel Editor -->
+                    <div class="layout-card full-width">
+                        <div class="layout-card-header">
+                            <h3><i class="fas fa-images"></i> Carousel do Menu</h3>
+                            <p>Gerencie as imagens do carousel da página de menu</p>
+                        </div>
+                        <div class="layout-card-content">
+                            <div class="carousel-manager">
+                                <div class="carousel-preview" id="carouselPreview">
+                                    <div class="carousel-slide-preview active" data-index="0">
+                                        <img src="images/banner1.jpg" alt="Banner 1">
+                                        <div class="slide-caption">Clássicas irresistíveis</div>
+                                        <button class="remove-slide" onclick="removeSlide(0)">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    <div class="carousel-slide-preview" data-index="1">
+                                        <img src="images/banner2.jpg" alt="Banner 2">
+                                        <div class="slide-caption">Promoções da semana</div>
+                                        <button class="remove-slide" onclick="removeSlide(1)">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="carousel-controls">
+                                    <input type="file" id="carouselInput" accept="image/*" style="display: none;" multiple>
+                                    <button class="btn-secondary" onclick="document.getElementById('carouselInput').click()">
+                                        <i class="fas fa-plus"></i> Adicionar Imagem
+                                    </button>
+                                    <button class="btn-primary" onclick="saveCarousel()">
+                                        <i class="fas fa-save"></i> Salvar Carousel
+                                    </button>
+                                    <button class="btn-outline" onclick="resetCarousel()">
+                                        <i class="fas fa-undo"></i> Restaurar
+                                    </button>
+                                </div>
+
+                                <div class="slide-editor" id="slideEditor" style="display: none;">
+                                    <h4>Editar Slide</h4>
+                                    <div class="form-group">
+                                        <label for="slideCaption">Legenda do Slide</label>
+                                        <input type="text" id="slideCaption" placeholder="Digite a legenda">
+                                    </div>
+                                    <div class="form-group">
+                                        <button class="btn-primary" onclick="updateSlide()">
+                                            <i class="fas fa-check"></i> Atualizar
+                                        </button>
+                                        <button class="btn-outline" onclick="cancelSlideEdit()">
+                                            <i class="fas fa-times"></i> Cancelar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
