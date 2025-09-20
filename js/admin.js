@@ -796,9 +796,10 @@ function showSection(sectionName) {
                 relatorios: 'Relatórios',
                 clientes: 'Clientes',
                 avaliacoes: 'Avaliações',
-                configuracoes: 'Configurações',
+                funcionamento: 'Funcionamento',
+                entregas: 'Entregas',
                 layout: 'Layout',
-                funcionamento: 'Funcionamento'
+                configuracoes: 'Configurações'
             };
             pageTitle.textContent = titles[sectionName] || 'Admin Panel';
         }
@@ -3296,3 +3297,354 @@ async function customConfirm(message, title = 'Confirmar ação', okText = 'Conf
         return false;
     }
 }
+
+// ============================================
+// DELIVERY MANAGEMENT SYSTEM
+// ============================================
+
+class DeliveryManager {
+    constructor() {
+        this.states = [];
+        this.cities = [];
+        this.deliveryAreas = JSON.parse(localStorage.getItem('deliveryAreas')) || [];
+        this.init();
+    }
+
+    async init() {
+        this.bindEvents();
+        await this.loadStates();
+        this.renderDeliveryAreas();
+        this.updateDeliveryCount();
+    }
+
+    bindEvents() {
+        // Form submission
+        const form = document.getElementById('deliveryForm');
+        if (form) {
+            form.addEventListener('submit', this.handleFormSubmit.bind(this));
+        }
+
+        // State selection change
+        const stateSelect = document.getElementById('stateSelect');
+        if (stateSelect) {
+            stateSelect.addEventListener('change', this.handleStateChange.bind(this));
+        }
+
+        // Search functionality
+        const searchInput = document.getElementById('deliverySearch');
+        if (searchInput) {
+            searchInput.addEventListener('input', this.handleSearch.bind(this));
+        }
+    }
+
+    async loadStates() {
+        try {
+            this.showStateLoading();
+            const response = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados');
+            
+            if (!response.ok) {
+                throw new Error('Erro ao carregar estados');
+            }
+
+            this.states = await response.json();
+            this.states.sort((a, b) => a.nome.localeCompare(b.nome));
+            this.populateStates();
+            
+        } catch (error) {
+            console.error('Erro ao carregar estados:', error);
+            this.showStateError();
+        }
+    }
+
+    async loadCities(stateId) {
+        try {
+            this.showCityLoading();
+            const response = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${stateId}/municipios`);
+            
+            if (!response.ok) {
+                throw new Error('Erro ao carregar cidades');
+            }
+
+            this.cities = await response.json();
+            this.cities.sort((a, b) => a.nome.localeCompare(b.nome));
+            this.populateCities();
+            
+        } catch (error) {
+            console.error('Erro ao carregar cidades:', error);
+            this.showCityError();
+        }
+    }
+
+    showStateLoading() {
+        const stateSelect = document.getElementById('stateSelect');
+        if (stateSelect) {
+            stateSelect.innerHTML = '<option value="">Carregando estados...</option>';
+            stateSelect.disabled = true;
+        }
+    }
+
+    showStateError() {
+        const stateSelect = document.getElementById('stateSelect');
+        if (stateSelect) {
+            stateSelect.innerHTML = '<option value="">Erro ao carregar estados</option>';
+        }
+    }
+
+    showCityLoading() {
+        const citySelect = document.getElementById('citySelect');
+        if (citySelect) {
+            citySelect.innerHTML = '<option value="">Carregando cidades...</option>';
+            citySelect.disabled = true;
+        }
+    }
+
+    showCityError() {
+        const citySelect = document.getElementById('citySelect');
+        if (citySelect) {
+            citySelect.innerHTML = '<option value="">Erro ao carregar cidades</option>';
+        }
+    }
+
+    populateStates() {
+        const stateSelect = document.getElementById('stateSelect');
+        if (!stateSelect) return;
+
+        stateSelect.innerHTML = '<option value="">Selecione o estado</option>';
+        
+        this.states.forEach(state => {
+            const option = document.createElement('option');
+            option.value = state.id;
+            option.textContent = state.nome;
+            option.dataset.uf = state.sigla;
+            stateSelect.appendChild(option);
+        });
+
+        stateSelect.disabled = false;
+    }
+
+    populateCities() {
+        const citySelect = document.getElementById('citySelect');
+        if (!citySelect) return;
+
+        citySelect.innerHTML = '<option value="">Selecione a cidade</option>';
+        
+        this.cities.forEach(city => {
+            const option = document.createElement('option');
+            option.value = city.id;
+            option.textContent = city.nome;
+            citySelect.appendChild(option);
+        });
+
+        citySelect.disabled = false;
+    }
+
+    async handleStateChange(e) {
+        const stateId = e.target.value;
+        const citySelect = document.getElementById('citySelect');
+        
+        if (!stateId) {
+            citySelect.innerHTML = '<option value="">Selecione a cidade</option>';
+            citySelect.disabled = true;
+            return;
+        }
+
+        await this.loadCities(stateId);
+    }
+
+    async handleFormSubmit(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const stateId = formData.get('state');
+        const cityId = formData.get('city');
+        const fee = parseFloat(formData.get('fee'));
+
+        if (!stateId || !cityId || isNaN(fee)) {
+            showNotification('Preencha todos os campos corretamente', 'error');
+            return;
+        }
+
+        // Get state and city names
+        const selectedState = this.states.find(s => s.id == stateId);
+        const selectedCity = this.cities.find(c => c.id == cityId);
+
+        if (!selectedState || !selectedCity) {
+            showNotification('Estado ou cidade inválidos', 'error');
+            return;
+        }
+
+        // Check if area already exists
+        const existingArea = this.deliveryAreas.find(area => 
+            area.stateId === stateId && area.cityId === cityId
+        );
+
+        if (existingArea) {
+            const confirmed = await customConfirm(
+                `A cidade ${selectedCity.nome} já está configurada com taxa de R$ ${existingArea.fee.toFixed(2)}. Deseja atualizar?`,
+                'Área já existe',
+                'Atualizar',
+                'Cancelar'
+            );
+            
+            if (!confirmed) return;
+            
+            existingArea.fee = fee;
+        } else {
+            const newArea = {
+                id: Date.now(),
+                stateId,
+                cityId,
+                stateName: selectedState.nome,
+                stateUf: selectedState.sigla,
+                cityName: selectedCity.nome,
+                fee
+            };
+            
+            this.deliveryAreas.push(newArea);
+        }
+
+        this.saveDeliveryAreas();
+        this.renderDeliveryAreas();
+        this.updateDeliveryCount();
+        e.target.reset();
+        
+        // Reset selects
+        document.getElementById('citySelect').innerHTML = '<option value="">Selecione a cidade</option>';
+        document.getElementById('citySelect').disabled = true;
+
+        showNotification(existingArea ? 'Taxa atualizada com sucesso!' : 'Área de entrega adicionada com sucesso!', 'success');
+    }
+
+    async handleDeleteArea(areaId) {
+        const area = this.deliveryAreas.find(a => a.id === areaId);
+        if (!area) return;
+
+        const confirmed = await customConfirm(
+            `Tem certeza que deseja remover a entrega para ${area.cityName} - ${area.stateUf}?`,
+            'Remover área de entrega',
+            'Remover',
+            'Cancelar'
+        );
+
+        if (!confirmed) return;
+
+        this.deliveryAreas = this.deliveryAreas.filter(a => a.id !== areaId);
+        this.saveDeliveryAreas();
+        this.renderDeliveryAreas();
+        this.updateDeliveryCount();
+        
+        showNotification('Área de entrega removida com sucesso!', 'success');
+    }
+
+    handleEditArea(areaId) {
+        const area = this.deliveryAreas.find(a => a.id === areaId);
+        if (!area) return;
+
+        // Fill form with area data
+        const stateSelect = document.getElementById('stateSelect');
+        const citySelect = document.getElementById('citySelect');
+        const feeInput = document.getElementById('deliveryFee');
+
+        stateSelect.value = area.stateId;
+        feeInput.value = area.fee;
+
+        // Load cities and set city
+        this.loadCities(area.stateId).then(() => {
+            citySelect.value = area.cityId;
+        });
+
+        // Scroll to form
+        document.querySelector('.delivery-form-card').scrollIntoView({ 
+            behavior: 'smooth' 
+        });
+    }
+
+    handleSearch(e) {
+        const query = e.target.value.toLowerCase();
+        const items = document.querySelectorAll('.delivery-item');
+        
+        items.forEach(item => {
+            const location = item.querySelector('.delivery-location').textContent.toLowerCase();
+            const state = item.querySelector('.delivery-state').textContent.toLowerCase();
+            
+            if (location.includes(query) || state.includes(query)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    renderDeliveryAreas() {
+        const container = document.getElementById('deliveryAreasList');
+        if (!container) return;
+
+        if (this.deliveryAreas.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-truck"></i>
+                    <h4>Nenhuma área de entrega configurada</h4>
+                    <p>Adicione estados e cidades para começar a configurar suas áreas de entrega</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Sort areas by state name then city name
+        const sortedAreas = [...this.deliveryAreas].sort((a, b) => {
+            if (a.stateName !== b.stateName) {
+                return a.stateName.localeCompare(b.stateName);
+            }
+            return a.cityName.localeCompare(b.cityName);
+        });
+
+        container.innerHTML = sortedAreas.map(area => `
+            <div class="delivery-item" data-area-id="${area.id}">
+                <div class="delivery-info">
+                    <div class="delivery-location">${area.cityName}</div>
+                    <div class="delivery-state">${area.stateName} - ${area.stateUf}</div>
+                </div>
+                <div class="delivery-fee">R$ ${area.fee.toFixed(2)}</div>
+                <div class="delivery-actions">
+                    <div class="action-buttons">
+                        <button class="action-btn edit" onclick="deliveryManager.handleEditArea(${area.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn delete" onclick="deliveryManager.handleDeleteArea(${area.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    updateDeliveryCount() {
+        const countElement = document.getElementById('deliveryCount');
+        if (countElement) {
+            const count = this.deliveryAreas.length;
+            countElement.textContent = `${count} ${count === 1 ? 'área' : 'áreas'}`;
+        }
+    }
+
+    saveDeliveryAreas() {
+        localStorage.setItem('deliveryAreas', JSON.stringify(this.deliveryAreas));
+    }
+
+    // Public method to get delivery fee for a city
+    getDeliveryFee(cityName, stateName) {
+        const area = this.deliveryAreas.find(area => 
+            area.cityName.toLowerCase() === cityName.toLowerCase() && 
+            area.stateName.toLowerCase() === stateName.toLowerCase()
+        );
+        return area ? area.fee : null;
+    }
+}
+
+// Initialize delivery manager when DOM is loaded
+let deliveryManager;
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('deliveryForm')) {
+        deliveryManager = new DeliveryManager();
+    }
+});
