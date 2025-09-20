@@ -1533,6 +1533,10 @@ function renderOrdersCards() {
             </div>
         `).join('');
 
+        // Get status info for dynamic button
+        const statusInfo = STATUS_INFO[order.status];
+        const canAdvance = STATUS_PROGRESSION[order.status] !== null;
+
         orderCard.innerHTML = `
             <div class="order-card-header">
                 <div>
@@ -1540,7 +1544,8 @@ function renderOrdersCards() {
                     <div class="order-time">${dateStr} às ${timeStr}</div>
                 </div>
                 <div class="order-status-card ${order.status}">
-                    ${statusTexts[order.status] || order.status}
+                    <i class="${statusInfo.icon}"></i>
+                    ${statusInfo.text}
                 </div>
             </div>
 
@@ -1583,10 +1588,22 @@ function renderOrdersCards() {
                     <i class="fas fa-eye"></i>
                     Ver Detalhes
                 </button>
-                <button class="action-btn-card edit" onclick="updateOrderStatusFromModal('${order.id}')">
-                    <i class="fas fa-edit"></i>
-                    Atualizar Status
+                ${canAdvance ? `
+                <button class="action-btn-card edit" onclick="advanceOrderStatus('${order.id}')">
+                    <i class="${STATUS_INFO[STATUS_PROGRESSION[order.status]]?.icon || 'fas fa-arrow-right'}"></i>
+                    ${statusInfo.nextAction}
                 </button>
+                ` : `
+                <button class="action-btn-card edit disabled">
+                    <i class="${statusInfo.icon}"></i>
+                    ${statusInfo.text}
+                </button>
+                `}
+                ${(order.status === 'pending' || order.status === 'preparing') ? `
+                <button class="cancel-btn-icon" onclick="cancelOrder('${order.id}')" title="Cancelar pedido">
+                    <i class="fas fa-times"></i>
+                </button>
+                ` : ''}
             </div>
         `;
 
@@ -2043,9 +2060,130 @@ function updateOrderStatusFromModal(orderId) {
     if (order) {
         order.status = newStatus;
         renderOrdersTable();
+        renderOrdersCards(); // Atualizar cards também
         closeModal('orderModal');
         showNotification('Status do pedido atualizado!', 'success');
     }
+}
+
+// Sistema de progressão dinâmica de status
+const STATUS_PROGRESSION = {
+    pending: 'preparing',
+    preparing: 'delivery',
+    delivery: 'delivered',
+    delivered: null, // Status final
+    cancelled: null  // Status final
+};
+
+const STATUS_INFO = {
+    pending: {
+        text: 'Pendente',
+        nextAction: 'Aceitar Pedido',
+        icon: 'fas fa-clock',
+        color: '#92400e'
+    },
+    preparing: {
+        text: 'Preparando',
+        nextAction: 'Enviar para Entrega',
+        icon: 'fas fa-utensils',
+        color: '#1e40af'
+    },
+    delivery: {
+        text: 'A caminho',
+        nextAction: 'Marcar como Entregue',
+        icon: 'fas fa-truck',
+        color: '#3730a3'
+    },
+    delivered: {
+        text: 'Entregue',
+        nextAction: null,
+        icon: 'fas fa-check-circle',
+        color: '#065f46'
+    },
+    cancelled: {
+        text: 'Cancelado',
+        nextAction: null,
+        icon: 'fas fa-times-circle',
+        color: '#991b1b'
+    }
+};
+
+// Função para avançar status do pedido
+function advanceOrderStatus(orderId) {
+    const order = orders.find(o => o.id === orderId);
+    
+    if (!order) {
+        showNotification('Pedido não encontrado!', 'error');
+        return;
+    }
+
+    const currentStatus = order.status;
+    const nextStatus = STATUS_PROGRESSION[currentStatus];
+    
+    if (!nextStatus) {
+        showNotification('Este pedido já está no status final!', 'info');
+        return;
+    }
+
+    // Atualizar status
+    order.status = nextStatus;
+    
+    // Atualizar interfaces
+    renderOrdersTable();
+    renderOrdersCards();
+    
+    // Mostrar notificação
+    const statusInfo = STATUS_INFO[nextStatus];
+    showNotification(`Pedido #${orderId} atualizado para: ${statusInfo.text}`, 'success');
+}
+
+// Função para aceitar pedido da notificação
+function acceptOrder(orderId) {
+    const order = orders.find(o => o.id === orderId);
+    
+    if (!order) {
+        showNotification('Pedido não encontrado!', 'error');
+        return;
+    }
+
+    // Mudar status para preparing
+    order.status = 'preparing';
+    
+    // Atualizar interfaces
+    renderOrdersTable();
+    renderOrdersCards();
+    
+    showNotification(`Pedido #${orderId} aceito e movido para preparação!`, 'success');
+}
+
+// Função para cancelar pedido
+function cancelOrder(orderId) {
+    customConfirm(
+        `Tem certeza que deseja cancelar o pedido #${orderId}? Esta ação não pode ser desfeita.`,
+        'Cancelar Pedido',
+        'Sim, Cancelar',
+        'Não, Manter'
+    ).then(confirmed => {
+        if (confirmed) {
+            const order = orders.find(o => o.id === orderId);
+            
+            if (!order) {
+                showNotification('Pedido não encontrado!', 'error');
+                return;
+            }
+
+            // Mudar status para cancelled
+            order.status = 'cancelled';
+            
+            // Atualizar interfaces
+            renderOrdersTable();
+            renderOrdersCards();
+            
+            showNotification(`Pedido #${orderId} foi cancelado.`, 'success');
+        }
+    }).catch(() => {
+        // User cancelled the action
+    });
 }
 
 // Funções de cliente
@@ -2136,14 +2274,7 @@ function formatDate(dateString) {
 }
 
 function getStatusText(status) {
-    const statusTexts = {
-        pending: 'Pendente',
-        preparing: 'Preparando',
-        delivery: 'A caminho',
-        delivered: 'Entregue',
-        cancelled: 'Cancelado'
-    };
-    return statusTexts[status] || status;
+    return STATUS_INFO[status]?.text || status;
 }
 
 function showNotification(message, type = 'info') {
@@ -4204,7 +4335,9 @@ class OrderNotificationSystem {
         const notification = this.notifications.find(n => n.order.id === orderId);
         if (notification) {
             this.removeNotification(notification.id);
-            showNotification(`Pedido ${orderId} aceito com sucesso!`, 'success');
+            
+            // Use the global acceptOrder function to handle status progression
+            acceptOrder(orderId);
         }
     }
 
@@ -4559,3 +4692,33 @@ function openMaps(address) {
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
     window.open(mapsUrl, '_blank');
 }
+
+// Função para testar novo pedido (desenvolvimento)
+function addTestOrder() {
+    const newOrder = {
+        id: String(Date.now()).slice(-3),
+        cliente: 'Cliente Teste',
+        data: new Date().toISOString(),
+        items: [
+            { nome: 'Pizza Margherita (Grande)', quantidade: 1, preco: 35.99 }
+        ],
+        total: 40.99,
+        status: 'pending',
+        endereco: 'Rua Teste, 123',
+        telefone: '(11) 99999-0000'
+    };
+    
+    orders.unshift(newOrder);
+    renderOrdersTable();
+    renderOrdersCards();
+    
+    // Simular notificação
+    if (window.orderNotificationSystem) {
+        window.orderNotificationSystem.showNotification(newOrder);
+    }
+    
+    showNotification('Novo pedido adicionado para teste!', 'success');
+}
+
+// Expor função globalmente para teste
+window.addTestOrder = addTestOrder;
