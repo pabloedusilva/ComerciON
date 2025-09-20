@@ -925,19 +925,27 @@ body.sidebar-collapsed .main-content {
 /* Section Headers */
 .section-header {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: flex-start;
     margin-bottom: 2rem;
 }
 
 .section-header h2 {
     font-size: 1.75rem;
     font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.section-description {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    margin: 0;
 }
 
 .header-actions {
     display: flex;
     gap: 0.75rem;
+    margin-top: 1rem;
 }
 
 /* Buttons */
@@ -1189,8 +1197,7 @@ tbody tr:hover {
     transition: all 0.2s;
 }
 
-.action-btn.edit,
-.action-btn.view {
+.action-btn.edit {
     background-color: rgba(23, 162, 184, 0.1);
     color: var(--info-color);
 }
@@ -1374,6 +1381,80 @@ tbody tr:hover {
 .form-group input[type="checkbox"] {
     width: auto;
     margin-right: 0.5rem;
+}
+
+/* Global Config Form - Unified Configuration */
+.global-config-form {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.config-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1.5rem 0 0;
+    border-top: 1px solid var(--border-color);
+    margin-top: 1.5rem;
+}
+
+.checkbox-label {
+    font-weight: 500;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    padding-left: 0;
+}
+
+.checkbox-label input[type="checkbox"] {
+    opacity: 0;
+    position: absolute;
+    width: 0;
+    height: 0;
+}
+
+.checkbox-label .checkmark {
+    width: 20px;
+    height: 20px;
+    background-color: white;
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    position: relative;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkmark {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.checkbox-label .checkmark::after {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 2px;
+    width: 6px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkmark::after {
+    opacity: 1;
+}
+
+.checkbox-label:hover .checkmark {
+    border-color: var(--primary-color);
+    transform: scale(1.05);
 }
 
 /* Modals - Melhorados */

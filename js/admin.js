@@ -653,11 +653,123 @@ function setupFilters() {
 
 // Configurar formulários de configuração
 function setupConfigForms() {
-    document.querySelectorAll('.config-form').forEach(form => {
-        form.addEventListener('submit', (e) => {
+    // Formulário unificado de configurações
+    const globalConfigForm = document.getElementById('globalConfigForm');
+    if (globalConfigForm) {
+        globalConfigForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            showNotification('Configurações salvas com sucesso!', 'success');
+            
+            // Mostrar loading no botão
+            const submitBtn = globalConfigForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+            submitBtn.disabled = true;
+            
+            try {
+                // Simular salvamento (aqui você adicionaria a lógica real)
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Coletar dados do formulário
+                const formData = new FormData(globalConfigForm);
+                const configData = {};
+                
+                // Converter FormData para objeto
+                for (let [key, value] of formData.entries()) {
+                    if (globalConfigForm.querySelector(`[name="${key}"]`).type === 'checkbox') {
+                        configData[key] = globalConfigForm.querySelector(`[name="${key}"]`).checked;
+                    } else {
+                        configData[key] = value;
+                    }
+                }
+                
+                // Salvar no localStorage
+                localStorage.setItem('pizzariaConfig', JSON.stringify(configData));
+                
+                showNotification('Todas as configurações foram salvas com sucesso!', 'success');
+            } catch (error) {
+                showNotification('Erro ao salvar configurações. Tente novamente.', 'error');
+            } finally {
+                // Restaurar botão
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
         });
+    }
+    
+    // Botão de reset
+    const resetBtn = document.getElementById('resetAllConfigBtn');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', async () => {
+            const confirmed = await customConfirm(
+                'Restaurar Configurações Padrão',
+                'Tem certeza de que deseja restaurar todas as configurações para os valores padrão?',
+                'Esta ação não pode ser desfeita.'
+            );
+            
+            if (confirmed) {
+                // Limpar localStorage
+                localStorage.removeItem('pizzariaConfig');
+                
+                // Recarregar valores padrão
+                loadConfigDefaults();
+                
+                showNotification('Configurações restauradas para os valores padrão!', 'success');
+            }
+        });
+    }
+    
+    // Carregar configurações salvas ao iniciar
+    loadSavedConfig();
+}
+
+// Carregar configurações salvas
+function loadSavedConfig() {
+    const savedConfig = localStorage.getItem('pizzariaConfig');
+    if (savedConfig) {
+        try {
+            const config = JSON.parse(savedConfig);
+            
+            // Aplicar valores salvos aos campos
+            Object.keys(config).forEach(key => {
+                const field = document.querySelector(`[name="${key}"]`);
+                if (field) {
+                    if (field.type === 'checkbox') {
+                        field.checked = config[key];
+                    } else {
+                        field.value = config[key];
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Erro ao carregar configurações:', error);
+        }
+    }
+}
+
+// Carregar valores padrão
+function loadConfigDefaults() {
+    const defaults = {
+        pizzariaName: 'Pizzaria Deliciosa',
+        pizzariaPhone: '(11) 99999-9999',
+        pizzariaEmail: 'contato@pizzaria.com',
+        pizzariaAddress: 'Rua das Pizzas, 123 - São Paulo, SP',
+        deliveryFee: '5.00',
+        deliveryTime: '30',
+        deliveryRadius: '15',
+        acceptOnlineOrders: true,
+        emailNotifications: true,
+        soundNotifications: true
+    };
+    
+    Object.keys(defaults).forEach(key => {
+        const field = document.querySelector(`[name="${key}"]`);
+        if (field) {
+            if (field.type === 'checkbox') {
+                field.checked = defaults[key];
+            } else {
+                field.value = defaults[key];
+            }
+        }
     });
 }
 
