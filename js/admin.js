@@ -128,6 +128,14 @@ function initializeApp() {
 
     // Iniciar status dinâmico no header da sidebar
     initSidebarStatusPill();
+    
+    // Inicializar statusManager globalmente para garantir que esteja disponível
+    try {
+        statusManager.load();
+        console.log('App inicializada, statusManager:', statusManager.state);
+    } catch (e) {
+        console.warn('Erro ao carregar statusManager:', e);
+    }
 }
 
 // Configuração da sidebar moderna
@@ -201,14 +209,8 @@ function initSidebarStatusPill() {
         if (e.key === 'pizzaria_status') update();
     });
 
-    // Atualizar também após ações internas que salvam estado
-    const origSave = statusManager.save?.bind(statusManager);
-    if (origSave) {
-        statusManager.save = function() {
-            origSave();
-            update();
-        };
-    }
+    // Não mais interceptar o statusManager.save aqui
+    // A sidebar será atualizada pelos botões específicos no statusManager
 }
 
 // Função para criar efeito ripple
@@ -2383,7 +2385,7 @@ function initLayoutSection() {
 // Funcionamento (Status) Management
 const statusManager = {
     state: {
-        closedNow: false,
+        closedNow: false, // false = loja aberta (switch não checked), true = loja fechada (switch checked)
         reason: '',
         reopenAt: '', // ISO string
         schedules: [] // [{ start: ISO, end: ISO, reason }]
@@ -2393,6 +2395,7 @@ const statusManager = {
         this.load();
         this.bindUI();
         this.render();
+        console.log('StatusManager iniciado com estado do localStorage:', this.state);
     },
 
     bindUI() {
@@ -2406,14 +2409,17 @@ const statusManager = {
     const hoursGrid = document.getElementById('hoursGrid');
 
         closeNowToggle?.addEventListener('change', () => {
+            // Switch checked = loja fechada, Switch não checked = loja aberta
             this.state.closedNow = closeNowToggle.checked;
-            this.renderPill();
+            console.log('Switch alterado:', { checked: closeNowToggle.checked, closedNow: this.state.closedNow });
+            this.renderPill(); // Atualiza pill imediatamente
         });
         saveBtn?.addEventListener('click', () => {
             this.state.reason = closeReason?.value?.trim() || '';
             this.state.reopenAt = reopenAt?.value ? new Date(reopenAt.value).toISOString() : '';
             this.save();
             this.render();
+            this.updateSidebarPill(); // Atualiza sidebar pill apenas ao salvar
             showNotification('Status de funcionamento atualizado!', 'success');
         });
         clearBtn?.addEventListener('click', () => {
@@ -2422,6 +2428,7 @@ const statusManager = {
             this.state.reopenAt = '';
             this.save();
             this.render();
+            this.updateSidebarPill(); // Atualiza sidebar pill
             showNotification('Loja reaberta. Status limpo!', 'info');
         });
 
@@ -2477,21 +2484,60 @@ const statusManager = {
         const closeNowToggle = document.getElementById('closeNowToggle');
         const closeReason = document.getElementById('closeReason');
         const reopenAt = document.getElementById('reopenAt');
-        if (closeNowToggle) closeNowToggle.checked = !!this.state.closedNow;
+        
+        // Switch checked = loja fechada, unchecked = loja aberta
+        if (closeNowToggle) {
+            closeNowToggle.checked = !!this.state.closedNow;
+            console.log('Render: closedNow =', this.state.closedNow, 'switch checked =', closeNowToggle.checked);
+        }
         if (closeReason) closeReason.value = this.state.reason || '';
         if (reopenAt) reopenAt.value = this.state.reopenAt ? this.toLocalDatetime(this.state.reopenAt) : '';
+        
         this.renderPill();
         this.renderHours();
     },
 
     renderPill() {
         const pill = document.getElementById('statusPill');
-        if (!pill) return;
-        const now = new Date();
-        const effectiveClosed = this.isClosedAt(now);
-        pill.classList.toggle('closed', effectiveClosed);
-        pill.classList.toggle('open', !effectiveClosed);
+        if (!pill) {
+            console.log('StatusPill não encontrado!');
+            return;
+        }
+        
+        // Para debug: vamos usar apenas o closedNow sem verificar horários
+        const effectiveClosed = this.state.closedNow;
+        
+        console.log('Renderizando pill:', { 
+            closedNow: this.state.closedNow, 
+            effectiveClosed,
+            pillElement: pill
+        });
+        
+        pill.classList.remove('closed', 'open');
+        pill.classList.add(effectiveClosed ? 'closed' : 'open');
         pill.innerHTML = effectiveClosed
+            ? '<i class="fas fa-circle"></i> Fechada'
+            : '<i class="fas fa-circle"></i> Aberta';
+    },
+
+    updateSidebarPill() {
+        const sidebarPill = document.getElementById('sidebarStatusPill');
+        if (!sidebarPill) {
+            console.log('SidebarStatusPill não encontrado!');
+            return;
+        }
+        
+        // Usar apenas o closedNow para simplicidade
+        const effectiveClosed = this.state.closedNow;
+        
+        console.log('Atualizando sidebar pill:', { 
+            closedNow: this.state.closedNow, 
+            effectiveClosed 
+        });
+        
+        sidebarPill.classList.remove('closed', 'open');
+        sidebarPill.classList.add(effectiveClosed ? 'closed' : 'open');
+        sidebarPill.innerHTML = effectiveClosed
             ? '<i class="fas fa-circle"></i> Fechada'
             : '<i class="fas fa-circle"></i> Aberta';
     },
@@ -2509,10 +2555,12 @@ const statusManager = {
             // aplicar cor condicional
             if (cfg.enabled) row.classList.add('open'); else row.classList.add('closed');
             row.innerHTML = `
-                <div class="hours-day">${this.dayNames[d]}</div>
+                <div class="hours-day-container">
+                    <input type="checkbox" data-day="${d}" data-kind="enabled" ${cfg.enabled ? 'checked' : ''}>
+                    <div class="hours-day">${this.dayNames[d]}</div>
+                </div>
                 <div><input type="time" data-day="${d}" data-kind="open" value="${cfg.open}"></div>
                 <div><input type="time" data-day="${d}" data-kind="close" value="${cfg.close}"></div>
-                <label class="closed-toggle"><input type="checkbox" data-day="${d}" data-kind="enabled" ${cfg.enabled ? 'checked' : ''}> Atender</label>
             `;
             grid.appendChild(row);
         });
@@ -2537,14 +2585,20 @@ const statusManager = {
     },
 
     isClosedAt(date) {
-        // Fechamento manual imediato
-        if (this.state.closedNow) {
+        // Fechamento manual imediato - tem prioridade absoluta
+        if (this.state.closedNow === true) {
             if (this.state.reopenAt) {
                 return date < new Date(this.state.reopenAt);
             }
-            return true;
+            return true; // Fechada manualmente
         }
-        // Horários de atendimento
+        
+        // Se não está fechada manualmente, verificar se está explicitamente aberta
+        if (this.state.closedNow === false) {
+            return false; // Aberta manualmente
+        }
+        
+        // Se closedNow é undefined/null, verificar horários de funcionamento
         const hours = this.state.hours || this.getDefaultHours();
         const d = new Date(date);
         const day = d.getDay();
@@ -2566,11 +2620,24 @@ const statusManager = {
             const raw = localStorage.getItem('pizzaria_status');
             if (raw) {
                 const parsed = JSON.parse(raw);
-                this.state = { hours: this.getDefaultHours(), ...this.state, ...parsed };
+                // Manter o estado salvo, apenas completar com defaults se necessário
+                this.state = { 
+                    hours: this.getDefaultHours(), 
+                    ...this.state, 
+                    ...parsed 
+                };
+            } else {
+                // Se não há dados salvos, usar estado padrão (loja aberta)
+                this.state.closedNow = false;
+                this.state.hours = this.getDefaultHours();
             }
             if (!this.state.hours) this.state.hours = this.getDefaultHours();
+            console.log('Estado carregado do localStorage:', this.state);
         } catch (e) {
             console.warn('Falha ao carregar status:', e);
+            // Em caso de erro, usar estado padrão
+            this.state.closedNow = false;
+            this.state.hours = this.getDefaultHours();
         }
     },
 

@@ -2175,11 +2175,12 @@ tbody tr:hover {
     margin-top: 2rem;
 }
 
-/* Funcionamento (Status) Section */
+/* Funcionamento (Status) Section - Padronizado */
 .status-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
     gap: 2rem;
+    align-items: start;
 }
 
 .status-card {
@@ -2191,7 +2192,10 @@ tbody tr:hover {
     transition: transform .2s ease, box-shadow .2s ease;
 }
 
-.status-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.status-card:hover { 
+    transform: translateY(-2px); 
+    box-shadow: var(--shadow-lg);
+}
 
 .status-card.full-width { grid-column: 1 / -1; }
 
@@ -2200,48 +2204,314 @@ tbody tr:hover {
     border-bottom: 1px solid var(--border-color);
     background: linear-gradient(135deg, var(--light-color), #fff);
 }
+
 .status-card-header h3 {
-    display: flex; align-items: center; gap: .6rem; font-size: 1.1rem; font-weight: 700; color: var(--text-primary);
+    display: flex; 
+    align-items: center; 
+    gap: 0.6rem; 
+    font-size: 1.1rem; 
+    font-weight: 700; 
+    color: var(--text-primary);
 }
-.status-card-header h3 i { color: var(--primary-color); }
-.status-card-header p { color: var(--text-secondary); margin-top: .25rem; font-size: .9rem; }
 
-.status-card-content { padding: 1.25rem 1.5rem; display: grid; gap: 1rem; }
+.status-card-header h3 i { 
+    color: var(--primary-color);
+}
 
-.status-row { display: flex; align-items: center; gap: 1rem; }
-.switch { position: relative; display: inline-block; width: 62px; height: 34px; }
-.switch input { opacity: 0; width: 0; height: 0; }
-.slider { position: absolute; cursor: pointer; inset: 0; background: #e9ecef; transition: .3s; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--border-color); }
-.slider:before { content: ""; position: absolute; height: 26px; width: 26px; left: 4px; top: 4px; background: white; transition: .3s; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,.15); }
-.switch input:checked + .slider { background: rgba(220, 53, 69, 0.15); box-shadow: inset 0 0 0 2px rgba(220,53,69,.35); }
-.switch input:checked + .slider:before { transform: translateX(28px); background: #dc3545; }
+.status-card-header p { 
+    color: var(--text-secondary); 
+    margin-top: 0.25rem; 
+    font-size: 0.9rem;
+}
 
-.switch-text strong { display: block; }
-.switch-text small { color: var(--text-secondary); }
+.status-card-content { 
+    padding: 1.25rem 1.5rem; 
+    display: grid; 
+    gap: 1rem; 
+}
 
-.status-pill { display: inline-flex; align-items: center; gap: .5rem; padding: .35rem .6rem; border-radius: 999px; font-weight: 700; font-size: .8rem; }
-.status-pill i { font-size: .55rem; }
-.status-pill.open { background: rgba(40,167,69,.12); color: #2e7d32; }
-.status-pill.closed { background: rgba(220,53,69,.12); color: #c62828; }
+.status-row { 
+    display: flex; 
+    align-items: center; 
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(250, 180, 39, 0.02) 0%, rgba(255, 255, 255, 0.5) 100%);
+    border: 1px solid rgba(250, 180, 39, 0.1);
+    border-radius: 16px;
+    transition: all 0.3s ease;
+}
+
+.status-row:hover {
+    background: linear-gradient(135deg, rgba(250, 180, 39, 0.04) 0%, rgba(255, 255, 255, 0.8) 100%);
+    border-color: rgba(250, 180, 39, 0.2);
+    transform: translateY(-1px);
+}
+/* Modern Power Switch with Icon */
+.switch { 
+    position: relative; 
+    display: inline-block; 
+    width: 72px; 
+    height: 40px;
+    flex-shrink: 0;
+}
+
+.switch input { 
+    opacity: 0; 
+    width: 0; 
+    height: 0; 
+    position: absolute;
+}
+
+.slider { 
+    position: absolute; 
+    cursor: pointer; 
+    inset: 0; 
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.15) 0%, rgba(40, 167, 69, 0.05) 100%);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+    border-radius: 999px; 
+    box-shadow: inset 0 0 0 2px rgba(40, 167, 69, 0.4), 0 2px 8px rgba(40, 167, 69, 0.2);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 4px;
+}
+
+.slider::before { 
+    content: "";
+    position: absolute; 
+    height: 32px; 
+    width: 32px; 
+    left: 4px; 
+    top: 4px; 
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+    border-radius: 50%; 
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3), 0 2px 4px rgba(40, 167, 69, 0.2);
+    z-index: 1;
+}
+
+/* Power icon inside the switch knob */
+.switch-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: white;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 2;
+    pointer-events: none;
+}
+
+/* Hover effects */
+.switch:hover .slider {
+    box-shadow: inset 0 0 0 2px rgba(250, 180, 39, 0.3), 0 4px 16px rgba(0, 0, 0, 0.15);
+    transform: scale(1.02);
+}
+
+.switch:hover .slider::before {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2), 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.switch:hover .switch-icon {
+    color: var(--primary-color);
+    transform: translateY(-50%) scale(1.1);
+}
+
+/* Focus states */
+.switch input:focus + .slider {
+    box-shadow: inset 0 0 0 2px var(--primary-color), 0 0 0 3px rgba(250, 180, 39, 0.2);
+}
+
+/* Estado padrão (não checked) - "Loja Aberta" - VERDE */
+.slider { 
+    position: absolute; 
+    cursor: pointer; 
+    inset: 0; 
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.15) 0%, rgba(40, 167, 69, 0.05) 100%);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+    border-radius: 999px; 
+    box-shadow: inset 0 0 0 2px rgba(40, 167, 69, 0.4), 0 2px 8px rgba(40, 167, 69, 0.2);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 4px;
+}
+
+.slider::before { 
+    content: "";
+    position: absolute; 
+    height: 32px; 
+    width: 32px; 
+    left: 4px; 
+    top: 4px; 
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+    border-radius: 50%; 
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3), 0 2px 4px rgba(40, 167, 69, 0.2);
+    z-index: 1;
+}
+
+/* Checked state - "Fechar loja" ativo - VERMELHO */
+.switch input:checked + .slider { 
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.15) 0%, rgba(220, 53, 69, 0.05) 100%);
+    box-shadow: inset 0 0 0 2px rgba(220, 53, 69, 0.4), 0 2px 8px rgba(220, 53, 69, 0.2);
+    justify-content: flex-end;
+}
+
+.switch input:checked + .slider::before { 
+    transform: translateX(32px); 
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3), 0 2px 4px rgba(220, 53, 69, 0.2);
+}
+
+/* Power icon when checked - move with knob and change color */
+.switch input:checked + .slider .switch-icon {
+    left: 46px;
+    color: white;
+    transform: translateY(-50%) scale(1.1);
+}
+
+/* Active/pressed state */
+.switch:active .slider::before {
+    transform: scale(0.95);
+}
+
+.switch input:checked:active + .slider::before {
+    transform: translateX(32px) scale(0.95);
+}
+
+.switch-text { 
+    flex: 1;
+}
+
+.switch-text strong { 
+    display: block; 
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.switch-text small { 
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.status-pill { 
+    display: inline-flex; 
+    align-items: center; 
+    gap: .5rem; 
+    padding: .35rem .6rem; 
+    border-radius: 999px; 
+    font-weight: 700; 
+    font-size: .8rem;
+}
+
+.status-pill i { 
+    font-size: .55rem;
+}
+
+.status-pill.open { 
+    background: rgba(40,167,69,.12); 
+    color: #2e7d32;
+}
+
+.status-pill.closed { 
+    background: rgba(220,53,69,.12); 
+    color: #c62828;
+}
 
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(200px, 1fr)); gap: 1rem; }
 .form-grid .form-group.full { grid-column: 1 / -1; }
 .form-grid .form-group input { width: 100%; }
 
 .hours-grid { display: grid; grid-template-columns: 1fr; gap: .75rem; }
-.hours-row { display: grid; grid-template-columns: 160px 1fr 1fr 120px; gap: .75rem; align-items: center; padding: .75rem 1rem; background: var(--light-color); border: 1px solid var(--border-color); border-radius: 10px; transition: background-color .2s ease, border-color .2s ease; }
+.hours-row { display: grid; grid-template-columns: 200px 1fr 1fr; gap: .75rem; align-items: center; padding: .75rem 1rem; background: var(--light-color); border: 1px solid var(--border-color); border-radius: 10px; transition: background-color .2s ease, border-color .2s ease; }
 .hours-row.open { background: rgba(40, 167, 69, 0.08); border-color: rgba(40, 167, 69, 0.25); }
 .hours-row.closed { background: rgba(220, 53, 69, 0.08); border-color: rgba(220, 53, 69, 0.25); }
-.hours-day { font-weight: 700; color: var(--text-primary); }
+
+.hours-day-container { 
+    display: flex; 
+    align-items: center; 
+    gap: .75rem;
+}
+
+.hours-day { 
+    font-weight: 700; 
+    color: var(--text-primary); 
+    flex: 1;
+}
+
+.hours-day-container input[type="checkbox"] { 
+    transform: translateY(1px);
+    margin: 0;
+}
+
 .hours-row input[type="time"] { width: 100%; padding: .6rem .75rem; border: 1px solid var(--border-color); border-radius: 8px; background: #fff; }
-.hours-row input[type="checkbox"] { transform: translateY(1px); }
-.hours-row .closed-toggle { display: inline-flex; align-items: center; gap: .5rem; color: var(--text-secondary); font-weight: 600; }
+
+@media (max-width: 1200px) {
+    .status-grid { 
+        grid-template-columns: 1fr; 
+        gap: 1.5rem; 
+    }
+}
 
 @media (max-width: 768px) {
-    .status-grid { grid-template-columns: 1fr; gap: 1.25rem; }
-    .form-grid { grid-template-columns: 1fr; }
-    .hours-row { grid-template-columns: 120px 1fr 1fr; }
-    .hours-row .closed-toggle { grid-column: 1 / -1; }
+    .status-grid { 
+        grid-template-columns: 1fr; 
+        gap: 1.25rem; 
+    }
+    
+    .status-card-content {
+        padding: 1.5rem;
+        gap: 1.25rem;
+    }
+    
+    .status-row {
+        padding: 1.25rem;
+        gap: 1.25rem;
+    }
+    
+    .form-grid { 
+        grid-template-columns: 1fr; 
+    }
+    
+    .hours-row { 
+        grid-template-columns: 150px 1fr 1fr; 
+    }
+    
+    .hours-day-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: .5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .status-card-content {
+        padding: 1.25rem;
+        gap: 1rem;
+    }
+    
+    .status-row {
+        padding: 1rem;
+        gap: 1rem;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .switch {
+        align-self: center;
+    }
+    
+    .switch-text {
+        text-align: center;
+    }
 }
 
 .layout-card {
