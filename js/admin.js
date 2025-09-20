@@ -129,6 +129,9 @@ function initializeApp() {
     // Iniciar status dinâmico no header da sidebar
     initSidebarStatusPill();
     
+    // Inicializar sistema de data e hora
+    initDateTimeSystem();
+    
     // Inicializar reviews manager
     reviewsManager.init();
     reviewsManager.updateSummary();
@@ -227,6 +230,112 @@ function initSidebarStatusPill() {
 
     // Não mais interceptar o statusManager.save aqui
     // A sidebar será atualizada pelos botões específicos no statusManager
+}
+
+// Sistema de Data e Hora em Tempo Real
+const dateTimeSystem = {
+    apiUrl: 'http://worldtimeapi.org/api/timezone/America/Sao_Paulo',
+    updateInterval: 60000, // Atualizar a cada 1 minuto
+    syncInterval: 3600000, // Sincronizar com API a cada 1 hora
+    offsetFromServer: 0,
+    lastSync: null,
+    
+    init() {
+        this.syncWithAPI();
+        this.startUpdateLoop();
+        this.startSyncLoop();
+    },
+    
+    async syncWithAPI() {
+        try {
+            const response = await fetch(this.apiUrl);
+            if (!response.ok) throw new Error('API response not ok');
+            
+            const data = await response.json();
+            const serverTime = new Date(data.datetime);
+            const localTime = new Date();
+            
+            // Calcular diferença entre servidor e local
+            this.offsetFromServer = serverTime.getTime() - localTime.getTime();
+            this.lastSync = new Date();
+            
+            console.log('DateTime sincronizado com API:', {
+                serverTime: serverTime.toISOString(),
+                localTime: localTime.toISOString(),
+                offset: this.offsetFromServer
+            });
+            
+            // Atualizar display imediatamente
+            this.updateDisplay();
+            
+        } catch (error) {
+            console.warn('Erro ao sincronizar com API de horário:', error);
+            // Em caso de erro, usar horário local
+            this.offsetFromServer = 0;
+            this.updateDisplay();
+        }
+    },
+    
+    getCurrentTime() {
+        const now = new Date();
+        return new Date(now.getTime() + this.offsetFromServer);
+    },
+    
+    updateDisplay() {
+        const dateElement = document.getElementById('dateText');
+        const timeElement = document.getElementById('timeText');
+        
+        if (!dateElement || !timeElement) return;
+        
+        const now = this.getCurrentTime();
+        
+        // Formatar data (ex: "20 Set 2025")
+        const dateStr = now.toLocaleDateString('pt-BR', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+        });
+        
+        // Formatar hora (ex: "14:30")
+        const timeStr = now.toLocaleTimeString('pt-BR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
+        
+        dateElement.textContent = dateStr;
+        timeElement.textContent = timeStr;
+    },
+    
+    startUpdateLoop() {
+        // Atualizar display a cada minuto
+        setInterval(() => {
+            this.updateDisplay();
+        }, this.updateInterval);
+    },
+    
+    startSyncLoop() {
+        // Sincronizar com API a cada hora
+        setInterval(() => {
+            this.syncWithAPI();
+        }, this.syncInterval);
+        
+        // Também sincronizar quando a aba ganha foco (caso tenha ficado inativa por muito tempo)
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && this.lastSync) {
+                const timeSinceLastSync = Date.now() - this.lastSync.getTime();
+                // Se passou mais de 30 minutos, sincronizar novamente
+                if (timeSinceLastSync > 1800000) {
+                    this.syncWithAPI();
+                }
+            }
+        });
+    }
+};
+
+// Função para inicializar o sistema de data e hora
+function initDateTimeSystem() {
+    dateTimeSystem.init();
 }
 
 // Função para criar efeito ripple
