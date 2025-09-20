@@ -86,6 +86,15 @@
                             <div class="nav-indicator"></div>
                         </a>
                     </li>
+                    <li>
+                        <a href="#avaliacoes" class="nav-link" data-section="avaliacoes">
+                            <div class="nav-icon">
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <span class="nav-text">Avaliações</span>
+                            <div class="nav-indicator"></div>
+                        </a>
+                    </li>
                 </ul>
             </div>
 
@@ -487,6 +496,189 @@
                                 <!-- Clientes serão inseridos via JavaScript -->
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Avaliações Section -->
+            <section id="avaliacoes-section" class="content-section">
+                <div class="section-header">
+                    <h2>Avaliações dos Clientes</h2>
+                    <div class="header-info">
+                        <span class="rating-summary">
+                            <i class="fas fa-star"></i>
+                            <span class="average-rating">4.8</span>
+                            <span class="total-reviews">(247 avaliações)</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="filters-bar">
+                    <div class="search-filter">
+                        <input type="text" id="reviewSearch" placeholder="Buscar avaliações...">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <div class="rating-filter">
+                        <select id="ratingFilter">
+                            <option value="">Todas as avaliações</option>
+                            <option value="5">5 estrelas</option>
+                            <option value="4">4 estrelas</option>
+                            <option value="3">3 estrelas</option>
+                            <option value="2">2 estrelas</option>
+                            <option value="1">1 estrela</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="reviews-container">
+                    <div class="review-card">
+                        <div class="review-header">
+                            <div class="customer-info">
+                                <div class="customer-avatar">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div class="customer-details">
+                                    <h4>Maria Silva</h4>
+                                    <span class="review-date">15/09/2025</span>
+                                </div>
+                            </div>
+                            <div class="rating-stars">
+                                <i class="fas fa-star active"></i>
+                                <i class="fas fa-star active"></i>
+                                <i class="fas fa-star active"></i>
+                                <i class="fas fa-star active"></i>
+                                <i class="fas fa-star active"></i>
+                            </div>
+                        </div>
+                        <div class="review-content">
+                            <p class="review-text">Excelente pizza! Massa fininha, ingredientes frescos e chegou bem quentinha. O atendimento também foi muito bom, entregaram no tempo prometido.</p>
+                        </div>
+                        <div class="review-actions">
+                            <button class="view-full-review" data-review-id="1">
+                                <i class="fas fa-eye"></i>
+                                Ver completa
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="review-card">
+                        <div class="review-header">
+                            <div class="customer-info">
+                                <div class="customer-avatar">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div class="customer-details">
+                                    <h4>João Santos</h4>
+                                    <span class="review-date">14/09/2025</span>
+                                </div>
+                            </div>
+                            <div class="rating-stars">
+                                <i class="fas fa-star active"></i>
+                                <i class="fas fa-star active"></i>
+                                <i class="fas fa-star active"></i>
+                                <i class="fas fa-star active"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                        </div>
+                        <div class="review-content">
+                            <p class="review-text">Muito boa! Só achei que poderia ter um pouco mais de recheio na margherita, mas no geral foi uma experiência positiva.</p>
+                        </div>
+                        <div class="review-actions">
+                            <button class="view-full-review" data-review-id="2">
+                                <i class="fas fa-eye"></i>
+                                Ver completa
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="review-card">
+                        <div class="review-header">
+                            <div class="customer-info">
+                                <div class="customer-avatar">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div class="customer-details">
+                                    <h4>Ana Costa</h4>
+                                    <span class="review-date">13/09/2025</span>
+                                </div>
+                            </div>
+                            <div class="rating-stars">
+                                <i class="fas fa-star active"></i>
+                                <i class="fas fa-star active"></i>
+                                <i class="fas fa-star active"></i>
+                                <i class="fas fa-star active"></i>
+                                <i class="fas fa-star active"></i>
+                            </div>
+                        </div>
+                        <div class="review-content">
+                            <p class="review-text">Simplesmente perfeita! A pizza 4 queijos estava divina e o atendimento foi excepcional. Já virou minha pizzaria favorita!</p>
+                        </div>
+                        <div class="review-actions">
+                            <button class="view-full-review" data-review-id="3">
+                                <i class="fas fa-eye"></i>
+                                Ver completa
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="review-card">
+                        <div class="review-header">
+                            <div class="customer-info">
+                                <div class="customer-avatar">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div class="customer-details">
+                                    <h4>Carlos Oliveira</h4>
+                                    <span class="review-date">12/09/2025</span>
+                                </div>
+                            </div>
+                            <div class="rating-stars">
+                                <i class="fas fa-star active"></i>
+                                <i class="fas fa-star active"></i>
+                                <i class="fas fa-star active"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                        </div>
+                        <div class="review-content">
+                            <p class="review-text">Boa pizza, mas demorou um pouco mais que o esperado para chegar. O sabor compensou a espera.</p>
+                        </div>
+                        <div class="review-actions">
+                            <button class="view-full-review" data-review-id="4">
+                                <i class="fas fa-eye"></i>
+                                Ver completa
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="review-card">
+                        <div class="review-header">
+                            <div class="customer-info">
+                                <div class="customer-avatar">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div class="customer-details">
+                                    <h4>Fernanda Lima</h4>
+                                    <span class="review-date">11/09/2025</span>
+                                </div>
+                            </div>
+                            <div class="rating-stars">
+                                <i class="fas fa-star active"></i>
+                                <i class="fas fa-star active"></i>
+                                <i class="fas fa-star active"></i>
+                                <i class="fas fa-star active"></i>
+                                <i class="fas fa-star active"></i>
+                            </div>
+                        </div>
+                        <div class="review-content">
+                            <p class="review-text">Incrível! A melhor pizza de calabresa que já comi. Ingredientes de qualidade e entrega super rápida. Recomendo muito!</p>
+                        </div>
+                        <div class="review-actions">
+                            <button class="view-full-review" data-review-id="5">
+                                <i class="fas fa-eye"></i>
+                                Ver completa
+                            </button>
+                        </div>
                     </div>
                 </div>
             </section>
