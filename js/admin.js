@@ -3778,7 +3778,7 @@ document.addEventListener('DOMContentLoaded', () => {
 class OrderNotificationSystem {
     constructor() {
         this.container = document.getElementById('orderNotificationContainer');
-        this.notificationSound = document.getElementById('notificationSound');
+        this.notificationSound = null; // Will be initialized in setupSoundSettings
         this.notifications = [];
         this.isPermissionGranted = false;
         this.soundEnabled = true;
@@ -3807,9 +3807,26 @@ class OrderNotificationSystem {
         const settings = JSON.parse(localStorage.getItem('pizzariaConfig')) || {};
         this.soundEnabled = settings.soundNotifications !== false;
         
-        if (this.notificationSound) {
-            this.notificationSound.volume = 0.7;
+        // Load saved sound from localStorage
+        try {
+            const soundSettings = localStorage.getItem('soundSettings');
+            if (soundSettings) {
+                const parsed = JSON.parse(soundSettings);
+                if (parsed.sound) {
+                    this.notificationSound = new Audio(parsed.sound);
+                    this.notificationSound.volume = 0.8;
+                    console.log('Loaded saved notification sound:', parsed.sound);
+                    return;
+                }
+            }
+        } catch (error) {
+            console.log('Error loading saved sound settings:', error);
         }
+        
+        // Fallback to default sound
+        this.notificationSound = new Audio('sounds/notificações1.mp3');
+        this.notificationSound.volume = 0.8;
+        console.log('Using default notification sound: sounds/notificações1.mp3');
     }
 
     generateMockOrder() {
@@ -3856,16 +3873,35 @@ class OrderNotificationSystem {
     }
 
     async playNotificationSound() {
-        if (!this.soundEnabled || !this.notificationSound) return;
+        if (!this.soundEnabled || !this.notificationSound) {
+            console.log('Sound disabled or no notification sound configured');
+            return;
+        }
 
         try {
+            console.log('Playing notification sound:', this.notificationSound.src);
+            
             // Reset audio to start
             this.notificationSound.currentTime = 0;
             
             // Play sound
             await this.notificationSound.play();
+            console.log('Notification sound played successfully');
         } catch (error) {
-            console.log('Error playing notification sound:', error);
+            console.error('Error playing notification sound:', error);
+            
+            // Try fallback sound
+            if (this.notificationSound.src !== 'sounds/notificações1.mp3') {
+                console.log('Attempting fallback to notificações1.mp3');
+                try {
+                    const fallbackAudio = new Audio('sounds/notificações1.mp3');
+                    fallbackAudio.currentTime = 0;
+                    await fallbackAudio.play();
+                    console.log('Fallback sound played successfully');
+                } catch (fallbackError) {
+                    console.error('Fallback sound also failed:', fallbackError);
+                }
+            }
         }
     }
 
@@ -4050,12 +4086,48 @@ class OrderNotificationSystem {
             this.soundEnabled ? 'success' : 'info'
         );
     }
+
+    setSoundEnabled(enabled) {
+        this.soundEnabled = enabled;
+        console.log('Notification sound', enabled ? 'enabled' : 'disabled');
+    }
+
+    updateSound(soundPath) {
+        console.log('Updating sound to:', soundPath);
+        
+        // Update the notification sound
+        if (this.notificationSound) {
+            this.notificationSound.src = soundPath;
+        } else {
+            this.notificationSound = new Audio(soundPath);
+        }
+        
+        // Add error handling to the audio object
+        this.notificationSound.addEventListener('error', (e) => {
+            console.error('Error loading notification sound:', soundPath, e);
+        });
+        
+        this.notificationSound.addEventListener('canplay', () => {
+            console.log('Notification sound loaded successfully:', soundPath);
+        });
+        
+        console.log('Notification sound updated to:', soundPath);
+    }
 }
 
 // Initialize notification system
 let orderNotificationSystem;
+let soundSettings;
+
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize notification system first
     orderNotificationSystem = new OrderNotificationSystem();
+    window.orderNotificationSystem = orderNotificationSystem; // Make it globally accessible
+    
+    // Initialize sound settings after notification system
+    setTimeout(() => {
+        soundSettings = new SoundSettings();
+    }, 100);
     
     // Add global event listener for notification close buttons
     document.addEventListener('click', (e) => {
@@ -4073,3 +4145,240 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+/* ============================================
+   SOUND SETTINGS SYSTEM - MODERN & INTERACTIVE
+   ============================================ */
+
+class SoundSettings {
+    constructor() {
+        this.currentSound = 'sounds/notificações1.mp3';
+        this.previewAudio = null;
+        this.soundEnabled = true;
+        this.soundCheckbox = document.getElementById('soundNotifications');
+        this.init();
+    }
+
+    init() {
+        this.setupSoundCheckbox();
+        this.setupSoundOptions();
+        this.loadSavedSettings();
+        this.updateUIState();
+    }
+
+    setupSoundCheckbox() {
+        if (this.soundCheckbox) {
+            this.soundCheckbox.addEventListener('change', () => {
+                this.soundEnabled = this.soundCheckbox.checked;
+                this.saveSettings();
+                this.updateUIState();
+                
+                // Update notification system
+                if (window.orderNotificationSystem) {
+                    window.orderNotificationSystem.setSoundEnabled(this.soundEnabled);
+                }
+                
+                console.log('Sound notifications:', this.soundEnabled ? 'enabled' : 'disabled');
+            });
+        }
+    }
+
+    updateUIState() {
+        const soundContainer = document.querySelector('.sound-selection-container');
+        const soundOptions = document.querySelectorAll('.sound-option');
+        const previewButtons = document.querySelectorAll('.sound-preview-btn');
+        
+        if (this.soundEnabled) {
+            // Enable sound selection
+            if (soundContainer) soundContainer.classList.remove('disabled');
+            soundOptions.forEach(option => {
+                option.classList.remove('disabled');
+                option.style.pointerEvents = 'auto';
+            });
+            previewButtons.forEach(btn => {
+                btn.disabled = false;
+                btn.style.pointerEvents = 'auto';
+            });
+        } else {
+            // Disable sound selection
+            if (soundContainer) soundContainer.classList.add('disabled');
+            soundOptions.forEach(option => {
+                option.classList.add('disabled');
+                option.style.pointerEvents = 'none';
+            });
+            previewButtons.forEach(btn => {
+                btn.disabled = true;
+                btn.style.pointerEvents = 'none';
+            });
+            
+            // Stop any playing preview
+            if (this.previewAudio) {
+                this.previewAudio.pause();
+                this.previewAudio = null;
+            }
+            
+            // Reset button states
+            previewButtons.forEach(btn => {
+                btn.classList.remove('playing');
+                btn.innerHTML = '<i class="fas fa-play"></i>';
+            });
+        }
+    }
+
+    setupSoundOptions() {
+        const soundOptions = document.querySelectorAll('.sound-option');
+        const previewButtons = document.querySelectorAll('.sound-preview-btn');
+
+        // Sound option selection
+        soundOptions.forEach(option => {
+            option.addEventListener('click', (e) => {
+                // Don't allow selection if sounds are disabled
+                if (!this.soundEnabled) return;
+                
+                // Don't trigger if clicking preview button
+                if (e.target.closest('.sound-preview-btn')) return;
+                
+                // Remove active class from all options
+                soundOptions.forEach(opt => opt.classList.remove('active'));
+                
+                // Add active class to clicked option
+                option.classList.add('active');
+                
+                // Update current sound
+                this.currentSound = option.dataset.sound;
+                this.saveSettings();
+                
+                // Update notification system sound
+                if (window.orderNotificationSystem) {
+                    window.orderNotificationSystem.updateSound(this.currentSound);
+                    console.log('Updated notification system sound to:', this.currentSound);
+                }
+            });
+        });
+
+        // Preview buttons
+        previewButtons.forEach((button, index) => {
+            button.addEventListener('click', (e) => {
+                // Don't allow preview if sounds are disabled
+                if (!this.soundEnabled) return;
+                
+                e.stopPropagation();
+                const soundOption = button.closest('.sound-option');
+                const soundPath = soundOption.dataset.sound;
+                this.previewSound(soundPath, button);
+            });
+        });
+    }
+
+    previewSound(soundPath, button) {
+        console.log('Trying to preview sound:', soundPath);
+        
+        // Stop any currently playing preview
+        if (this.previewAudio) {
+            this.previewAudio.pause();
+            this.previewAudio.currentTime = 0;
+            this.previewAudio = null;
+        }
+
+        // Remove playing class from all buttons
+        document.querySelectorAll('.sound-preview-btn').forEach(btn => {
+            btn.classList.remove('playing');
+            btn.innerHTML = '<i class="fas fa-play"></i>';
+        });
+
+        // Create new audio instance
+        this.previewAudio = new Audio();
+        this.previewAudio.volume = 0.7; // Fixed volume at 70%
+        this.previewAudio.preload = 'auto';
+
+        // Add playing state
+        button.classList.add('playing');
+        button.innerHTML = '<i class="fas fa-pause"></i>';
+
+        // Set up event listeners before setting src
+        this.previewAudio.addEventListener('loadstart', () => {
+            console.log('Audio loading started for:', soundPath);
+        });
+
+        this.previewAudio.addEventListener('canplay', () => {
+            console.log('Audio can play:', soundPath);
+        });
+
+        this.previewAudio.addEventListener('ended', () => {
+            console.log('Audio ended:', soundPath);
+            this.resetButton(button);
+        });
+
+        this.previewAudio.addEventListener('error', (e) => {
+            console.log('Audio error for', soundPath, ':', e);
+            this.resetButton(button);
+            // Try to fallback to a working sound
+            if (soundPath !== 'sounds/notificações1.mp3') {
+                console.log('Falling back to notificações1.mp3');
+                this.previewSound('sounds/notificações1.mp3', button);
+            }
+        });
+
+        // Set source and play
+        this.previewAudio.src = soundPath;
+        this.previewAudio.play().catch(error => {
+            console.log('Error playing preview sound:', error);
+            this.resetButton(button);
+        });
+    }
+
+    resetButton(button) {
+        button.classList.remove('playing');
+        button.innerHTML = '<i class="fas fa-play"></i>';
+    }
+
+    saveSettings() {
+        const settings = {
+            sound: this.currentSound,
+            enabled: this.soundEnabled
+        };
+        localStorage.setItem('soundSettings', JSON.stringify(settings));
+        console.log('Sound settings saved:', settings);
+    }
+
+    loadSavedSettings() {
+        try {
+            const saved = localStorage.getItem('soundSettings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                
+                // Set sound enabled state
+                if (typeof settings.enabled !== 'undefined') {
+                    this.soundEnabled = settings.enabled;
+                    if (this.soundCheckbox) {
+                        this.soundCheckbox.checked = this.soundEnabled;
+                    }
+                }
+                
+                // Set sound
+                if (settings.sound) {
+                    this.currentSound = settings.sound;
+                    const soundOption = document.querySelector(`[data-sound="${settings.sound}"]`);
+                    if (soundOption) {
+                        document.querySelectorAll('.sound-option').forEach(opt => opt.classList.remove('active'));
+                        soundOption.classList.add('active');
+                    }
+                    
+                    // Update notification system sound
+                    if (window.orderNotificationSystem) {
+                        window.orderNotificationSystem.updateSound(this.currentSound);
+                        window.orderNotificationSystem.setSoundEnabled(this.soundEnabled);
+                        console.log('Loaded and applied saved sound to notification system:', this.currentSound);
+                    }
+                }
+                
+                console.log('Loaded saved sound setting:', settings);
+            } else {
+                // If no saved settings, save the default
+                this.saveSettings();
+            }
+        } catch (error) {
+            console.log('Error loading sound settings:', error);
+        }
+    }
+}
