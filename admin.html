@@ -813,23 +813,51 @@
                                     </span>
                                 </label>
                                 <div class="switch-text">
-                                    <strong>Status da Loja</strong>
-                                    <small>
-                                        <span style="color: #28a745;">●</span> Verde = Aberto |
-                                        <span style="color: #dc3545;">●</span> Vermelho = Fechado
-                                    </small>
+                                    <strong>Fechar agora</strong>
+                                    <small>Use para fechar a loja imediatamente</small>
                                 </div>
                             </div>
 
                             <div class="form-grid">
                                 <div class="form-group">
-                                    <label for="closeReason">Motivo (opcional)</label>
-                                    <input type="text" id="closeReason" placeholder="Ex.: Manutenção no forno, equipe reduzida, feriado...">
+                                    <label for="closeReason">Motivo do fechamento</label>
+                                    <select id="closeReason">
+                                        <option value="">Selecione um motivo (opcional)</option>
+                                        <option value="manutencao">Manutenção do equipamento</option>
+                                        <option value="feriado">Feriado</option>
+                                        <option value="equipe_reduzida">Equipe reduzida</option>
+                                        <option value="falta_ingredientes">Falta de ingredientes</option>
+                                        <option value="problema_energia">Problema de energia</option>
+                                        <option value="evento_privado">Evento privado</option>
+                                        <option value="ferias">Férias</option>
+                                        <option value="emergencia">Emergência</option>
+                                        <option value="outro">Outro motivo</option>
+                                    </select>
                                 </div>
                                 <div class="form-group">
                                     <label for="reopenAt">Reabrir em (opcional)</label>
                                     <input type="datetime-local" id="reopenAt">
                                     <small>Deixe vazio para fechamento por tempo indeterminado</small>
+                                </div>
+                            </div>
+
+                            <div class="form-grid">
+                                <div class="form-group full">
+                                    <label>Notificar clientes sobre o fechamento:</label>
+                                    <div class="notification-options">
+                                        <div class="checkbox-group">
+                                            <input type="checkbox" id="notifyWhatsApp">
+                                            <label for="notifyWhatsApp">
+                                                <i class="fab fa-whatsapp"></i> Enviar mensagem via WhatsApp
+                                            </label>
+                                        </div>
+                                        <div class="checkbox-group">
+                                            <input type="checkbox" id="notifyEmail">
+                                            <label for="notifyEmail">
+                                                <i class="fas fa-envelope"></i> Enviar notificação por email
+                                            </label>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 

@@ -2439,7 +2439,71 @@ tbody tr:hover {
 
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(200px, 1fr)); gap: 1rem; }
 .form-grid .form-group.full { grid-column: 1 / -1; }
-.form-grid .form-group input { width: 100%; }
+.form-grid .form-group input,
+.form-grid .form-group select { width: 100%; }
+
+/* Notification options styling - Minimalista */
+.notification-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: transparent;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    transition: border-color 0.2s ease;
+}
+
+.checkbox-group:hover {
+    border-color: #ced4da;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: auto !important;
+    margin: 0;
+    transform: scale(1.1);
+}
+
+.checkbox-group label {
+    margin: 0;
+    font-weight: 400;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex: 1;
+    font-size: 0.9rem;
+}
+
+.checkbox-group label i {
+    font-size: 1rem;
+    opacity: 0.7;
+}
+
+.checkbox-group label .fab.fa-whatsapp {
+    color: #25d366;
+}
+
+.checkbox-group label .fas.fa-envelope {
+    color: #6c757d;
+}
+
+.checkbox-group input[type="checkbox"]:checked + label {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.checkbox-group input[type="checkbox"]:checked + label i {
+    opacity: 1;
+}
 
 .hours-grid { display: grid; grid-template-columns: 1fr; gap: .75rem; }
 .hours-row { display: grid; grid-template-columns: 200px 1fr 1fr; gap: .75rem; align-items: center; padding: .75rem 1rem; background: var(--light-color); border: 1px solid var(--border-color); border-radius: 10px; transition: background-color .2s ease, border-color .2s ease; }
@@ -3334,6 +3398,26 @@ tbody tr:hover {
 .instagram-section-preview.enabled .instagram-link-preview:hover .instagram-follow-preview {
     color: #666;
     transform: scale(1.02);
+}
+
+/* Responsive design for notification options */
+@media (max-width: 768px) {
+    .notification-options {
+        gap: 0.4rem;
+    }
+
+    .checkbox-group {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.85rem;
+    }
+
+    .checkbox-group label i {
+        font-size: 0.9rem;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .instagram-section-preview.enabled .instagram-link-preview:hover .instagram-handle-preview {

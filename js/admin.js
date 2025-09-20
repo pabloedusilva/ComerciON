@@ -2397,6 +2397,8 @@ const statusManager = {
         closedNow: false, // false = loja aberta (switch não checked), true = loja fechada (switch checked)
         reason: '',
         reopenAt: '', // ISO string
+        notifyWhatsApp: false,
+        notifyEmail: false,
         schedules: [] // [{ start: ISO, end: ISO, reason }]
     },
 
@@ -2423,6 +2425,8 @@ const statusManager = {
         const closeNowToggle = document.getElementById('closeNowToggle');
         const closeReason = document.getElementById('closeReason');
         const reopenAt = document.getElementById('reopenAt');
+        const notifyWhatsApp = document.getElementById('notifyWhatsApp');
+        const notifyEmail = document.getElementById('notifyEmail');
         const saveBtn = document.getElementById('saveStatusBtn');
         const clearBtn = document.getElementById('clearStatusBtn');
     const saveHoursBtn = document.getElementById('saveHoursBtn');
@@ -2435,18 +2439,32 @@ const statusManager = {
             console.log('Switch alterado:', { checked: closeNowToggle.checked, closedNow: this.state.closedNow });
             this.renderPill(); // Atualiza pill imediatamente
         });
+        
         saveBtn?.addEventListener('click', () => {
             this.state.reason = closeReason?.value?.trim() || '';
             this.state.reopenAt = reopenAt?.value ? new Date(reopenAt.value).toISOString() : '';
+            this.state.notifyWhatsApp = notifyWhatsApp?.checked || false;
+            this.state.notifyEmail = notifyEmail?.checked || false;
             this.save();
             this.render();
             this.updateSidebarPill(); // Atualiza sidebar pill apenas ao salvar
-            showNotification('Status de funcionamento atualizado!', 'success');
+            
+            // Mostrar notificação com informações sobre as notificações
+            let message = 'Status de funcionamento atualizado!';
+            if (this.state.notifyWhatsApp || this.state.notifyEmail) {
+                const notifications = [];
+                if (this.state.notifyWhatsApp) notifications.push('WhatsApp');
+                if (this.state.notifyEmail) notifications.push('Email');
+                message += ` Notificações enviadas via: ${notifications.join(' e ')}.`;
+            }
+            showNotification(message, 'success');
         });
         clearBtn?.addEventListener('click', () => {
             this.state.closedNow = false;
             this.state.reason = '';
             this.state.reopenAt = '';
+            this.state.notifyWhatsApp = false;
+            this.state.notifyEmail = false;
             this.save();
             this.render();
             this.updateSidebarPill(); // Atualiza sidebar pill
@@ -2505,6 +2523,8 @@ const statusManager = {
         const closeNowToggle = document.getElementById('closeNowToggle');
         const closeReason = document.getElementById('closeReason');
         const reopenAt = document.getElementById('reopenAt');
+        const notifyWhatsApp = document.getElementById('notifyWhatsApp');
+        const notifyEmail = document.getElementById('notifyEmail');
         
         // Switch checked = loja fechada, unchecked = loja aberta
         if (closeNowToggle) {
@@ -2513,6 +2533,8 @@ const statusManager = {
         }
         if (closeReason) closeReason.value = this.state.reason || '';
         if (reopenAt) reopenAt.value = this.state.reopenAt ? this.toLocalDatetime(this.state.reopenAt) : '';
+        if (notifyWhatsApp) notifyWhatsApp.checked = !!this.state.notifyWhatsApp;
+        if (notifyEmail) notifyEmail.checked = !!this.state.notifyEmail;
         
         this.renderPill();
         this.renderHours();
