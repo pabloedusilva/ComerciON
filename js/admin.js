@@ -343,6 +343,9 @@ function setupEventListeners() {
     // Botões de ação
     document.getElementById('addProductBtn')?.addEventListener('click', () => openProductModal());
     document.getElementById('refreshOrdersBtn')?.addEventListener('click', () => loadMockData());
+    
+    // Fullscreen toggle for orders
+    setupOrdersFullscreen();
 
     // Filtros
     setupFilters();
@@ -358,6 +361,51 @@ function setupEventListeners() {
 
     // Formulários de configuração
     setupConfigForms();
+}
+
+// Configurar fullscreen para pedidos
+function setupOrdersFullscreen() {
+    const fullscreenBtn = document.getElementById('ordersFullscreenToggle');
+    if (!fullscreenBtn) return;
+
+    let isFullscreen = false;
+
+    function toggleFullscreen() {
+        isFullscreen = !isFullscreen;
+        const body = document.body;
+        const icon = fullscreenBtn.querySelector('i');
+
+        if (isFullscreen) {
+            body.classList.add('orders-fullscreen');
+            icon.className = 'fas fa-compress';
+            fullscreenBtn.title = 'Sair da tela cheia';
+        } else {
+            body.classList.remove('orders-fullscreen');
+            icon.className = 'fas fa-expand';
+            fullscreenBtn.title = 'Visualizar em tela cheia';
+        }
+    }
+
+    // Click handler
+    fullscreenBtn.addEventListener('click', toggleFullscreen);
+
+    // Escape key handler
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && isFullscreen) {
+            toggleFullscreen();
+        }
+    });
+
+    // Prevent page scroll when in fullscreen
+    document.addEventListener('keydown', (e) => {
+        if (isFullscreen && (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === ' ')) {
+            // Allow scrolling within the orders section only
+            const ordersSection = document.getElementById('pedidos-section');
+            if (ordersSection && !ordersSection.contains(e.target)) {
+                e.preventDefault();
+            }
+        }
+    });
 }
 
 // Configurar gestos móveis

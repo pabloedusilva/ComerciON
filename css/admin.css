@@ -996,6 +996,147 @@ body.sidebar-collapsed .main-content {
     transform: translateY(-1px);
 }
 
+/* Fullscreen Toggle Button */
+.fullscreen-toggle {
+    padding: 0.6rem 0.8rem;
+    border: none;
+    border-radius: 8px;
+    background: #f8f9fa;
+    color: #6c757d;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 40px;
+    font-size: 1rem;
+}
+
+.fullscreen-toggle:hover {
+    background: #e9ecef;
+    color: #495057;
+    transform: translateY(-1px);
+}
+
+.fullscreen-toggle:active {
+    transform: translateY(0);
+}
+
+.fullscreen-toggle i {
+    transition: transform 0.3s ease;
+}
+
+.fullscreen-toggle:hover i {
+    transform: scale(1.1);
+}
+
+/* Fullscreen Mode Styles */
+body.orders-fullscreen {
+    overflow: hidden;
+}
+
+body.orders-fullscreen .sidebar,
+body.orders-fullscreen .admin-header,
+body.orders-fullscreen .content-section:not(#pedidos-section) {
+    display: none !important;
+}
+
+body.orders-fullscreen .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+}
+
+body.orders-fullscreen #pedidos-section {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #f8f9fa;
+    padding: 2rem;
+    overflow-y: auto;
+    z-index: 1000;
+    display: block !important;
+}
+
+body.orders-fullscreen #pedidos-section .section-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #dee2e6;
+}
+
+body.orders-fullscreen #pedidos-section .section-header h2 {
+    font-size: 2rem;
+    color: #212529;
+}
+
+body.orders-fullscreen .fullscreen-toggle {
+    background: #dc3545;
+    color: white;
+}
+
+body.orders-fullscreen .fullscreen-toggle:hover {
+    background: #c82333;
+}
+
+/* Ensure notifications stay on top in all contexts */
+.notification-container {
+    z-index: 9999 !important;
+    position: fixed !important;
+}
+
+/* Enhanced fullscreen mode for better table viewing */
+body.orders-fullscreen #pedidos-section .orders-table {
+    margin-top: 1rem;
+}
+
+body.orders-fullscreen #pedidos-section .table-wrapper {
+    max-height: calc(100vh - 200px);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+body.orders-fullscreen #pedidos-section .filters-bar {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Responsive fullscreen adjustments */
+@media (max-width: 768px) {
+    body.orders-fullscreen #pedidos-section {
+        padding: 1rem;
+    }
+    
+    body.orders-fullscreen #pedidos-section .section-header h2 {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    body.orders-fullscreen #pedidos-section {
+        padding: 0.75rem;
+    }
+    
+    body.orders-fullscreen #pedidos-section .section-header h2 {
+        font-size: 1.25rem;
+    }
+    
+    body.orders-fullscreen .header-actions {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    body.orders-fullscreen .fullscreen-toggle {
+        min-width: 36px;
+        height: 36px;
+        font-size: 0.9rem;
+    }
+}
+
 /* Filters Bar */
 .filters-bar {
     display: flex;
