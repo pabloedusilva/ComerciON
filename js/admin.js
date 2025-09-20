@@ -133,6 +133,9 @@ function initializeApp() {
     reviewsManager.init();
     reviewsManager.updateSummary();
     
+    // Inicializar modal de confirmação
+    confirmModal.init();
+    
     // Inicializar statusManager globalmente para garantir que esteja disponível
     try {
         statusManager.load();
@@ -1313,9 +1316,6 @@ function renderOrdersTable() {
                     <button class="action-btn edit" onclick="viewOrder('${order.id}')">
                         <i class="fas fa-eye"></i>
                     </button>
-                    <button class="action-btn edit" onclick="updateOrderStatus('${order.id}')">
-                        <i class="fas fa-edit"></i>
-                    </button>
                 </div>
             </td>
         `;
@@ -1450,9 +1450,6 @@ function renderFilteredOrders(filteredOrders) {
                 <div class="action-buttons">
                     <button class="action-btn edit" onclick="viewOrder('${order.id}')">
                         <i class="fas fa-eye"></i>
-                    </button>
-                    <button class="action-btn edit" onclick="updateOrderStatus('${order.id}')">
-                        <i class="fas fa-edit"></i>
                     </button>
                 </div>
             </td>
@@ -1686,8 +1683,15 @@ function editProduct(id) {
     openProductModal(id);
 }
 
-function deleteProduct(id) {
-    if (confirm('Tem certeza que deseja excluir este produto?')) {
+async function deleteProduct(id) {
+    const confirmed = await customConfirm(
+        'Tem certeza que deseja excluir este produto?',
+        'Excluir Produto',
+        'Excluir',
+        'Cancelar'
+    );
+    
+    if (confirmed) {
         products = products.filter(p => p.id !== id);
         renderProductsTable();
         showNotification('Produto excluído com sucesso!', 'success');
@@ -1761,18 +1765,6 @@ function viewOrder(orderId) {
     modal.classList.add('show');
 }
 
-function updateOrderStatus(orderId) {
-    const order = orders.find(o => o.id === orderId);
-    if (!order) return;
-
-    const newStatus = prompt('Novo status (pending/preparing/delivery/delivered/cancelled):', order.status);
-    if (newStatus && ['pending', 'preparing', 'delivery', 'delivered', 'cancelled'].includes(newStatus)) {
-        order.status = newStatus;
-        renderOrdersTable();
-        showNotification('Status do pedido atualizado!', 'success');
-    }
-}
-
 function updateOrderStatusFromModal(orderId) {
     const newStatus = document.getElementById('newStatus').value;
     const order = orders.find(o => o.id === orderId);
@@ -1841,8 +1833,15 @@ function editClient(id) {
     viewClient(id);
 }
 
-function deleteClient(id) {
-    if (confirm('Tem certeza que deseja excluir este cliente?')) {
+async function deleteClient(id) {
+    const confirmed = await customConfirm(
+        'Tem certeza que deseja excluir este cliente?',
+        'Excluir Cliente',
+        'Excluir',
+        'Cancelar'
+    );
+    
+    if (confirmed) {
         clients = clients.filter(c => c.id !== id);
         renderClientsTable();
         showNotification('Cliente excluído com sucesso!', 'success');
@@ -2330,13 +2329,20 @@ const layoutManager = {
         }
     },
 
-    removeSlide(index) {
+    async removeSlide(index) {
         if (this.currentLayout.carouselSlides.length <= 1) {
             showNotification('Deve haver pelo menos uma imagem no carousel!', 'error');
             return;
         }
 
-        if (confirm('Tem certeza que deseja remover esta imagem?')) {
+        const confirmed = await customConfirm(
+            'Tem certeza que deseja remover esta imagem?',
+            'Remover Imagem',
+            'Remover',
+            'Cancelar'
+        );
+        
+        if (confirmed) {
             this.currentLayout.carouselSlides.splice(index, 1);
             this.updateCarouselPreview();
             this.saveLayout();
@@ -2349,8 +2355,15 @@ const layoutManager = {
         showNotification('Carousel salvo com sucesso!', 'success');
     },
 
-    resetCarousel() {
-        if (confirm('Tem certeza que deseja restaurar o carousel para as imagens padrão?')) {
+    async resetCarousel() {
+        const confirmed = await customConfirm(
+            'Tem certeza que deseja restaurar o carousel para as imagens padrão?',
+            'Restaurar Carousel',
+            'Restaurar',
+            'Cancelar'
+        );
+        
+        if (confirmed) {
             this.currentLayout.carouselSlides = [
                 { image: 'images/banner1.jpg', caption: 'Clássicas irresistíveis' },
                 { image: 'images/banner2.jpg', caption: 'Promoções da semana' }
@@ -2485,8 +2498,15 @@ const statusManager = {
             this.save();
             showNotification('Horários de funcionamento salvos!', 'success');
         });
-        resetHoursBtn?.addEventListener('click', () => {
-            if (confirm('Restaurar horários padrão?')) {
+        resetHoursBtn?.addEventListener('click', async () => {
+            const confirmed = await customConfirm(
+                'Restaurar horários padrão?',
+                'Restaurar Horários',
+                'Restaurar',
+                'Cancelar'
+            );
+            
+            if (confirmed) {
                 this.state.hours = this.getDefaultHours();
                 this.save();
                 this.renderHours();
@@ -2780,8 +2800,15 @@ const instagramManager = {
         });
 
         // Botão reset
-        resetBtn?.addEventListener('click', () => {
-            if (confirm('Restaurar configurações padrão do Instagram?')) {
+        resetBtn?.addEventListener('click', async () => {
+            const confirmed = await customConfirm(
+                'Restaurar configurações padrão do Instagram?',
+                'Restaurar Instagram',
+                'Restaurar',
+                'Cancelar'
+            );
+            
+            if (confirmed) {
                 this.state = {
                     enabled: true,
                     handle: 'pizzaria_deliciosa',
@@ -3073,3 +3100,87 @@ const reviewsManager = {
         }
     }
 };
+
+// ========== CONFIRM MODAL SYSTEM ==========
+const confirmModal = {
+    modal: null,
+    currentResolve: null,
+    currentReject: null,
+
+    init() {
+        this.modal = document.getElementById('confirmModal');
+        if (!this.modal) return;
+
+        // Bind events
+        const cancelBtn = document.getElementById('confirmCancel');
+        const okBtn = document.getElementById('confirmOk');
+
+        cancelBtn?.addEventListener('click', () => this.hide(false));
+        okBtn?.addEventListener('click', () => this.hide(true));
+
+        // Close on backdrop click
+        this.modal.addEventListener('click', (e) => {
+            if (e.target === this.modal) {
+                this.hide(false);
+            }
+        });
+
+        // Close on ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.modal.classList.contains('show')) {
+                this.hide(false);
+            }
+        });
+    },
+
+    show(message, title = 'Confirmar ação', okText = 'Confirmar', cancelText = 'Cancelar') {
+        return new Promise((resolve, reject) => {
+            if (!this.modal) {
+                reject(new Error('Modal não encontrado'));
+                return;
+            }
+
+            this.currentResolve = resolve;
+            this.currentReject = reject;
+
+            // Update content
+            const titleEl = document.getElementById('confirmTitle');
+            const messageEl = document.getElementById('confirmMessage');
+            const okBtn = document.getElementById('confirmOk');
+            const cancelBtn = document.getElementById('confirmCancel');
+
+            if (titleEl) titleEl.textContent = title;
+            if (messageEl) messageEl.textContent = message;
+            if (okBtn) okBtn.innerHTML = `<i class="fas fa-check"></i> ${okText}`;
+            if (cancelBtn) cancelBtn.innerHTML = `<i class="fas fa-times"></i> ${cancelText}`;
+
+            // Show modal
+            this.modal.classList.add('show');
+            
+            // Focus on cancel button by default for safety
+            setTimeout(() => cancelBtn?.focus(), 100);
+        });
+    },
+
+    hide(result) {
+        if (!this.modal) return;
+
+        this.modal.classList.remove('show');
+        
+        if (this.currentResolve) {
+            this.currentResolve(result);
+            this.currentResolve = null;
+            this.currentReject = null;
+        }
+    }
+};
+
+// Custom confirm function to replace native confirm()
+async function customConfirm(message, title = 'Confirmar ação', okText = 'Confirmar', cancelText = 'Cancelar') {
+    try {
+        return await confirmModal.show(message, title, okText, cancelText);
+    } catch (error) {
+        console.error('Erro no modal de confirmação:', error);
+        return false;
+    }
+}
