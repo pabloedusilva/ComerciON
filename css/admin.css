@@ -2438,6 +2438,46 @@ tbody tr:hover {
     font-size: 1.1rem;
 }
 
+.slide-editor .form-group {
+    margin-bottom: 1rem;
+}
+
+.slide-editor .form-group:last-child {
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: row !important;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: flex-start;
+}
+
+.slide-editor label {
+    display: block;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.slide-editor input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    background: var(--card-bg);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+    max-width: 100%;
+}
+
+.slide-editor input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(250, 180, 39, 0.1);
+}
+
 /* Layout Controls */
 .layout-controls {
     display: flex;
@@ -2468,6 +2508,13 @@ tbody tr:hover {
 }
 
 /* Responsive Layout */
+@media (max-width: 1024px) {
+    .slide-editor .form-group:last-child {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+}
+
 @media (max-width: 768px) {
     .layout-grid {
         grid-template-columns: 1fr;
@@ -2492,6 +2539,31 @@ tbody tr:hover {
     .carousel-controls button {
         width: 100%;
         justify-content: center;
+    }
+    
+    /* Slide Editor mantém botões lado a lado como os demais */
+    .slide-editor .form-group:last-child {
+        flex-direction: row !important;
+        gap: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .layout-card {
+        margin: 0 -0.5rem;
+    }
+    
+    .layout-card-content {
+        padding: 1rem;
+    }
+    
+    .slide-editor {
+        padding: 1rem;
+    }
+    
+    .slide-editor button {
+        padding: 0.6rem 0.8rem;
+        font-size: 0.85rem;
     }
 }
 
