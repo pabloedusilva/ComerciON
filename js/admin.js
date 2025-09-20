@@ -3315,6 +3315,7 @@ class DeliveryManager {
         await this.loadStates();
         this.renderDeliveryAreas();
         this.updateDeliveryCount();
+        this.renderDeliveryStats();
     }
 
     bindEvents() {
@@ -3506,6 +3507,7 @@ class DeliveryManager {
         this.saveDeliveryAreas();
         this.renderDeliveryAreas();
         this.updateDeliveryCount();
+        this.renderDeliveryStats();
         e.target.reset();
         
         // Reset selects
@@ -3532,6 +3534,7 @@ class DeliveryManager {
         this.saveDeliveryAreas();
         this.renderDeliveryAreas();
         this.updateDeliveryCount();
+        this.renderDeliveryStats();
         
         showNotification('Área de entrega removida com sucesso!', 'success');
     }
@@ -3638,6 +3641,118 @@ class DeliveryManager {
             area.stateName.toLowerCase() === stateName.toLowerCase()
         );
         return area ? area.fee : null;
+    }
+
+    // Generate mock delivery statistics
+    generateMockStats() {
+        if (this.deliveryAreas.length === 0) return null;
+
+        // Generate random stats for each configured city
+        const cityStats = this.deliveryAreas.map(area => {
+            const deliveries = Math.floor(Math.random() * 50) + 10; // 10-60 deliveries
+            const avgTicket = Math.random() * 30 + 35; // R$ 35-65
+            const revenue = deliveries * avgTicket;
+
+            return {
+                ...area,
+                deliveries,
+                avgTicket,
+                revenue
+            };
+        });
+
+        // Sort by delivery count
+        cityStats.sort((a, b) => b.deliveries - a.deliveries);
+
+        const totalDeliveries = cityStats.reduce((sum, city) => sum + city.deliveries, 0);
+        const totalRevenue = cityStats.reduce((sum, city) => sum + city.revenue, 0);
+        const avgTicket = totalRevenue / totalDeliveries;
+
+        return {
+            totalDeliveries,
+            avgTicket,
+            citiesCount: this.deliveryAreas.length,
+            topCities: cityStats.slice(0, 5) // Top 5 cities
+        };
+    }
+
+    renderDeliveryStats() {
+        const stats = this.generateMockStats();
+        
+        if (!stats) {
+            this.renderEmptyStats();
+            return;
+        }
+
+        // Update overview stats
+        const totalDeliveriesEl = document.getElementById('totalDeliveries');
+        const avgTicketEl = document.getElementById('avgDeliveryValue');
+        const citiesCountEl = document.getElementById('topCitiesCount');
+
+        if (totalDeliveriesEl) totalDeliveriesEl.textContent = stats.totalDeliveries;
+        if (avgTicketEl) avgTicketEl.textContent = `R$ ${stats.avgTicket.toFixed(2)}`;
+        if (citiesCountEl) citiesCountEl.textContent = stats.citiesCount;
+
+        // Render top cities
+        this.renderTopCities(stats.topCities);
+    }
+
+    renderTopCities(topCities) {
+        const container = document.getElementById('topCitiesList');
+        if (!container) return;
+
+        if (topCities.length === 0) {
+            container.innerHTML = `
+                <div class="stats-empty">
+                    <i class="fas fa-chart-bar"></i>
+                    <h4>Nenhum dado disponível</h4>
+                    <p>Configure áreas de entrega para ver as estatísticas</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = topCities.map((city, index) => {
+            const rankClass = index === 0 ? 'top-1' : index === 1 ? 'top-2' : index === 2 ? 'top-3' : '';
+            
+            return `
+                <div class="city-rank-item">
+                    <div class="city-rank-info">
+                        <div class="rank-number ${rankClass}">${index + 1}</div>
+                        <div class="city-info">
+                            <div class="city-name">${city.cityName}</div>
+                            <div class="city-state">${city.stateName} - ${city.stateUf}</div>
+                        </div>
+                    </div>
+                    <div class="city-stats">
+                        <div class="delivery-count">${city.deliveries} entregas</div>
+                        <div class="revenue-total">R$ ${city.revenue.toFixed(2)} em vendas</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    renderEmptyStats() {
+        const container = document.getElementById('topCitiesList');
+        if (!container) return;
+
+        // Update overview with zeros
+        const totalDeliveriesEl = document.getElementById('totalDeliveries');
+        const avgTicketEl = document.getElementById('avgDeliveryValue');
+        const citiesCountEl = document.getElementById('topCitiesCount');
+
+        if (totalDeliveriesEl) totalDeliveriesEl.textContent = '0';
+        if (avgTicketEl) avgTicketEl.textContent = 'R$ 0,00';
+        if (citiesCountEl) citiesCountEl.textContent = '0';
+
+        container.innerHTML = `
+            <div class="stats-empty">
+                <i class="fas fa-chart-bar"></i>
+                <h4>Nenhuma estatística disponível</h4>
+                <p>Configure áreas de entrega para visualizar dados de vendas e entregas</p>
+            </div>
+        `;
     }
 }
 
