@@ -16,6 +16,41 @@ body {
     min-height: 100vh
 }
 
+/* Simple Footer Styles (for login and index pages) */
+footer:not(.modern-footer) {
+    display: block;
+    height: 80px;
+    font-size: 0.7rem;
+    background: transparent;
+    text-align: center;
+    line-height: 80px;
+    font-weight: 500;
+    color: #ddd;
+}
+
+footer:not(.modern-footer) a {
+    position: relative;
+    text-decoration: none;
+    color: #ccc;
+    padding-bottom: 2px;
+}
+
+footer:not(.modern-footer) a::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0%;
+    height: 1px;
+    background: #cfcfcf;
+    transition: 0.3s ease-out;
+}
+
+footer:not(.modern-footer) a:hover::after {
+    left: 0%;
+    width: 100%;
+}
+
 .loader-content {
     position: fixed;
     left: 0;
