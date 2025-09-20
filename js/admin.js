@@ -3672,7 +3672,7 @@ class DeliveryManager {
             totalDeliveries,
             avgTicket,
             citiesCount: this.deliveryAreas.length,
-            topCities: cityStats.slice(0, 5) // Top 5 cities
+            topCities: cityStats.slice(0, 3) // Top 3 cities
         };
     }
 
