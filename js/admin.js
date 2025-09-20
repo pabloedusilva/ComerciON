@@ -3889,7 +3889,7 @@ class OrderNotificationSystem {
                     <h4>Novo Pedido Recebido!</h4>
                     <span>Acabou de chegar</span>
                 </div>
-                <button class="notification-close" onclick="orderNotificationSystem.removeNotification('${notification.id}')">
+                <button class="notification-close" data-notification-id="${notification.id}">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -3921,6 +3921,17 @@ class OrderNotificationSystem {
         `;
 
         this.container.appendChild(notification);
+        
+        // Add event listener for close button with better error handling
+        const closeButton = notification.querySelector('.notification-close');
+        if (closeButton) {
+            closeButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.removeNotification(notification.id);
+            });
+        }
+        
         this.notifications.push({
             id: notification.id,
             element: notification,
@@ -3974,13 +3985,25 @@ class OrderNotificationSystem {
     }
 
     removeNotification(notificationId) {
+        console.log('Trying to remove notification:', notificationId);
+        
         const notification = document.getElementById(notificationId);
         if (notification) {
+            console.log('Notification found, removing...');
+            
+            // Add hide class for animation
             notification.classList.add('hide');
+            
+            // Remove from DOM and array after animation
             setTimeout(() => {
-                notification.remove();
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
                 this.notifications = this.notifications.filter(n => n.id !== notificationId);
+                console.log('Notification removed successfully');
             }, 400);
+        } else {
+            console.log('Notification not found:', notificationId);
         }
     }
 
@@ -4033,4 +4056,20 @@ class OrderNotificationSystem {
 let orderNotificationSystem;
 document.addEventListener('DOMContentLoaded', () => {
     orderNotificationSystem = new OrderNotificationSystem();
+    
+    // Add global event listener for notification close buttons
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('.notification-close')) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const closeBtn = e.target.closest('.notification-close');
+            const notificationId = closeBtn.getAttribute('data-notification-id');
+            
+            if (notificationId && orderNotificationSystem) {
+                console.log('Global close button clicked for:', notificationId);
+                orderNotificationSystem.removeNotification(notificationId);
+            }
+        }
+    });
 });
