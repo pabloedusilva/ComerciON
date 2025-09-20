@@ -786,6 +786,13 @@ function showSection(sectionName) {
         targetSection.classList.add('active');
         currentSection = sectionName;
         
+        // Atualizar sidebar - adicionar classe active ao link correto
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        const targetNavLink = document.querySelector(`.nav-link[data-section="${sectionName}"]`);
+        if (targetNavLink) {
+            targetNavLink.classList.add('active');
+        }
+        
         // Atualizar título da página
         const pageTitle = document.getElementById('pageTitle');
         if (pageTitle) {
@@ -3978,7 +3985,7 @@ class OrderNotificationSystem {
     }
 
     viewOrder(orderId) {
-        // Navigate to orders section and highlight the order
+        // Navigate to orders section
         showSection('pedidos');
         showNotification(`Visualizando pedido ${orderId}`, 'info');
     }
