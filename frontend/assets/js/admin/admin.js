@@ -4415,11 +4415,7 @@ class OrderNotificationSystem {
             icon: '../../assets/images/logo_pizza.png',
             badge: '../../assets/images/logo_pizza.png',
             tag: 'new-order',
-            requireInteraction: true,
-            actions: [
-                { action: 'view', title: 'Ver Pedido' },
-                { action: 'accept', title: 'Aceitar' }
-            ]
+            requireInteraction: true
         });
 
         notification.onclick = () => {
