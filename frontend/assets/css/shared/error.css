@@ -1,0 +1,35 @@
+/* Minimal, clean, modern 404 styles – consistent with brand in style.css */
+.notfound { min-height: calc(100vh - 75px - 80px); display: flex; align-items: center; justify-content: center; padding: 24px 16px; background: #fafafa; }
+
+.notfound-container {
+  width: 100%;
+  max-width: 880px;
+  padding: 0 10px;
+}
+
+.notfound-card { background: #fff; border: 1px solid rgba(0,0,0,0.06); border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.06); padding: 28px 22px; text-align: center; }
+
+.notfound-code {
+  font-size: 56px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #333;
+  margin: 0 0 4px;
+}
+
+.notfound-title { font-size: 18px; font-weight: 700; color: #2d2d2d; margin: 0 0 6px; }
+
+.notfound-subtitle { font-size: 14px; color: #777; margin: 0 auto 14px; max-width: 520px; }
+
+.notfound-actions { display: inline-flex; gap: 10px; margin-top: 8px; }
+
+.nf-btn { display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; padding: 10px 14px; font-size: 14px; font-weight: 600; text-decoration: none; transition: all .2s ease; }
+
+.nf-btn-primary { background: #fab427; color: #fff; }
+.nf-btn-primary:hover { background: #e0a225; transform: translateY(-1px); }
+
+.notfound-links { margin-top: 8px; }
+.notfound-links .link-muted { font-size: 13px; }
+
+@media (max-width: 560px){ .notfound-card { padding: 24px 18px; border-radius: 14px; } .notfound-code { font-size: 44px; } .notfound-title { font-size: 16px; } }

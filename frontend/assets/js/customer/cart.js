@@ -5,9 +5,13 @@ const saveCart = () => {
   localStorage.setItem("pizza_cart", JSON.stringify(cart));
 };
 
+// Mobile: abrir carrinho ao clicar no ícone (no menu.html isso abre imediatamente)
 document.querySelector(".menu-openner").addEventListener("click", () => {
-  if (cart.length > 0) {
-    document.querySelector("aside").style.left = 0;
+  // Abrir carrinho mesmo sem itens; o estado vazio é tratado na UI
+  const aside = document.querySelector("aside");
+  if (aside) {
+    aside.style.left = 0;
+    aside.classList.add("show");
   }
 });
 
@@ -19,6 +23,9 @@ function updateCart() {
   document.querySelector(".menu-openner span").innerHTML = cart.length;
 
   if (cart.length > 0) {
+    // Mostrar totais quando houver itens
+    const details = document.querySelector('.cart--details');
+    if (details) details.style.display = '';
     document.querySelector("aside").classList.add("show");
     document.querySelector(".cart").innerHTML = ""; //Limpar carrinho
 
@@ -112,11 +119,56 @@ function updateCart() {
       currency: "BRL",
     })}`;
   } else {
-    localStorage.clear();
-    document.querySelector("aside").classList.remove("show"); //Closet cart
-    document.querySelector("aside").style.left = "100vw";
+    // Em vez de fechar o carrinho, renderizamos um estado vazio minimalista
+    const cartEl = document.querySelector('.cart');
+    if (cartEl) {
+      cartEl.innerHTML = '';
+      cartEl.insertAdjacentHTML('beforeend', `
+        <div class="cart-empty">
+          <div class="cart-empty-icon"><i class="fa-regular fa-face-frown"></i></div>
+          <h2 class="cart-empty-title">Seu carrinho está vazio</h2>
+          <p class="cart-empty-sub">Adicione pizzas ou bebidas para começar</p>
+          <a href="menu.html" class="cart-empty-cta">Ver Cardápio</a>
+        </div>
+      `);
+    }
+    // Ocultar totais e botão finalizar no estado vazio
+    const details = document.querySelector('.cart--details');
+    if (details) details.style.display = 'none';
+    // Zera os totais exibidos
+    const zero = (0).toLocaleString("pt-br", { style: "currency", currency: "BRL" });
+    document.querySelector(".pizzasValor span:last-child").textContent = zero;
+    document.querySelector(".entrega span:last-child").textContent = zero;
+    document.querySelector(".subtotal span:last-child").textContent = zero;
+    document.querySelector(".desconto span:last-child").textContent = zero;
+    document.querySelector(".total span:last-child").textContent = zero;
+    // Mantemos o aside aberto para mostrar o estado vazio
+    const aside = document.querySelector('aside');
+    if (aside) {
+      aside.classList.add('show');
+      aside.style.left = 0;
+    }
   }
 }
+
+// Auto-abertura do carrinho quando viemos de outra página mobile
+document.addEventListener('DOMContentLoaded', function(){
+  try {
+    const shouldOpen = localStorage.getItem('pizzaria_open_cart_on_load') === '1';
+    if (shouldOpen) {
+      const aside = document.querySelector('aside');
+      if (aside) {
+        aside.style.left = 0;
+        aside.classList.add('show');
+      }
+      // Renderizar estado atual (vazio ou com itens) imediatamente
+      try { updateCart(); } catch(_) {}
+    }
+  } finally {
+    // limpar a flag independente do resultado
+    try { localStorage.removeItem('pizzaria_open_cart_on_load'); } catch(_) {}
+  }
+});
 
 // Controla a sequência de modais: sucesso -> avaliação
 let ratingState = {
@@ -249,7 +301,7 @@ function initRatingInteractionsOnce() {
 
 document.querySelector(".cart--finalizar").addEventListener("click", () => {
   cart = [];
-  localStorage.clear();
+  localStorage.setItem("pizza_cart", JSON.stringify(cart));
   updateCart();
   document.querySelector(".fa-cart-shopping").classList.remove("pulse");
   document.querySelector(".loader-content").classList.add("display");

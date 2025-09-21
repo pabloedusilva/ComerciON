@@ -304,8 +304,11 @@ document.querySelector(".cart--finalizar").addEventListener("click", () => {
 
 //## MOBILE EVENTS
 document.querySelector(".menu-openner").addEventListener("click", () => {
-  if (cart.length > 0) {
-    document.querySelector("aside").classList.add("show");
+  // Abrir carrinho mesmo vazio (UX mobile): o conteúdo vazio será renderizado em updateCart
+  const aside = document.querySelector("aside");
+  if (aside) {
+    aside.classList.add("show");
+    aside.style.left = 0;
   }
 });
 document.querySelector(".menu-closer").addEventListener("click", () => {

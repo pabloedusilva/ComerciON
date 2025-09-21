@@ -743,15 +743,16 @@ footer a:hover::after {
 }
 
 .bg-image {
-    background: url('../images/background.jpg') center/cover no-repeat
+    /* from assets/css/customer to assets/images requires two levels up */
+    background: url('../../images/background.jpg') center/cover no-repeat
 }
 
 .bg-overlay {
     background: rgba(0, 0, 0, .55)
 }
 
-/* Index: esconder o botão do carrinho no header (somente na home) */
-.menuMobile-area { display: none !important; }
+/* Em telas pequenas, mostrar o ícone do carrinho normalmente como nas outras páginas */
+/* Mantemos o layout e alturas padrão via classes já existentes */
 
 /* Profile responsive styles for mobile - matching style.css */
 @media (max-width: 820px) {
