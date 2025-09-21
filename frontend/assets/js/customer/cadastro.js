@@ -261,7 +261,7 @@ function clearFieldError(field) {
 }
 
 // Submeter formulário
-function submitForm() {
+async function submitForm() {
     const submitButton = document.querySelector('.auth-submit');
     const originalText = submitButton.textContent;
     
@@ -269,31 +269,40 @@ function submitForm() {
     submitButton.classList.add('loading');
     submitButton.textContent = 'Criando conta...';
     submitButton.disabled = true;
-    
-    // Simular processo de cadastro
-    setTimeout(() => {
-        // Coletar dados do formulário
-        const formData = {
-            firstName: document.getElementById('firstName').value.trim(),
-            lastName: document.getElementById('lastName').value.trim(),
-            email: document.getElementById('email').value.trim(),
-            phone: document.getElementById('phone').value.trim(),
-            password: document.getElementById('password').value,
-            newsletter: document.getElementById('newsletter').checked
-        };
-        
-        // Aqui você enviaria os dados para o backend
-        console.log('Dados do cadastro:', formData);
-        
-        // Simular sucesso
+
+    // Coletar dados do formulário e mapear para o backend
+    const payload = {
+        nome: `${document.getElementById('firstName').value.trim()} ${document.getElementById('lastName').value.trim()}`.trim(),
+        email: document.getElementById('email').value.trim(),
+        senha: document.getElementById('password').value,
+        telefone: document.getElementById('phone').value.trim()
+    };
+
+    try {
+        const data = await API.apiFetch('/customer/register', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+        // Salvar token e user
+        API.setToken(data.token);
+        API.saveUser(data.cliente);
         showSuccessMessage();
-        
-        // Redirecionar após sucesso
         setTimeout(() => {
             window.location.href = 'login.html?registered=true';
-        }, 2000);
-        
-    }, 1500);
+        }, 1200);
+    } catch (err) {
+        const msg = (err && err.message) || 'Falha no cadastro';
+        // Mostrar erro próximo ao email por padrão
+        const emailError = document.getElementById('emailError');
+        if (emailError) {
+            emailError.textContent = msg;
+            emailError.style.display = 'block';
+        }
+    } finally {
+        submitButton.classList.remove('loading');
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+    }
 }
 
 // Mostrar mensagem de sucesso

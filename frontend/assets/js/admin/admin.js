@@ -366,34 +366,71 @@ function removeLoadingState() {
     });
 }
 
-// Carregar produtos da API existente
+// Autenticação simples para administrador (prompt)
+async function promptAdminLogin() {
+    try {
+        const email = window.prompt('Informe o e-mail do administrador:');
+        if (!email) return false;
+        const senha = window.prompt('Informe a senha do administrador:');
+        if (!senha) return false;
+        const data = await window.API.apiFetch('/admin/login', {
+            method: 'POST',
+            body: JSON.stringify({ email, senha })
+        });
+        window.API.setToken(data.token);
+        window.API.saveUser({ ...data.usuario, isAdmin: true });
+        showNotification('Login de administrador realizado com sucesso.', 'success');
+        return true;
+    } catch (err) {
+        const msg = err?.data?.error || err.message || 'Falha no login de administrador';
+        showNotification(msg, 'error');
+        return false;
+    }
+}
+
+// Helper: mapear produto da API para o formato da UI
+function mapApiProductToUI(apiProd) {
+    const categoriaNome = apiProd.categoria?.nome || '';
+    const category = /pizza/i.test(categoriaNome) ? 'pizza' : 'drink'; // UI usa 'drink'
+    const tamanhos = Array.isArray(apiProd.tamanhos) ? apiProd.tamanhos : [];
+    const order = { 'Pequena': 0, 'Média': 1, 'Media': 1, 'Grande': 2 };
+    const ordered = tamanhos.slice().sort((a,b)=> (order[a.tamanho] ?? 99) - (order[b.tamanho] ?? 99));
+    const sizes = ordered.map(t => t.tamanho);
+    const price = ordered.map(t => parseFloat(t.preco));
+    return {
+        id: apiProd.id,
+        name: apiProd.nome,
+        description: apiProd.descricao || '',
+        category,
+        sizes,
+        price,
+        img: apiProd.imagem_url || '../../assets/images/pizza-desenho.png',
+        status: apiProd.disponivel === false ? 'inactive' : 'active',
+        _raw: apiProd,
+    };
+}
+
+// Carregar produtos da API real (admin)
 async function loadProductsFromAPI() {
     try {
-        const response = await fetch('./apiData.json');
-        const data = await response.json();
-        
-        // Combinar pizzas e bebidas
-        products = [
-            ...data.pizzas.map(pizza => ({ ...pizza, category: 'pizza', status: 'active' })),
-            ...data.drinks.map(drink => ({ ...drink, category: 'drink', status: 'active' }))
-        ];
-        
+        const data = await window.API.apiFetch('/admin/products', { method: 'GET' });
+        const list = Array.isArray(data.produtos) ? data.produtos : [];
+        products = list.map(mapApiProductToUI);
         renderProductsTable();
     } catch (error) {
-        console.error('Erro ao carregar produtos:', error);
-        // Fallback para produtos mockados
-        products = [
-            {
-                id: 1,
-                name: 'Pizza Calabresa',
-                description: 'Molho, muçarela, calabresa fatiada, cebola fatiada e orégano.',
-                price: [14.5, 19.99, 27.99],
-                sizes: ['320g', '530g', '860g'],
-                img: 'images/calabresa.png',
-                category: 'pizza',
-                status: 'active'
+        console.error('Erro ao carregar produtos da API:', error);
+        if (error.status === 401 || error.status === 403) {
+            showNotification('Você precisa entrar como administrador.', 'warning');
+            const ok = await promptAdminLogin();
+            if (ok) {
+                // tentar novamente
+                return loadProductsFromAPI();
             }
-        ];
+        } else {
+            showNotification('Não foi possível carregar os produtos.', 'error');
+        }
+        // manter a tabela vazia em erro
+        products = [];
         renderProductsTable();
     }
 }
@@ -2037,43 +2074,56 @@ function clearPreview({ imgEl, previewBox, form }) {
     if (form) form.dataset.imageData = '';
 }
 
-function saveProduct() {
+async function saveProduct() {
     const form = document.getElementById('productForm');
     const formData = new FormData(form);
     
     const uploadedImage = form.dataset.imageData;
-    const productData = {
-        name: formData.get('name'),
-        category: formData.get('category'),
-        description: formData.get('description'),
-        price: [
-            parseFloat(formData.get('price1')) || 0,
-            parseFloat(formData.get('price2')) || 0,
-            parseFloat(formData.get('price3'))
-        ],
-        sizes: ['320g', '530g', '860g'],
-        img: uploadedImage || 'images/pizza-desenho.png',
-        status: 'active'
+    // Montar payload para API
+    const uiCategory = formData.get('category'); // 'pizza' | 'drink'
+    const apiCategory = uiCategory === 'pizza' ? 'pizza' : 'bebida'; // backend espera 'bebida'
+    const p1 = parseFloat(formData.get('price1')) || 0;
+    const p2 = parseFloat(formData.get('price2')) || 0;
+    const p3 = parseFloat(formData.get('price3')) || 0;
+    const tamanhos = [];
+    // UI não permite editar nomes de tamanhos ainda; usar padrão compatível com o frontend público
+    const defaultSizes = ['Pequena', 'Média', 'Grande'];
+    if (p1 > 0) tamanhos.push({ tamanho: defaultSizes[0], preco: p1 });
+    if (p2 > 0) tamanhos.push({ tamanho: defaultSizes[1], preco: p2 });
+    if (p3 > 0) tamanhos.push({ tamanho: defaultSizes[2], preco: p3 });
+
+    const payload = {
+        nome: formData.get('name'),
+        descricao: formData.get('description') || '',
+        categoria: apiCategory,
+        disponivel: true,
+        // Enquanto upload não estiver implementado, ignorar data URLs para não exceder limite do campo
+        imagem_url: (uploadedImage && !/^data:/i.test(uploadedImage)) ? uploadedImage : null,
+        tamanhos,
     };
 
-    if (form.dataset.editId) {
-        // Editar produto existente
-        const id = parseInt(form.dataset.editId);
-        const index = products.findIndex(p => p.id === id);
-        if (!uploadedImage) {
-            productData.img = products[index]?.img || productData.img;
+    try {
+        if (form.dataset.editId) {
+            const id = parseInt(form.dataset.editId, 10);
+            await window.API.apiFetch(`/admin/products/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify(payload),
+            });
+            showNotification('Produto atualizado com sucesso!', 'success');
+        } else {
+            await window.API.apiFetch('/admin/products', {
+                method: 'POST',
+                body: JSON.stringify(payload),
+            });
+            showNotification('Produto criado com sucesso!', 'success');
         }
-        products[index] = { ...products[index], ...productData };
-    } else {
-        // Adicionar novo produto
-        const nextId = products.length ? Math.max(...products.map(p => parseInt(p.id) || 0)) + 1 : 1;
-        productData.id = nextId;
-        products.push(productData);
+        closeModal('productModal');
+        await loadProductsFromAPI();
+    } catch (error) {
+        console.error('Erro ao salvar produto:', error);
+        const msg = error?.data?.error || error.message || 'Erro ao salvar produto';
+        showNotification(msg, 'error');
     }
-
-    renderProductsTable();
-    closeModal('productModal');
-    showNotification('Produto salvo com sucesso!', 'success');
 }
 
 function editProduct(id) {
@@ -2089,9 +2139,15 @@ async function deleteProduct(id) {
     );
     
     if (confirmed) {
-        products = products.filter(p => p.id !== id);
-        renderProductsTable();
-        showNotification('Produto excluído com sucesso!', 'success');
+        try {
+            await window.API.apiFetch(`/admin/products/${id}`, { method: 'DELETE' });
+            await loadProductsFromAPI();
+            showNotification('Produto excluído com sucesso!', 'success');
+        } catch (error) {
+            console.error('Erro ao excluir produto:', error);
+            const msg = error?.data?.error || error.message || 'Erro ao excluir produto';
+            showNotification(msg, 'error');
+        }
     }
 }
 
@@ -2556,14 +2612,14 @@ document.getElementById('exportOrdersBtn')?.addEventListener('click', () => expo
 const layoutManager = {
     // State management
     currentLayout: {
-        background: 'images/background.jpg',
-        logo: 'images/logo_pizza.png',
+        background: '../../assets/images/background.jpg',
+        logo: '../../assets/images/logo_pizza.png',
         title: 'Pizzas 10% OFF',
         subtitle: 'Confira no cardápio',
         description: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Incidunt, vitae beatae sint magnam, libero harum quae nobis veritatis iure hic provident illo porro.',
         carouselSlides: [
-            { image: 'images/banner1.jpg', caption: 'Clássicas irresistíveis' },
-            { image: 'images/banner2.jpg', caption: 'Promoções da semana' }
+            { image: '../../assets/images/banner1.jpg', caption: 'Clássicas irresistíveis' },
+            { image: '../../assets/images/banner2.jpg', caption: 'Promoções da semana' }
         ]
     },
 
@@ -2668,7 +2724,7 @@ const layoutManager = {
     },
 
     resetBackground() {
-        this.currentLayout.background = 'images/background.jpg';
+        this.currentLayout.background = '../../assets/images/background.jpg';
         this.updateBackgroundPreview();
         this.saveLayoutSilent();
         showNotification('Background restaurado!', 'info');
@@ -2698,7 +2754,7 @@ const layoutManager = {
     },
 
     resetLogo() {
-        this.currentLayout.logo = 'images/logo_pizza.png';
+        this.currentLayout.logo = '../../assets/images/logo_pizza.png';
         this.updateLogoPreview();
         this.saveLayoutSilent();
         showNotification('Logo restaurada!', 'info');
@@ -2875,8 +2931,8 @@ const layoutManager = {
         
         if (confirmed) {
             this.currentLayout.carouselSlides = [
-                { image: 'images/banner1.jpg', caption: 'Clássicas irresistíveis' },
-                { image: 'images/banner2.jpg', caption: 'Promoções da semana' }
+                { image: '../../assets/images/banner1.jpg', caption: 'Clássicas irresistíveis' },
+                { image: '../../assets/images/banner2.jpg', caption: 'Promoções da semana' }
             ];
             this.updateCarouselPreview();
             this.saveLayoutSilent();
@@ -4214,9 +4270,9 @@ class OrderNotificationSystem {
         }
         
         // Fallback to default sound
-        this.notificationSound = new Audio('sounds/notificações1.mp3');
+        this.notificationSound = new Audio('../../assets/sounds/notificações1.mp3');
         this.notificationSound.volume = 0.8;
-        console.log('Using default notification sound: sounds/notificações1.mp3');
+        console.log('Using default notification sound: ../../assets/sounds/notificações1.mp3');
     }
 
     generateMockOrder() {
@@ -4281,10 +4337,10 @@ class OrderNotificationSystem {
             console.error('Error playing notification sound:', error);
             
             // Try fallback sound
-            if (this.notificationSound.src !== 'sounds/notificações1.mp3') {
+            if (this.notificationSound.src !== '../../assets/sounds/notificações1.mp3') {
                 console.log('Attempting fallback to notificações1.mp3');
                 try {
-                    const fallbackAudio = new Audio('sounds/notificações1.mp3');
+                    const fallbackAudio = new Audio('../../assets/sounds/notificações1.mp3');
                     fallbackAudio.currentTime = 0;
                     await fallbackAudio.play();
                     console.log('Fallback sound played successfully');
@@ -4390,8 +4446,8 @@ class OrderNotificationSystem {
 
         const notification = new Notification('Novo Pedido - Pizzaria', {
             body: `${order.customer.name} - R$ ${order.value.toFixed(2)}`,
-            icon: 'images/logo_pizza.png',
-            badge: 'images/logo_pizza.png',
+            icon: '../../assets/images/logo_pizza.png',
+            badge: '../../assets/images/logo_pizza.png',
             tag: 'new-order',
             requireInteraction: true,
             actions: [
@@ -4544,7 +4600,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 class SoundSettings {
     constructor() {
-        this.currentSound = 'sounds/notificações1.mp3';
+        this.currentSound = '../../assets/sounds/notificações1.mp3';
         this.previewAudio = null;
         this.soundEnabled = true;
         this.soundCheckbox = document.getElementById('soundNotifications');
@@ -4705,9 +4761,9 @@ class SoundSettings {
             console.log('Audio error for', soundPath, ':', e);
             this.resetButton(button);
             // Try to fallback to a working sound
-            if (soundPath !== 'sounds/notificações1.mp3') {
+            if (soundPath !== '../../assets/sounds/notificações1.mp3') {
                 console.log('Falling back to notificações1.mp3');
-                this.previewSound('sounds/notificações1.mp3', button);
+                this.previewSound('../../assets/sounds/notificações1.mp3', button);
             }
         });
 

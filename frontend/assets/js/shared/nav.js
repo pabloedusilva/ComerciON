@@ -1,4 +1,34 @@
 let header = document.querySelector(".header");
+
+// Detecta o caminho correto para assets baseado na localização atual
+function getAssetsPath() {
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('/admin/')) {
+        return '../../assets/';
+    } else if (currentPath.includes('/customer/')) {
+        return '../../assets/';
+    } else {
+        // Para páginas na raiz de pages/
+        return '../assets/';
+    }
+}
+
+// Detecta o caminho correto para navegação baseado na localização atual  
+function getNavPath() {
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('/admin/')) {
+        return '../';
+    } else if (currentPath.includes('/customer/')) {
+        return '../';
+    } else {
+        // Para páginas na raiz de pages/
+        return './';
+    }
+}
+
+const assetsPath = getAssetsPath();
+const navPath = getNavPath();
+
 header = header.innerHTML = `<div class="menu-area">
     <div class="mobile-left">
         <label for="checkbox" class="menu_hamburger">
@@ -8,8 +38,8 @@ header = header.innerHTML = `<div class="menu-area">
         </label>
     </div>
     <div class="logo">
-        <a href="index.html">
-            <img src="images/logo_pizza.png" alt="logo_pizza.png">
+        <a href="${navPath}">
+            <img src="${assetsPath}images/logo_pizza.png" alt="logo_pizza.png">
         </a>
     </div>
     <nav>
@@ -34,13 +64,13 @@ header = header.innerHTML = `<div class="menu-area">
         </div>
         <div class="menu">
             <ul>
-                <a href="index.html">
+                <a href="${navPath}">
                     <li>Início</li>
                 </a>
-                <a href="menu.html">
+                <a href="${navPath}menu">
                     <li>Cardápio</li>
                 </a>
-                <a href="sobre.html">
+                <a href="${navPath}sobre">
                     <li>Sobre</li>
                 </a>
                 <a href="https://github.com/pabloedusilva" target="_blank">
@@ -120,3 +150,34 @@ document.addEventListener("keydown", (e) => {
     if (profileDropdownDesktop) profileDropdownDesktop.classList.remove("show");
   }
 });
+
+// Auth awareness: mostrar/esconder opções e logout
+(function () {
+    function updateProfileMenus() {
+        const isAuth = typeof API !== 'undefined' && API.isAuthenticated();
+        // Ajusta itens do menu conforme autenticado
+        document.querySelectorAll('.profile-dropdown').forEach(drop => {
+            const logout = drop.querySelector('.logout');
+            if (logout) logout.style.display = isAuth ? 'block' : 'none';
+        });
+    }
+
+    function wireLogout() {
+        document.querySelectorAll('.logout').forEach(a => {
+            a.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (typeof API !== 'undefined') API.clearToken();
+                // feedback simples
+                alert('Você saiu da sua conta.');
+                updateProfileMenus();
+                // opcional: redirecionar
+                // window.location.href = './index.html';
+            });
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        updateProfileMenus();
+        wireLogout();
+    });
+})();
