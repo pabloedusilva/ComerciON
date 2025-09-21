@@ -492,35 +492,18 @@ function removeLoadingState() {
     });
 }
 
-// Carregar produtos da API existente
+// Carregar produtos do backend
 async function loadProductsFromAPI() {
     try {
-        const response = await fetch('../../assets/data/apiData.json');
-        const data = await response.json();
-        
-        // Combinar pizzas e bebidas
-        products = [
-            ...data.pizzas.map(pizza => ({ ...pizza, category: 'pizza', status: 'active' })),
-            ...data.drinks.map(drink => ({ ...drink, category: 'drink', status: 'active' }))
-        ];
-        
+        const response = await fetch('/api/public/catalog/products');
+        const result = await response.json();
+        if (!result.sucesso) throw new Error(result.mensagem || 'Falha ao carregar produtos');
+        products = result.data || [];
         renderProductsTable();
     } catch (error) {
         console.error('Erro ao carregar produtos:', error);
-        // Fallback para produtos mockados
-        products = [
-            {
-                id: 1,
-                name: 'Pizza Calabresa',
-                description: 'Molho, muçarela, calabresa fatiada, cebola fatiada e orégano.',
-                price: [14.5, 19.99, 27.99],
-                sizes: ['320g', '530g', '860g'],
-                img: '../../assets/images/default-images/calabresa.png',
-                category: 'pizza',
-                status: 'active'
-            }
-        ];
-        renderProductsTable();
+        products = [];
+        renderProductsTable(); // render vazio
     }
 }
 
@@ -2163,7 +2146,7 @@ function clearPreview({ imgEl, previewBox, form }) {
     if (form) form.dataset.imageData = '';
 }
 
-function saveProduct() {
+async function saveProduct() {
     const form = document.getElementById('productForm');
     const formData = new FormData(form);
     
@@ -2182,24 +2165,28 @@ function saveProduct() {
         status: 'active'
     };
 
-    if (form.dataset.editId) {
-        // Editar produto existente
-        const id = parseInt(form.dataset.editId);
-        const index = products.findIndex(p => p.id === id);
-        if (!uploadedImage) {
-            productData.img = products[index]?.img || productData.img;
-        }
-        products[index] = { ...products[index], ...productData };
-    } else {
-        // Adicionar novo produto
-        const nextId = products.length ? Math.max(...products.map(p => parseInt(p.id) || 0)) + 1 : 1;
-        productData.id = nextId;
-        products.push(productData);
+    try {
+        const token = localStorage.getItem('admin_token');
+        const isEdit = !!form.dataset.editId;
+        const url = isEdit ? `/api/admin/products/${parseInt(form.dataset.editId)}` : '/api/admin/products';
+        const method = isEdit ? 'PUT' : 'POST';
+        const resp = await fetch(url, {
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token ? `Bearer ${token}` : ''
+            },
+            body: JSON.stringify(productData)
+        });
+        const result = await resp.json();
+        if (!resp.ok || !result.sucesso) throw new Error(result.mensagem || 'Falha ao salvar produto');
+        await loadProductsFromAPI();
+        closeModal('productModal');
+        showNotification('Produto salvo com sucesso!', 'success');
+    } catch (err) {
+        console.error(err);
+        showNotification(err.message || 'Erro ao salvar produto', 'error');
     }
-
-    renderProductsTable();
-    closeModal('productModal');
-    showNotification('Produto salvo com sucesso!', 'success');
 }
 
 function editProduct(id) {
@@ -2215,9 +2202,22 @@ async function deleteProduct(id) {
     );
     
     if (confirmed) {
-        products = products.filter(p => p.id !== id);
-        renderProductsTable();
-        showNotification('Produto excluído com sucesso!', 'success');
+        try {
+            const token = localStorage.getItem('admin_token');
+            const resp = await fetch(`/api/admin/products/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': token ? `Bearer ${token}` : ''
+                }
+            });
+            const result = await resp.json();
+            if (!resp.ok || !result.sucesso) throw new Error(result.mensagem || 'Falha ao excluir produto');
+            await loadProductsFromAPI();
+            showNotification('Produto excluído com sucesso!', 'success');
+        } catch (err) {
+            console.error(err);
+            showNotification(err.message || 'Erro ao excluir produto', 'error');
+        }
     }
 }
 

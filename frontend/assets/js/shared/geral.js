@@ -49,11 +49,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const assetsPath = getAssetsPath();
     console.log('Assets path:', assetsPath);
 
-    const api = fetch(`${assetsPath}data/apiData.json`)
+    const api = fetch(`/api/public/catalog/products`)
   .then(async (response) => await response.json())
-  .then((data) => {
-    pizzas = data.pizzas;
-    drinks = data.drinks;
+  .then((result) => {
+    if(!result.sucesso){ throw new Error(result.mensagem || 'Falha ao carregar catálogo'); }
+    const all = result.data || [];
+    pizzas = all.filter(p => p.category === 'pizza');
+    drinks = all.filter(p => p.category === 'drink');
 
     // Atualizar preços de itens antigos no carrinho
     cart = cart.map(item => {
@@ -71,7 +73,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateCart();
 
     //##LIST PIZZAS
-    data.pizzas.map((item, index) => {
+  pizzas.map((item, index) => {
       //Mapear todos os objetos do JSON
       let pizzaItem = document
         .querySelector(".models .pizza-item")
@@ -99,7 +101,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     //##LIST DRINKS
-    data.drinks.map((item, index) => {
+  drinks.map((item, index) => {
       let drinkItem = document
         .querySelector(".models .pizza-item")
         .cloneNode(true);
