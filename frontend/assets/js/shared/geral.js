@@ -49,37 +49,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const assetsPath = getAssetsPath();
     console.log('Assets path:', assetsPath);
 
-    const api = fetch(`/api/public/menu`)
+    const api = fetch(`${assetsPath}data/apiData.json`)
   .then(async (response) => await response.json())
   .then((data) => {
-    // Adaptar dados do backend (Produto + tamanhos) para o formato esperado pelo frontend
-    const mapProduct = (p) => ({
-      id: p.id,
-      name: p.nome,
-      description: p.descricao || '',
-      // Preço em array [P,M,G] baseado nos tamanhos; se faltar, repete último
-      price: (() => {
-        const ordered = (p.tamanhos || []).slice().sort((a,b)=>{
-          const order = { '320g':0, '530g':1, '860g':2 };
-          return (order[a.tamanho] ?? 99) - (order[b.tamanho] ?? 99);
-        });
-        const precos = ordered.map(t=>Number(t.preco));
-        if (precos.length === 1) return [precos[0], precos[0], precos[0]];
-        if (precos.length === 2) return [precos[0], precos[1], precos[1]];
-        return [precos[0]||0, precos[1]||precos[0]||0, precos[2]||precos[1]||0];
-      })(),
-      // labels de tamanho
-      sizes: (p.tamanhos || []).map(t => t.tamanho) || ['320g','530g','860g'],
-      img: p.imagem_url || (p.categoria?.nome?.toLowerCase().includes('pizza') ? `../assets/images/pizza-desenho.png` : `../assets/images/logo_pizza.png`),
-      // map auxiliar: index->tamanho_produto_id
-      sizeMap: (() => {
-        const map = {};
-        (p.tamanhos || []).forEach((t, idx) => { map[idx] = t.id; });
-        return map;
-      })(),
-    });
-    pizzas = (data.pizzas || []).map(mapProduct);
-    drinks = (data.drinks || []).map(mapProduct);
+    pizzas = data.pizzas;
+    drinks = data.drinks;
 
     // Atualizar preços de itens antigos no carrinho
     cart = cart.map(item => {

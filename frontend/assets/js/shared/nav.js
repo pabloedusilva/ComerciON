@@ -38,7 +38,7 @@ header = header.innerHTML = `<div class="menu-area">
         </label>
     </div>
     <div class="logo">
-        <a href="${navPath}">
+        <a href="${navPath}index.html">
             <img src="${assetsPath}images/logo_pizza.png" alt="logo_pizza.png">
         </a>
     </div>
@@ -64,13 +64,13 @@ header = header.innerHTML = `<div class="menu-area">
         </div>
         <div class="menu">
             <ul>
-                <a href="${navPath}">
+                <a href="${navPath}index.html">
                     <li>Início</li>
                 </a>
-                <a href="${navPath}menu">
+                <a href="${navPath}menu.html">
                     <li>Cardápio</li>
                 </a>
-                <a href="${navPath}sobre">
+                <a href="${navPath}sobre.html">
                     <li>Sobre</li>
                 </a>
                 <a href="https://github.com/pabloedusilva" target="_blank">
@@ -150,34 +150,3 @@ document.addEventListener("keydown", (e) => {
     if (profileDropdownDesktop) profileDropdownDesktop.classList.remove("show");
   }
 });
-
-// Auth awareness: mostrar/esconder opções e logout
-(function () {
-    function updateProfileMenus() {
-        const isAuth = typeof API !== 'undefined' && API.isAuthenticated();
-        // Ajusta itens do menu conforme autenticado
-        document.querySelectorAll('.profile-dropdown').forEach(drop => {
-            const logout = drop.querySelector('.logout');
-            if (logout) logout.style.display = isAuth ? 'block' : 'none';
-        });
-    }
-
-    function wireLogout() {
-        document.querySelectorAll('.logout').forEach(a => {
-            a.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (typeof API !== 'undefined') API.clearToken();
-                // feedback simples
-                alert('Você saiu da sua conta.');
-                updateProfileMenus();
-                // opcional: redirecionar
-                // window.location.href = './index.html';
-            });
-        });
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        updateProfileMenus();
-        wireLogout();
-    });
-})();

@@ -1,3 +1,25 @@
+// Simple Admin Auth Guard (frontend-only)
+(function(){
+    const LS_KEY = 'pizzaria_admin_session';
+    try {
+        const session = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+        if (!session || session.logged !== true) {
+            // If the current page isn't the login page, redirect to login
+            const isLogin = /pages\/admin\/admin-login\.html$/.test(location.pathname) || /admin-login\.html$/.test(location.pathname);
+            if (!isLogin) {
+                const to = location.pathname.includes('/pages/admin/') ? 'admin-login.html' : './pages/admin/admin-login.html';
+                window.location.replace(to);
+            }
+        }
+    } catch(e) { /* ignore and proceed */ }
+    // Expose logout globally
+    window.__adminLogout = function(){
+        try { localStorage.removeItem(LS_KEY); } catch(e) {}
+        const to = location.pathname.includes('/pages/admin/') ? 'admin-login.html' : './pages/admin/admin-login.html';
+        window.location.replace(to);
+    };
+})();
+
 // Estado global da aplicação
 let currentSection = 'dashboard';
 let products = [];
@@ -366,71 +388,34 @@ function removeLoadingState() {
     });
 }
 
-// Autenticação simples para administrador (prompt)
-async function promptAdminLogin() {
-    try {
-        const email = window.prompt('Informe o e-mail do administrador:');
-        if (!email) return false;
-        const senha = window.prompt('Informe a senha do administrador:');
-        if (!senha) return false;
-        const data = await window.API.apiFetch('/admin/login', {
-            method: 'POST',
-            body: JSON.stringify({ email, senha })
-        });
-        window.API.setToken(data.token);
-        window.API.saveUser({ ...data.usuario, isAdmin: true });
-        showNotification('Login de administrador realizado com sucesso.', 'success');
-        return true;
-    } catch (err) {
-        const msg = err?.data?.error || err.message || 'Falha no login de administrador';
-        showNotification(msg, 'error');
-        return false;
-    }
-}
-
-// Helper: mapear produto da API para o formato da UI
-function mapApiProductToUI(apiProd) {
-    const categoriaNome = apiProd.categoria?.nome || '';
-    const category = /pizza/i.test(categoriaNome) ? 'pizza' : 'drink'; // UI usa 'drink'
-    const tamanhos = Array.isArray(apiProd.tamanhos) ? apiProd.tamanhos : [];
-    const order = { 'Pequena': 0, 'Média': 1, 'Media': 1, 'Grande': 2 };
-    const ordered = tamanhos.slice().sort((a,b)=> (order[a.tamanho] ?? 99) - (order[b.tamanho] ?? 99));
-    const sizes = ordered.map(t => t.tamanho);
-    const price = ordered.map(t => parseFloat(t.preco));
-    return {
-        id: apiProd.id,
-        name: apiProd.nome,
-        description: apiProd.descricao || '',
-        category,
-        sizes,
-        price,
-        img: apiProd.imagem_url || '../../assets/images/pizza-desenho.png',
-        status: apiProd.disponivel === false ? 'inactive' : 'active',
-        _raw: apiProd,
-    };
-}
-
-// Carregar produtos da API real (admin)
+// Carregar produtos da API existente
 async function loadProductsFromAPI() {
     try {
-        const data = await window.API.apiFetch('/admin/products', { method: 'GET' });
-        const list = Array.isArray(data.produtos) ? data.produtos : [];
-        products = list.map(mapApiProductToUI);
+        const response = await fetch('../../assets/data/apiData.json');
+        const data = await response.json();
+        
+        // Combinar pizzas e bebidas
+        products = [
+            ...data.pizzas.map(pizza => ({ ...pizza, category: 'pizza', status: 'active' })),
+            ...data.drinks.map(drink => ({ ...drink, category: 'drink', status: 'active' }))
+        ];
+        
         renderProductsTable();
     } catch (error) {
-        console.error('Erro ao carregar produtos da API:', error);
-        if (error.status === 401 || error.status === 403) {
-            showNotification('Você precisa entrar como administrador.', 'warning');
-            const ok = await promptAdminLogin();
-            if (ok) {
-                // tentar novamente
-                return loadProductsFromAPI();
+        console.error('Erro ao carregar produtos:', error);
+        // Fallback para produtos mockados
+        products = [
+            {
+                id: 1,
+                name: 'Pizza Calabresa',
+                description: 'Molho, muçarela, calabresa fatiada, cebola fatiada e orégano.',
+                price: [14.5, 19.99, 27.99],
+                sizes: ['320g', '530g', '860g'],
+                img: '../../assets/images/calabresa.png',
+                category: 'pizza',
+                status: 'active'
             }
-        } else {
-            showNotification('Não foi possível carregar os produtos.', 'error');
-        }
-        // manter a tabela vazia em erro
-        products = [];
+        ];
         renderProductsTable();
     }
 }
@@ -2074,56 +2059,43 @@ function clearPreview({ imgEl, previewBox, form }) {
     if (form) form.dataset.imageData = '';
 }
 
-async function saveProduct() {
+function saveProduct() {
     const form = document.getElementById('productForm');
     const formData = new FormData(form);
     
     const uploadedImage = form.dataset.imageData;
-    // Montar payload para API
-    const uiCategory = formData.get('category'); // 'pizza' | 'drink'
-    const apiCategory = uiCategory === 'pizza' ? 'pizza' : 'bebida'; // backend espera 'bebida'
-    const p1 = parseFloat(formData.get('price1')) || 0;
-    const p2 = parseFloat(formData.get('price2')) || 0;
-    const p3 = parseFloat(formData.get('price3')) || 0;
-    const tamanhos = [];
-    // UI não permite editar nomes de tamanhos ainda; usar padrão compatível com o frontend público
-    const defaultSizes = ['Pequena', 'Média', 'Grande'];
-    if (p1 > 0) tamanhos.push({ tamanho: defaultSizes[0], preco: p1 });
-    if (p2 > 0) tamanhos.push({ tamanho: defaultSizes[1], preco: p2 });
-    if (p3 > 0) tamanhos.push({ tamanho: defaultSizes[2], preco: p3 });
-
-    const payload = {
-        nome: formData.get('name'),
-        descricao: formData.get('description') || '',
-        categoria: apiCategory,
-        disponivel: true,
-        // Enquanto upload não estiver implementado, ignorar data URLs para não exceder limite do campo
-        imagem_url: (uploadedImage && !/^data:/i.test(uploadedImage)) ? uploadedImage : null,
-        tamanhos,
+    const productData = {
+        name: formData.get('name'),
+        category: formData.get('category'),
+        description: formData.get('description'),
+        price: [
+            parseFloat(formData.get('price1')) || 0,
+            parseFloat(formData.get('price2')) || 0,
+            parseFloat(formData.get('price3'))
+        ],
+        sizes: ['320g', '530g', '860g'],
+        img: uploadedImage || '../../assets/images/pizza-desenho.png',
+        status: 'active'
     };
 
-    try {
-        if (form.dataset.editId) {
-            const id = parseInt(form.dataset.editId, 10);
-            await window.API.apiFetch(`/admin/products/${id}`, {
-                method: 'PUT',
-                body: JSON.stringify(payload),
-            });
-            showNotification('Produto atualizado com sucesso!', 'success');
-        } else {
-            await window.API.apiFetch('/admin/products', {
-                method: 'POST',
-                body: JSON.stringify(payload),
-            });
-            showNotification('Produto criado com sucesso!', 'success');
+    if (form.dataset.editId) {
+        // Editar produto existente
+        const id = parseInt(form.dataset.editId);
+        const index = products.findIndex(p => p.id === id);
+        if (!uploadedImage) {
+            productData.img = products[index]?.img || productData.img;
         }
-        closeModal('productModal');
-        await loadProductsFromAPI();
-    } catch (error) {
-        console.error('Erro ao salvar produto:', error);
-        const msg = error?.data?.error || error.message || 'Erro ao salvar produto';
-        showNotification(msg, 'error');
+        products[index] = { ...products[index], ...productData };
+    } else {
+        // Adicionar novo produto
+        const nextId = products.length ? Math.max(...products.map(p => parseInt(p.id) || 0)) + 1 : 1;
+        productData.id = nextId;
+        products.push(productData);
     }
+
+    renderProductsTable();
+    closeModal('productModal');
+    showNotification('Produto salvo com sucesso!', 'success');
 }
 
 function editProduct(id) {
@@ -2139,15 +2111,9 @@ async function deleteProduct(id) {
     );
     
     if (confirmed) {
-        try {
-            await window.API.apiFetch(`/admin/products/${id}`, { method: 'DELETE' });
-            await loadProductsFromAPI();
-            showNotification('Produto excluído com sucesso!', 'success');
-        } catch (error) {
-            console.error('Erro ao excluir produto:', error);
-            const msg = error?.data?.error || error.message || 'Erro ao excluir produto';
-            showNotification(msg, 'error');
-        }
+        products = products.filter(p => p.id !== id);
+        renderProductsTable();
+        showNotification('Produto excluído com sucesso!', 'success');
     }
 }
 

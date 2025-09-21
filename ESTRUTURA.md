@@ -29,7 +29,7 @@
 ## 🚀 ESTRUTURA DO BACKEND
 
 ```
-pizzaria-backend/
+backend/
 │
 ├── 📁 src/
 │   ├── 📁 config/

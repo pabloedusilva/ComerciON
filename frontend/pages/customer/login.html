@@ -55,9 +55,57 @@
           <span>Não tem conta?</span>
           <a href="cadastro.html" class="link-accent">Crie uma agora</a>
         </div>
+      </div>
+    </div>
+  </main>
+  <footer>
+    <a href="https://github.com/pabloedusilva" target="_blank">&copy; Desenvolvido por Pablo Silva</a>
+  </footer>
+  
 
-        <script src="../../assets/js/shared/api.js"></script>
-        <script src="../../assets/js/customer/login.js"></script>
+  <script>
+    // Toggle password visibility
+    document.querySelector('.toggle-password').addEventListener('click', function(){
+      const input = document.getElementById('password');
+      const icon = this.querySelector('i');
+      const isPassword = input.getAttribute('type') === 'password';
+      input.setAttribute('type', isPassword ? 'text' : 'password');
+      icon.classList.toggle('fa-eye');
+      icon.classList.toggle('fa-eye-slash');
+    });
+
+    // Simple validation
+    const form = document.getElementById('loginForm');
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      const email = document.getElementById('email');
+      const password = document.getElementById('password');
+      const emailError = document.getElementById('emailError');
+      const passwordError = document.getElementById('passwordError');
+
+      let valid = true;
+      emailError.textContent = '';
+      passwordError.textContent = '';
+
+      if(!email.value || !/^\S+@\S+\.\S+$/.test(email.value)){
+        emailError.textContent = 'Informe um e-mail válido.';
+        valid = false;
+      }
+      if(!password.value || password.value.length < 6){
+        passwordError.textContent = 'A senha deve ter no mínimo 6 caracteres.';
+        valid = false;
+      }
+
+      if(valid){
+        // Simulação de login OK
+        this.querySelector('.auth-submit').classList.add('loading');
+        this.querySelector('.auth-submit').textContent = 'Entrando...';
+        setTimeout(()=>{
+          window.location.href = '../menu.html';
+        }, 1200);
+      }
+    });
+  </script>
 </body>
 
 </html>

@@ -247,58 +247,35 @@ function initRatingInteractionsOnce() {
   });
 }
 
-document.querySelector(".cart--finalizar").addEventListener("click", async () => {
-  if (!window.API || !API.isAuthenticated()) {
-    alert('Você precisa estar logado para finalizar o pedido.');
-    window.location.href = '../customer/login.html';
-    return;
-  }
+document.querySelector(".cart--finalizar").addEventListener("click", () => {
+  cart = [];
+  localStorage.clear();
+  updateCart();
+  document.querySelector(".fa-cart-shopping").classList.remove("pulse");
+  document.querySelector(".loader-content").classList.add("display");
 
-  // Montar payload dos itens
-  const buildSizeMap = (id, type) => {
-    const dataArray = type === 'pizza' ? pizzas : drinks;
-    const product = dataArray.find(p => p.id == id);
-    return product?.sizeMap || {};
-  };
-
-  const itens = cart.map(item => ({
-    produto_id: item.id,
-    tamanho_produto_id: buildSizeMap(item.id, item.type)[item.size] || null,
-    quantidade: item.qt
-  }));
-
-  if (!itens.length) return;
-
-  try {
-    document.querySelector(".loader-content").classList.add("display");
-    const resp = await API.apiFetch('/customer/orders', {
-      method: 'POST',
-      body: JSON.stringify({ itens })
-    });
-    // Sucesso: limpar carrinho local
-    cart = [];
-    saveCart();
-    updateCart();
-    document.querySelector(".fa-cart-shopping").classList.remove("pulse");
-
-    // Mostrar sucesso e avaliação (mantendo UX)
+  setTimeout(() => {
     document.querySelector(".loader-content").classList.remove("display");
+
     document.querySelector(".success.pizzaWindowArea").style.opacity = 0;
     document.querySelector(".success.pizzaWindowArea").style.display = "flex";
-    setTimeout(() => { document.querySelector(".success.pizzaWindowArea").style.opacity = 1; }, 200);
+    setTimeout(() => {
+      document.querySelector(".success.pizzaWindowArea").style.opacity = 1;
+    }, 200);
+    document.querySelector(".success.pizzaWindowArea").style.display = "flex";
+
     setTimeout(() => {
       document.querySelector(".success.pizzaWindowArea").style.opacity = 0;
       setTimeout(() => {
-        document.querySelector(".success.pizzaWindowArea").style.display = "none";
+        document.querySelector(".success.pizzaWindowArea").style.display =
+          "none";
         updateCart();
         closeModal();
+        // Abrir avaliação após fechar sucesso
         ratingState.openedAfterSuccess = true;
         initRatingInteractionsOnce();
         openRatingModal();
       }, 200);
-    }, 3000);
-  } catch (e) {
-    document.querySelector(".loader-content").classList.remove("display");
-    alert((e && e.message) || 'Falha ao finalizar pedido');
-  }
+    }, 4000);
+  }, 2100);
 });

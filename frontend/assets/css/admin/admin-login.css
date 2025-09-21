@@ -1,0 +1,9 @@
+/* Admin Login Overrides - keep minimal and consistent with shared palette */
+.admin-auth .auth-card {
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.06);
+}
+
+/* Footer note (no signup) */
+.auth-footer.admin-only { gap: 6px; }
+.auth-footer.admin-only [aria-disabled="true"] { opacity: .5; pointer-events: none; }

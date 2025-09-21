@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="shortcut icon" href="../../assets/images/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <!-- Base shared styles (includes .auth UI) -->
+    <link rel="stylesheet" href="../../assets/css/shared/style.css" />
+    <!-- Admin login overrides -->
+    <link rel="stylesheet" href="../../assets/css/admin/admin-login.css" />
+    <title>Login Administrativo - Pizzaria</title>
+  </head>
+  <body>
+    <main class="auth admin-auth">
+      <div class="auth-container">
+        <div class="auth-card" aria-labelledby="adminLoginTitle">
+          <div class="auth-header">
+            <img src="../../assets/images/logo_pizza.png" alt="Logo Pizzaria" class="auth-logo" />
+            <h1 id="adminLoginTitle">Acesso Administrativo</h1>
+            <p>Área restrita. Somente administradores.</p>
+          </div>
+
+          <form class="auth-form" id="adminLoginForm" novalidate>
+            <div class="form-group">
+              <label for="adminEmail">E-mail</label>
+              <div class="input-wrapper">
+                <i class="fas fa-envelope" aria-hidden="true"></i>
+                <input type="email" id="adminEmail" name="email" placeholder="admin@pizzaria.com" autocomplete="username" required />
+              </div>
+              <small class="input-error" id="adminEmailError" aria-live="polite"></small>
+            </div>
+
+            <div class="form-group">
+              <label for="adminPassword">Senha</label>
+              <div class="input-wrapper">
+                <i class="fas fa-lock" aria-hidden="true"></i>
+                <input type="password" id="adminPassword" name="password" placeholder="••••••••" autocomplete="current-password" required minlength="6" />
+                <button type="button" class="toggle-password" aria-label="Mostrar/ocultar senha">
+                  <i class="fas fa-eye" aria-hidden="true"></i>
+                </button>
+              </div>
+              <small class="input-error" id="adminPasswordError" aria-live="polite"></small>
+            </div>
+
+            <button type="submit" class="auth-submit" id="adminLoginSubmit">Entrar</button>
+          </form>
+
+          <div class="auth-footer admin-only">
+            <span>Suporte:</span>
+            <a href="#" class="link-accent" aria-disabled="true" tabindex="-1">Recuperar acesso</a>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <a href="https://github.com/pabloedusilva" target="_blank" rel="noopener noreferrer">&copy; Desenvolvido por Pablo Silva</a>
+    </footer>
+
+    <script src="../../assets/js/admin/admin-login.js"></script>
+  </body>
+  </html>
