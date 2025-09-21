@@ -4,7 +4,7 @@
       "id": 1,
       "name": "Muçarela",
       "description": "Clássica e irresistível com muito queijo muçarela.",
-      "img": "../assets/images/muçarela.png",
+      "img": "../assets/images/default-images/muçarela.png",
       "sizes": ["PEQUENA", "MÉDIA", "GRANDE"],
       "price": [29.9, 39.9, 49.9]
     },
@@ -12,7 +12,7 @@
       "id": 2,
       "name": "Calabresa",
       "description": "Calabresa fatiada, cebola e azeitonas pretas.",
-      "img": "../assets/images/calabresa.png",
+      "img": "../assets/images/default-images/calabresa.png",
       "sizes": ["PEQUENA", "MÉDIA", "GRANDE"],
       "price": [31.9, 41.9, 51.9]
     },
@@ -20,7 +20,7 @@
       "id": 3,
       "name": "Portuguesa",
       "description": "Presunto, ovos, cebola, pimentão e azeitonas.",
-      "img": "../assets/images/portuguesa.png",
+      "img": "../assets/images/default-images/portuguesa.png",
       "sizes": ["PEQUENA", "MÉDIA", "GRANDE"],
       "price": [34.9, 44.9, 56.9]
     },
@@ -28,7 +28,7 @@
       "id": 4,
       "name": "Frango com Catupiry",
       "description": "Frango desfiado com cremoso catupiry.",
-      "img": "../assets/images/frango-catupiry.png",
+      "img": "../assets/images/default-images/frango-catupiry.png",
       "sizes": ["PEQUENA", "MÉDIA", "GRANDE"],
       "price": [35.9, 46.9, 59.9]
     },
@@ -36,7 +36,7 @@
       "id": 5,
       "name": "Pepperoni",
       "description": "Farta cobertura de pepperoni com toque levemente picante.",
-      "img": "../assets/images/pepperoni.png",
+      "img": "../assets/images/default-images/pepperoni.png",
       "sizes": ["PEQUENA", "MÉDIA", "GRANDE"],
       "price": [36.9, 47.9, 61.9]
     },
@@ -44,7 +44,7 @@
       "id": 6,
       "name": "4 Queijos",
       "description": "Blend especial de quatro queijos selecionados.",
-      "img": "../assets/images/4queijos.png",
+      "img": "../assets/images/default-images/4queijos.png",
       "sizes": ["PEQUENA", "MÉDIA", "GRANDE"],
       "price": [37.9, 49.9, 64.9]
     },
@@ -52,7 +52,7 @@
       "id": 7,
       "name": "Napolitana",
       "description": "Tomate, muçarela, parmesão e orégano.",
-      "img": "../assets/images/napolitana.png",
+      "img": "../assets/images/default-images/napolitana.png",
       "sizes": ["PEQUENA", "MÉDIA", "GRANDE"],
       "price": [33.9, 43.9, 55.9]
     },
@@ -60,7 +60,7 @@
       "id": 8,
       "name": "Moda da Casa",
       "description": "Seleção especial do chef com ingredientes do dia.",
-      "img": "../assets/images/moda-da-casa.png",
+      "img": "../assets/images/default-images/moda-da-casa.png",
       "sizes": ["PEQUENA", "MÉDIA", "GRANDE"],
       "price": [39.9, 52.9, 69.9]
     }
@@ -70,7 +70,7 @@
       "id": 101,
       "name": "Refrigerante Cola",
       "description": "Clássico gelado para acompanhar sua pizza.",
-      "img": "../assets/images/logo_pizza.png",
+      "img": "../assets/images/default-images/logo_pizza.png",
       "sizes": ["300ml", "500ml", "1L"],
       "price": [5.9, 7.9, 9.9]
     },
@@ -78,7 +78,7 @@
       "id": 102,
       "name": "Guaraná",
       "description": "Sabor brasileiro, refrescante.",
-      "img": "../assets/images/logo_pizza.png",
+      "img": "../assets/images/default-images/logo_pizza.png",
       "sizes": ["300ml", "500ml", "1L"],
       "price": [5.9, 7.9, 9.9]
     },
@@ -86,7 +86,7 @@
       "id": 103,
       "name": "Água Mineral",
       "description": "Sem gás, gelada.",
-      "img": "../assets/images/logo_pizza.png",
+      "img": "../assets/images/default-images/logo_pizza.png",
       "sizes": ["300ml", "500ml", "1L"],
       "price": [3.5, 4.5, 6.0]
     },
@@ -94,7 +94,7 @@
       "id": 104,
       "name": "Suco Laranja",
       "description": "100% integral.",
-      "img": "../assets/images/logo_pizza.png",
+      "img": "../assets/images/default-images/logo_pizza.png",
       "sizes": ["300ml", "500ml", "1L"],
       "price": [6.9, 8.9, 12.9]
     }

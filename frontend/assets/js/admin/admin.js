@@ -411,7 +411,7 @@ async function loadProductsFromAPI() {
                 description: 'Molho, muçarela, calabresa fatiada, cebola fatiada e orégano.',
                 price: [14.5, 19.99, 27.99],
                 sizes: ['320g', '530g', '860g'],
-                img: '../../assets/images/calabresa.png',
+                img: '../../assets/images/default-images/calabresa.png',
                 category: 'pizza',
                 status: 'active'
             }
@@ -2074,7 +2074,7 @@ function saveProduct() {
             parseFloat(formData.get('price3'))
         ],
         sizes: ['320g', '530g', '860g'],
-        img: uploadedImage || '../../assets/images/pizza-desenho.png',
+        img: uploadedImage || '../../assets/images/default-images/pizza-desenho.png',
         status: 'active'
     };
 
@@ -2578,14 +2578,14 @@ document.getElementById('exportOrdersBtn')?.addEventListener('click', () => expo
 const layoutManager = {
     // State management
     currentLayout: {
-        background: '../../assets/images/background.jpg',
-        logo: '../../assets/images/logo_pizza.png',
+        background: '../../assets/images/default-images/background.jpg',
+        logo: '../../assets/images/default-images/logo_pizza.png',
         title: 'Pizzas 10% OFF',
         subtitle: 'Confira no cardápio',
         description: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Incidunt, vitae beatae sint magnam, libero harum quae nobis veritatis iure hic provident illo porro.',
         carouselSlides: [
-            { image: '../../assets/images/banner1.jpg', caption: 'Clássicas irresistíveis' },
-            { image: '../../assets/images/banner2.jpg', caption: 'Promoções da semana' }
+            { image: '../../assets/images/default-images/banner1.jpg', caption: 'Clássicas irresistíveis' },
+            { image: '../../assets/images/default-images/banner2.jpg', caption: 'Promoções da semana' }
         ]
     },
 
@@ -2690,7 +2690,7 @@ const layoutManager = {
     },
 
     resetBackground() {
-        this.currentLayout.background = '../../assets/images/background.jpg';
+        this.currentLayout.background = '../../assets/images/default-images/background.jpg';
         this.updateBackgroundPreview();
         this.saveLayoutSilent();
         showNotification('Background restaurado!', 'info');
@@ -2720,7 +2720,7 @@ const layoutManager = {
     },
 
     resetLogo() {
-        this.currentLayout.logo = '../../assets/images/logo_pizza.png';
+        this.currentLayout.logo = '../../assets/images/default-images/logo_pizza.png';
         this.updateLogoPreview();
         this.saveLayoutSilent();
         showNotification('Logo restaurada!', 'info');
@@ -2897,8 +2897,8 @@ const layoutManager = {
         
         if (confirmed) {
             this.currentLayout.carouselSlides = [
-                { image: '../../assets/images/banner1.jpg', caption: 'Clássicas irresistíveis' },
-                { image: '../../assets/images/banner2.jpg', caption: 'Promoções da semana' }
+                { image: '../../assets/images/default-images/banner1.jpg', caption: 'Clássicas irresistíveis' },
+                { image: '../../assets/images/default-images/banner2.jpg', caption: 'Promoções da semana' }
             ];
             this.updateCarouselPreview();
             this.saveLayoutSilent();
@@ -4331,7 +4331,7 @@ class OrderNotificationSystem {
         notification.innerHTML = `
             <div class="notification-header">
                 <div class="notification-logo">
-                    <img src="images/logo_pizza.png" alt="Logo">
+                    <img src="../../assets/images/default-images/logo_pizza.png" alt="Logo">
                 </div>
                 <div class="notification-title">
                     <h4>Novo Pedido Recebido!</h4>
@@ -4412,10 +4412,14 @@ class OrderNotificationSystem {
 
         const notification = new Notification('Novo Pedido - Pizzaria', {
             body: `${order.customer.name} - R$ ${order.value.toFixed(2)}`,
-            icon: '../../assets/images/logo_pizza.png',
-            badge: '../../assets/images/logo_pizza.png',
+            icon: '../../assets/images/default-images/logo_pizza.png',
+            badge: '../../assets/images/default-images/logo_pizza.png',
             tag: 'new-order',
-            requireInteraction: true
+            requireInteraction: true,
+            actions: [
+                { action: 'view', title: 'Ver Pedido' },
+                { action: 'accept', title: 'Aceitar' }
+            ]
         });
 
         notification.onclick = () => {

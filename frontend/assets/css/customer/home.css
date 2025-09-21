@@ -744,7 +744,7 @@ footer a:hover::after {
 
 .bg-image {
     /* from assets/css/customer to assets/images requires two levels up */
-    background: url('../../images/background.jpg') center/cover no-repeat
+    background: url('../../images/default-images/background.jpg') center/cover no-repeat
 }
 
 .bg-overlay {

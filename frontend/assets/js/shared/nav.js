@@ -75,7 +75,7 @@ header = header.innerHTML = `<div class="menu-area">
     </div>
     <div class="logo">
         <a href="${navPath}index.html">
-            <img src="${assetsPath}images/logo_pizza.png" alt="logo_pizza.png">
+            <img src="${assetsPath}images/default-images/logo_pizza.png" alt="logo_pizza.png">
         </a>
     </div>
     <nav>
