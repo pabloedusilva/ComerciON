@@ -74,7 +74,7 @@ header = header.innerHTML = `<div class="menu-area">
         </label>
     </div>
     <div class="logo">
-        <a href="${navPath}index.html">
+        <a href="/">
             <img src="${assetsPath}images/default-images/logo_pizza.png" alt="logo_pizza.png">
         </a>
     </div>
@@ -85,13 +85,13 @@ header = header.innerHTML = `<div class="menu-area">
         </div>
         <div class="menu">
             <ul>
-                <a href="${navPath}index.html">
+                <a href="/">
                     <li>Início</li>
                 </a>
-                <a href="${navPath}menu.html">
+                <a href="/menu">
                     <li>Cardápio</li>
                 </a>
-                <a href="${navPath}sobre.html">
+                <a href="/sobre">
                     <li>Sobre</li>
                 </a>
                 <a href="https://github.com/pabloedusilva" target="_blank">
@@ -180,10 +180,10 @@ try {
 
         opener.addEventListener('click', (ev) => {
             const path = window.location.pathname;
-            const onMenu = /\/?menu\.html$/i.test(path);
+            const onMenu = /\/?menu(\.html)?$/i.test(path);
             if (!onMenu) {
             try { localStorage.setItem('pizzaria_open_cart_on_load', '1'); } catch(_) {}
-            window.location.href = `${navPath}menu.html`;
+            window.location.href = '/menu';
             ev.preventDefault();
             ev.stopPropagation();
         }

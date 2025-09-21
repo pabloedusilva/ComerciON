@@ -1,23 +1,127 @@
-// Simple Admin Auth Guard (frontend-only)
+// Sistema de Autenticação Admin
 (function(){
-    const LS_KEY = 'pizzaria_admin_session';
-    try {
-        const session = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
-        if (!session || session.logged !== true) {
-            // If the current page isn't the login page, redirect to login
-            const isLogin = /pages\/admin\/admin-login\.html$/.test(location.pathname) || /admin-login\.html$/.test(location.pathname);
-            if (!isLogin) {
-                const to = location.pathname.includes('/pages/admin/') ? 'admin-login.html' : './pages/admin/admin-login.html';
-                window.location.replace(to);
+    const LS_KEY = 'admin_token';
+    let checkingAuth = false;
+    
+    async function verificarAutenticacao() {
+        if (checkingAuth) return;
+        checkingAuth = true;
+        
+        try {
+            const token = localStorage.getItem(LS_KEY);
+            
+            if (!token) {
+                redirecionarParaLogin();
+                return;
+            }
+
+            const response = await fetch('/api/admin/auth/verificar', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                localStorage.removeItem(LS_KEY);
+                redirecionarParaLogin();
+                return;
+            }
+            
+        } catch (error) {
+            console.error('Erro na autenticação:', error);
+            localStorage.removeItem(LS_KEY);
+            redirecionarParaLogin();
+        } finally {
+            checkingAuth = false;
+        }
+    }
+
+    function redirecionarParaLogin() {
+        const isLoginPage = window.location.pathname.includes('admin-login');
+        if (!isLoginPage) {
+            window.location.replace('/admin-login');
+        }
+    }
+
+    // Verificar autenticação apenas se não estiver na página de login
+    const isLoginPage = window.location.pathname.includes('admin-login');
+    if (!isLoginPage) {
+        verificarAutenticacao();
+    }
+
+    // Função global de logout com segurança total
+    window.__adminLogout = async function(){
+        try {
+            const token = localStorage.getItem(LS_KEY);
+            
+            if (token) {
+                // Chamar endpoint de logout do backend para invalidar sessão
+                await fetch('/api/admin/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+            }
+        } catch (error) {
+            console.error('Erro ao fazer logout no backend:', error);
+        }
+        
+        // Limpar completamente o localStorage
+        localStorage.removeItem(LS_KEY);
+        localStorage.removeItem('admin_user');
+        localStorage.removeItem('admin_permissions');
+        localStorage.clear(); // Limpar tudo para garantir
+        
+        // Limpar sessionStorage também
+        sessionStorage.clear();
+        
+        // Adicionar proteção contra voltar do navegador
+        history.pushState(null, null, '/admin-login');
+        window.addEventListener('popstate', function(event) {
+            window.location.replace('/admin-login');
+        });
+        
+        // Forçar redirecionamento para login
+        window.location.replace('/admin-login');
+    };
+
+    // Vincular o clique do botão de logout via JS (evita inline bloqueado por CSP)
+    document.addEventListener('DOMContentLoaded', function(){
+        const logoutButtons = document.querySelectorAll('.btn-logout');
+        logoutButtons.forEach(btn => {
+            btn.addEventListener('click', function(e){
+                e.preventDefault();
+                if (window.__adminLogout) {
+                    window.__adminLogout();
+                }
+            });
+        });
+    });
+
+    // Delegação global (resiliência): funciona mesmo se o botão for recriado dinamicamente
+    document.addEventListener('click', function(e){
+        const target = e.target.closest('.btn-logout');
+        if (target) {
+            e.preventDefault();
+            if (window.__adminLogout) {
+                window.__adminLogout();
             }
         }
-    } catch(e) { /* ignore and proceed */ }
-    // Expose logout globally
-    window.__adminLogout = function(){
-        try { localStorage.removeItem(LS_KEY); } catch(e) {}
-        const to = location.pathname.includes('/pages/admin/') ? 'admin-login.html' : './pages/admin/admin-login.html';
-        window.location.replace(to);
-    };
+    }, true);
+
+    // Proteção adicional contra voltar do navegador após logout
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+            // Página foi carregada do cache (botão voltar)
+            const token = localStorage.getItem(LS_KEY);
+            if (!token) {
+                window.location.replace('/admin-login');
+            }
+        }
+    });
 })();
 
 // Estado global da aplicação
@@ -256,7 +360,7 @@ function initSidebarStatusPill() {
 
 // Sistema de Data e Hora em Tempo Real
 const dateTimeSystem = {
-    apiUrl: 'http://worldtimeapi.org/api/timezone/America/Sao_Paulo',
+    apiUrl: 'https://worldtimeapi.org/api/timezone/America/Sao_Paulo',
     updateInterval: 60000, // Atualizar a cada 1 minuto
     syncInterval: 3600000, // Sincronizar com API a cada 1 hora
     offsetFromServer: 0,
@@ -4853,3 +4957,90 @@ function addTestOrder() {
 
 // Expor função globalmente para teste
 window.addTestOrder = addTestOrder;
+
+// Proteção adicional: Verificação periódica de autenticação
+(function() {
+    const LS_KEY = 'admin_token';
+    
+    // Verificar autenticação periodicamente (a cada 60s) com proteção anti-loop
+    let __authCheckRunning = false;
+    setInterval(async function() {
+        if (__authCheckRunning) return;
+        __authCheckRunning = true;
+        const isLoginPage = window.location.pathname.includes('admin-login');
+        if (isLoginPage) return;
+        
+        const token = localStorage.getItem(LS_KEY);
+        if (!token) {
+            // Redirecionar suavemente apenas se não estivermos indo para login já
+            if (!window.location.pathname.includes('admin-login')) {
+                window.location.replace('/admin-login');
+            }
+            __authCheckRunning = false;
+            return; 
+        }
+        
+        try {
+            const response = await fetch('/api/admin/auth/verificar', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (!response.ok) {
+                localStorage.clear();
+                sessionStorage.clear();
+                if (!window.location.pathname.includes('admin-login')) {
+                    window.location.replace('/admin-login');
+                }
+            }
+        } catch (error) {
+            console.error('Erro na verificação periódica:', error);
+            localStorage.clear();
+            sessionStorage.clear();
+            if (!window.location.pathname.includes('admin-login')) {
+                window.location.replace('/admin-login');
+            }
+        }
+        __authCheckRunning = false;
+    }, 60000); // 60 segundos
+    
+    // Proteção contra inatividade (15 minutos)
+    let lastActivity = Date.now();
+    
+    function updateActivity() {
+        lastActivity = Date.now();
+    }
+    
+    // Eventos que indicam atividade do usuário
+    ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'].forEach(function(event) {
+        document.addEventListener(event, updateActivity, true);
+    });
+    
+    // Verificar inatividade a cada minuto
+    setInterval(function() {
+        const isLoginPage = window.location.pathname.includes('admin-login');
+        if (isLoginPage) return;
+        
+        const inactiveTime = Date.now() - lastActivity;
+        const maxInactiveTime = 15 * 60 * 1000; // 15 minutos
+        
+        if (inactiveTime > maxInactiveTime) {
+            alert('Sessão expirada por inatividade. Você será redirecionado para o login.');
+            window.__adminLogout();
+        }
+    }, 60000); // 1 minuto
+    
+    // Proteger contra abertura em múltiplas abas
+    const tabId = sessionStorage.getItem('admin_tab_id') || Date.now().toString();
+    sessionStorage.setItem('admin_tab_id', tabId);
+    
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'admin_tab_id' && e.newValue !== tabId) {
+            alert('Dashboard já está aberto em outra aba. Esta aba será fechada.');
+            window.close();
+        }
+    });
+    
+    localStorage.setItem('admin_tab_id', tabId);
+})();

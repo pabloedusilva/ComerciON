@@ -1,6 +1,12 @@
 // Cadastro.js - Validações e funcionalidades do formulário de cadastro
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Verificar se já está logado
+    if (window.AuthSystem && window.AuthSystem.isAuthenticated()) {
+        window.location.href = '/';
+        return;
+    }
+    
     initializeRegisterForm();
 });
 

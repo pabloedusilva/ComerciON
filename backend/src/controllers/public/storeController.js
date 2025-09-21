@@ -1,0 +1,1 @@
+// Status da loja (aberto/fechado)

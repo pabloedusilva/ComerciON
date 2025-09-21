@@ -1,6 +1,7 @@
 (function(){
-  const LS_KEY = 'pizzaria_admin_session';
-  const REDIRECT_URL = './admin.html';
+  const LS_KEY = 'admin_token';
+  const REDIRECT_URL = '/admin';
+  let isSubmitting = false;
 
   function isValidEmail(email){
     return /\S+@\S+\.\S+/.test(email);
@@ -19,14 +20,44 @@
     }
   }
 
-  // Auto redirect if already logged
-  try {
-    const session = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
-    if (session && session.logged === true) {
-      window.location.replace(REDIRECT_URL);
-      return;
+  function showError(element, message) {
+    if (element) {
+      element.textContent = message;
     }
-  } catch(e) { /* ignore */ }
+  }
+
+  function clearErrors() {
+    document.querySelectorAll('.input-error').forEach(el => el.textContent = '');
+  }
+
+  // Verificar se já está logado - APENAS UMA VEZ com verificação no backend
+  (async function checkExistingAuth() {
+    try {
+      const token = localStorage.getItem(LS_KEY);
+      if (token) {
+        // Verificar se o token ainda é válido no backend
+        const response = await fetch('/api/admin/auth/verificar', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.ok) {
+          console.log('Token válido encontrado, redirecionando...');
+          window.location.replace(REDIRECT_URL);
+          return;
+        } else {
+          // Token inválido, limpar e continuar no login
+          localStorage.clear();
+          sessionStorage.clear();
+        }
+      }
+    } catch(e) { 
+      console.error('Erro ao verificar token:', e);
+      localStorage.clear();
+      sessionStorage.clear();
+    }
+  })();
 
   // DOM ready
   document.addEventListener('DOMContentLoaded', function(){
@@ -47,35 +78,55 @@
       icon?.classList.toggle('fa-eye-slash');
     });
 
-    form?.addEventListener('submit', function(e){
+    form?.addEventListener('submit', async function(e){
       e.preventDefault();
-      // reset errors
-      emailError.textContent = '';
-      passError.textContent = '';
-
+      
+      if (isSubmitting) return;
+      
+      clearErrors();
+      
       let valid = true;
       const email = (emailInput.value || '').trim();
       const password = passInput.value || '';
 
       if (!isValidEmail(email)){
-        emailError.textContent = 'Informe um e-mail válido.';
+        showError(emailError, 'Informe um e-mail válido.');
         valid = false;
       }
       if (!password || password.length < 6){
-        passError.textContent = 'A senha deve ter no mínimo 6 caracteres.';
+        showError(passError, 'A senha deve ter no mínimo 6 caracteres.');
         valid = false;
       }
 
       if (!valid) return;
 
-      // Demo-only auth: any valid email/senha passes. No signup.
+      isSubmitting = true;
       setLoading(submitBtn, true);
-      setTimeout(()=>{
-        try {
-          localStorage.setItem(LS_KEY, JSON.stringify({ logged: true, at: Date.now(), email }));
-        } catch(e) { /* ignore */ }
-        window.location.href = REDIRECT_URL;
-      }, 900);
+
+      try {
+        const response = await fetch('/api/admin/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, senha: password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.sucesso) {
+          localStorage.setItem(LS_KEY, data.token);
+          window.location.href = REDIRECT_URL;
+        } else {
+          showError(passError, data.mensagem || 'Erro no login. Verifique suas credenciais.');
+        }
+      } catch (error) {
+        console.error('Erro no login:', error);
+        showError(passError, 'Erro de conexão. Tente novamente.');
+      } finally {
+        isSubmitting = false;
+        setLoading(submitBtn, false);
+      }
     });
   });
 })();
