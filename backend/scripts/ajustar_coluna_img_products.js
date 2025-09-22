@@ -36,3 +36,5 @@ const { dbHost, dbPort, dbUser, dbPass, dbName } = require('../src/config/enviro
     await conn.end();
   }
 })();
+
+module.exports = {};

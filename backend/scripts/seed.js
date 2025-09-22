@@ -1,1 +1,2 @@
 // Popular DB
+module.exports = {};

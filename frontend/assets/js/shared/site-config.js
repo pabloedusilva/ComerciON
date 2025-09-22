@@ -55,11 +55,15 @@
   }
 
   function applyMenuCarousel(layout) {
-    if (!layout?.carousel || !Array.isArray(layout.carousel)) return;
     const hero = document.querySelector('.hero-carousel .carousel-track');
     if (!hero) return;
+    const slides = Array.isArray(layout?.carousel) ? layout.carousel : [];
     hero.innerHTML = '';
-    layout.carousel.forEach((slide, i) => {
+    if (!slides.length) {
+      // Sem slides: não renderiza nada
+      return;
+    }
+    slides.forEach((slide, i) => {
       const div = document.createElement('div');
       div.className = 'carousel-slide' + (i === 0 ? ' active' : '');
       div.innerHTML = `
@@ -72,6 +76,23 @@
       cap.textContent = slide.caption || '';
       hero.appendChild(div);
     });
+
+    // Autoplay simples baseado na quantidade de slides
+    const container = document.querySelector('.hero-carousel');
+    if (!container) return;
+    // evita inicializar duas vezes
+    if (container.dataset.autoplayInit === '1') return;
+    container.dataset.autoplayInit = '1';
+    if (slides.length <= 1) return; // com 1 slide, não alterna
+
+    let idx = 0;
+    setInterval(() => {
+      const els = container.querySelectorAll('.carousel-slide');
+      if (!els.length) return;
+      els[idx]?.classList.remove('active');
+      idx = (idx + 1) % els.length;
+      els[idx]?.classList.add('active');
+    }, 5000);
   }
 
   function applyInstagram(layout) {

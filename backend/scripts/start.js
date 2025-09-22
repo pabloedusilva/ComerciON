@@ -1,1 +1,3 @@
 // Script inicialização
+
+module.exports = {};
