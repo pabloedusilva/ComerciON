@@ -7,7 +7,9 @@ const customerAuthRoutes = require('./customer/auth');
 const adminAuthRoutes = require('./admin/auth');
 // Rotas de catálogo público e admin produtos
 const publicCatalogRoutes = require('./public/catalog');
+const publicLayoutRoutes = require('./public/layout');
 const adminProductsRoutes = require('./admin/products');
+const adminLayoutRoutes = require('./admin/layout');
 
 // Middleware de log para rotas da API
 router.use((req, res, next) => {
@@ -39,7 +41,9 @@ if (process.env.NODE_ENV === 'development') {
 router.use('/customer/auth', customerAuthRoutes);
 router.use('/admin/auth', adminAuthRoutes);
 router.use('/public/catalog', publicCatalogRoutes);
+router.use('/public/layout', publicLayoutRoutes);
 router.use('/admin/products', adminProductsRoutes);
+router.use('/admin/layout', adminLayoutRoutes);
 
 // Rota 404 para API
 router.use('*', (req, res) => {

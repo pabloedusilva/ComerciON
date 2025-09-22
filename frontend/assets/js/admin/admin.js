@@ -2707,8 +2707,44 @@ const layoutManager = {
 
     init() {
         this.setupEventListeners();
-        this.loadStoredLayout();
-        this.updatePreviews();
+        // Primeiro tentar carregar do backend; se falhar, usa cache local
+        this.loadFromServer().then(() => {
+            this.updatePreviews();
+        }).catch(() => {
+            this.loadStoredLayout();
+            this.updatePreviews();
+        });
+    },
+
+    getToken() { return localStorage.getItem('admin_token'); },
+
+    async apiFetch(path, options = {}) {
+        const headers = options.headers || {};
+        const token = this.getToken();
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+        const res = await fetch(path, { ...options, headers });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.sucesso === false) {
+            throw new Error(data.mensagem || `Falha na requisição: ${path}`);
+        }
+        return data;
+    },
+
+    async loadFromServer() {
+        const data = await this.apiFetch('/api/admin/layout');
+        const set = data.data || {};
+        // Mapear config para o estado local do editor
+        this.currentLayout.background = set.home_background_url || this.currentLayout.background;
+        this.currentLayout.logo = set.logo_url || this.currentLayout.logo;
+        this.currentLayout.title = set.home_title || this.currentLayout.title;
+        this.currentLayout.subtitle = set.home_subtitle || this.currentLayout.subtitle;
+        this.currentLayout.description = set.home_description || this.currentLayout.description;
+        this.currentLayout.carouselSlides = Array.isArray(set.carousel) && set.carousel.length
+            ? set.carousel.map(s => ({ image: s.image_url, caption: s.caption }))
+            : this.currentLayout.carouselSlides;
+        // cache local
+        this.saveLayoutSilent();
     },
 
     setupEventListeners() {
@@ -2783,17 +2819,29 @@ const layoutManager = {
     },
 
     // Background functions
-    handleBackgroundUpload(event) {
+    async handleBackgroundUpload(event) {
         const file = event.target.files[0];
         if (!file) return;
 
         if (!this.validateImageFile(file)) return;
 
         const reader = new FileReader();
-        reader.onload = (e) => {
-            this.currentLayout.background = e.target.result;
-            this.updateBackgroundPreview();
-            this.saveLayout();
+        reader.onload = async (e) => {
+            try {
+                // Enviar para o backend como base64
+                const resp = await this.apiFetch('/api/admin/layout/background', {
+                    method: 'PUT',
+                    body: JSON.stringify({ image: e.target.result })
+                });
+                const bg = resp.data?.home_background_url || e.target.result;
+                this.currentLayout.background = bg;
+                this.updateBackgroundPreview();
+                this.saveLayout();
+                showNotification('Background atualizado!', 'success');
+            } catch (err) {
+                console.error(err);
+                showNotification(err.message || 'Erro ao atualizar background', 'error');
+            }
         };
         reader.readAsDataURL(file);
     },
@@ -2805,25 +2853,45 @@ const layoutManager = {
         }
     },
 
-    resetBackground() {
-        this.currentLayout.background = '../../assets/images/default-images/background.jpg';
-        this.updateBackgroundPreview();
-        this.saveLayoutSilent();
-        showNotification('Background restaurado!', 'info');
+    async resetBackground() {
+        try {
+            const url = '../../assets/images/default-images/background.jpg';
+            const resp = await this.apiFetch('/api/admin/layout/background', {
+                method: 'PUT',
+                body: JSON.stringify({ image: url })
+            });
+            this.currentLayout.background = resp.data?.home_background_url || url;
+            this.updateBackgroundPreview();
+            this.saveLayoutSilent();
+            showNotification('Background restaurado!', 'info');
+        } catch (e) {
+            showNotification('Falha ao restaurar background', 'error');
+        }
     },
 
     // Logo functions
-    handleLogoUpload(event) {
+    async handleLogoUpload(event) {
         const file = event.target.files[0];
         if (!file) return;
 
         if (!this.validateImageFile(file)) return;
 
         const reader = new FileReader();
-        reader.onload = (e) => {
-            this.currentLayout.logo = e.target.result;
-            this.updateLogoPreview();
-            this.saveLayout();
+        reader.onload = async (e) => {
+            try {
+                const resp = await this.apiFetch('/api/admin/layout/logo', {
+                    method: 'PUT',
+                    body: JSON.stringify({ image: e.target.result })
+                });
+                const logo = resp.data?.logo_url || e.target.result;
+                this.currentLayout.logo = logo;
+                this.updateLogoPreview();
+                this.saveLayout();
+                showNotification('Logo atualizada!', 'success');
+            } catch (err) {
+                console.error(err);
+                showNotification(err.message || 'Erro ao atualizar logo', 'error');
+            }
         };
         reader.readAsDataURL(file);
     },
@@ -2835,11 +2903,20 @@ const layoutManager = {
         }
     },
 
-    resetLogo() {
-        this.currentLayout.logo = '../../assets/images/default-images/logo_pizza.png';
-        this.updateLogoPreview();
-        this.saveLayoutSilent();
-        showNotification('Logo restaurada!', 'info');
+    async resetLogo() {
+        try {
+            const url = '../../assets/images/default-images/logo_pizza.png';
+            const resp = await this.apiFetch('/api/admin/layout/logo', {
+                method: 'PUT',
+                body: JSON.stringify({ image: url })
+            });
+            this.currentLayout.logo = resp.data?.logo_url || url;
+            this.updateLogoPreview();
+            this.saveLayoutSilent();
+            showNotification('Logo restaurada!', 'info');
+        } catch (e) {
+            showNotification('Falha ao restaurar logo', 'error');
+        }
     },
 
     // Text functions
@@ -2867,9 +2944,21 @@ const layoutManager = {
         if (previewDescription) previewDescription.textContent = this.currentLayout.description;
     },
 
-    saveTexts() {
-        this.saveLayout();
-        showNotification('Textos salvos com sucesso!', 'success');
+    async saveTexts() {
+        try {
+            await this.apiFetch('/api/admin/layout/texts', {
+                method: 'PUT',
+                body: JSON.stringify({
+                    title: this.currentLayout.title,
+                    subtitle: this.currentLayout.subtitle,
+                    description: this.currentLayout.description
+                })
+            });
+            this.saveLayout();
+            showNotification('Textos salvos com sucesso!', 'success');
+        } catch (e) {
+            showNotification(e.message || 'Falha ao salvar textos', 'error');
+        }
     },
 
     resetTexts() {
@@ -2998,9 +3087,22 @@ const layoutManager = {
         }
     },
 
-    saveCarousel() {
-        this.saveLayout();
-        showNotification('Carousel salvo com sucesso!', 'success');
+    async saveCarousel() {
+        try {
+            // Enviar slides para o backend (aceita base64 ou URLs)
+            const slides = this.currentLayout.carouselSlides.map(s => ({ image: s.image, caption: s.caption }));
+            const resp = await this.apiFetch('/api/admin/layout/carousel', {
+                method: 'PUT',
+                body: JSON.stringify({ slides })
+            });
+            const updated = (resp.data?.carousel || []).map(s => ({ image: s.image_url, caption: s.caption }));
+            if (updated.length) this.currentLayout.carouselSlides = updated;
+            this.updateCarouselPreview();
+            this.saveLayout();
+            showNotification('Carousel salvo com sucesso!', 'success');
+        } catch (e) {
+            showNotification(e.message || 'Falha ao salvar carousel', 'error');
+        }
     },
 
     async resetCarousel() {
@@ -3016,8 +3118,7 @@ const layoutManager = {
                 { image: '../../assets/images/default-images/banner1.jpg', caption: 'Clássicas irresistíveis' },
                 { image: '../../assets/images/default-images/banner2.jpg', caption: 'Promoções da semana' }
             ];
-            this.updateCarouselPreview();
-            this.saveLayoutSilent();
+            await this.saveCarousel();
             showNotification('Carousel restaurado!', 'info');
         }
     },
@@ -3441,10 +3542,29 @@ const instagramManager = {
         });
 
         // Botão salvar
-        saveBtn?.addEventListener('click', () => {
-            this.save();
-            this.updateInstagramSection();
-            showNotification('Configurações do Instagram salvas!', 'success');
+        saveBtn?.addEventListener('click', async () => {
+            try {
+                const token = localStorage.getItem('admin_token');
+                const res = await fetch('/api/admin/layout/instagram', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token ? `Bearer ${token}` : ''
+                    },
+                    body: JSON.stringify({
+                        enabled: this.state.enabled,
+                        handle: this.state.handle,
+                        text: this.state.text
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok || data.sucesso === false) throw new Error(data.mensagem || 'Falha ao salvar');
+                this.save(); // cache local
+                this.updateInstagramSection();
+                showNotification('Configurações do Instagram salvas!', 'success');
+            } catch (e) {
+                showNotification(e.message || 'Erro ao salvar Instagram', 'error');
+            }
         });
 
         // Botão reset
@@ -3462,6 +3582,21 @@ const instagramManager = {
                     handle: 'pizzaria_deliciosa',
                     text: 'Siga-nos no Instagram'
                 };
+                try {
+                    const token = localStorage.getItem('admin_token');
+                    const res = await fetch('/api/admin/layout/instagram', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': token ? `Bearer ${token}` : ''
+                        },
+                        body: JSON.stringify({ enabled: true, handle: this.state.handle, text: this.state.text })
+                    });
+                    const data = await res.json();
+                    if (!res.ok || data.sucesso === false) throw new Error(data.mensagem || 'Falha ao restaurar');
+                } catch(e) {
+                    console.warn('Falha ao restaurar no backend, aplicando localmente: ', e);
+                }
                 this.save();
                 this.render();
                 this.updatePreview();
@@ -3505,13 +3640,25 @@ const instagramManager = {
         console.log('Instagram section updated:', this.state);
     },
 
-    load() {
+    async load() {
         try {
-            const raw = localStorage.getItem('pizzaria_instagram');
-            if (raw) {
-                const parsed = JSON.parse(raw);
-                this.state = { ...this.state, ...parsed };
+            // Tenta carregar do backend primeiro
+            const token = localStorage.getItem('admin_token');
+            const res = await fetch('/api/admin/layout', {
+                headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+            });
+            const data = await res.json();
+            if (res.ok && data.sucesso !== false) {
+                const set = data.data || {};
+                this.state.enabled = !!set.instagram_enabled;
+                this.state.handle = set.instagram_handle || this.state.handle;
+                this.state.text = set.instagram_text || this.state.text;
+                this.save(); // sincronizar cache local
+                return;
             }
+            // fallback localStorage
+            const raw = localStorage.getItem('pizzaria_instagram');
+            if (raw) this.state = { ...this.state, ...JSON.parse(raw) };
         } catch (e) {
             console.warn('Falha ao carregar configurações do Instagram:', e);
         }
