@@ -296,7 +296,7 @@ function submitForm() {
         
         // Redirecionar após sucesso
         setTimeout(() => {
-            window.location.href = 'login.html?registered=true';
+            window.location.href = '/login?registered=true';
         }, 2000);
         
     }, 1500);

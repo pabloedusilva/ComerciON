@@ -944,9 +944,6 @@ function setupConfigForms() {
             submitBtn.disabled = true;
             
             try {
-                // Simular salvamento (aqui você adicionaria a lógica real)
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
                 // Coletar dados do formulário
                 const formData = new FormData(globalConfigForm);
                 const configData = {};
@@ -959,10 +956,26 @@ function setupConfigForms() {
                         configData[key] = value;
                     }
                 }
-                
-                // Salvar no localStorage
+                // Salvar no backend (nome, telefone, email, endereço)
+                const token = localStorage.getItem('admin_token');
+                const payload = {
+                    name: configData.pizzariaName,
+                    phone: configData.pizzariaPhone,
+                    email: configData.pizzariaEmail,
+                    address: configData.pizzariaAddress,
+                };
+                const resp = await fetch('/api/admin/settings', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token ? `Bearer ${token}` : ''
+                    },
+                    body: JSON.stringify(payload)
+                });
+                if (!resp.ok) throw new Error('Falha ao salvar configurações');
+
+                // Atualizar localStorage como cache (não mais fonte de verdade)
                 localStorage.setItem('pizzariaConfig', JSON.stringify(configData));
-                
                 showNotification('Todas as configurações foram salvas com sucesso!', 'success');
             } catch (error) {
                 showNotification('Erro ao salvar configurações. Tente novamente.', 'error');
@@ -1001,7 +1014,31 @@ function setupConfigForms() {
 }
 
 // Carregar configurações salvas
-function loadSavedConfig() {
+async function loadSavedConfig() {
+    // Primeiro tenta do backend, senão usa localStorage
+    const token = localStorage.getItem('admin_token');
+    try {
+        const resp = await fetch('/api/admin/settings', {
+            headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+        });
+        if (resp.ok) {
+            const json = await resp.json();
+            if (json?.sucesso) {
+                const s = json.data || {};
+                const map = {
+                    pizzariaName: s.name,
+                    pizzariaPhone: s.phone,
+                    pizzariaEmail: s.email,
+                    pizzariaAddress: s.address,
+                };
+                Object.keys(map).forEach(key => {
+                    const field = document.querySelector(`[name="${key}"]`);
+                    if (field && map[key] != null) field.value = map[key];
+                });
+            }
+        }
+    } catch (_) {}
+
     const savedConfig = localStorage.getItem('pizzariaConfig');
     if (savedConfig) {
         try {
@@ -5023,47 +5060,91 @@ class SoundSettings {
         };
         localStorage.setItem('soundSettings', JSON.stringify(settings));
         console.log('Sound settings saved:', settings);
+
+        // Persistir no backend (não bloqueante)
+        try {
+            const token = localStorage.getItem('admin_token');
+            if (token) {
+                fetch('/api/admin/settings/notifications', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        notification_enabled: this.soundEnabled,
+                        notification_sound: this.currentSound
+                    })
+                }).catch(() => {});
+            }
+        } catch (_) {}
     }
 
     loadSavedSettings() {
-        try {
-            const saved = localStorage.getItem('soundSettings');
-            if (saved) {
-                const settings = JSON.parse(saved);
-                
-                // Set sound enabled state
-                if (typeof settings.enabled !== 'undefined') {
-                    this.soundEnabled = settings.enabled;
-                    if (this.soundCheckbox) {
-                        this.soundCheckbox.checked = this.soundEnabled;
+        // Primeiro tenta do backend; fallback para localStorage
+        (async () => {
+            let appliedFromBackend = false;
+            try {
+                const token = localStorage.getItem('admin_token');
+                if (token) {
+                    const resp = await fetch('/api/admin/settings', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (resp.ok) {
+                        const json = await resp.json();
+                        const data = json?.data;
+                        if (data) {
+                            if (typeof data.notification_enabled !== 'undefined') {
+                                this.soundEnabled = !!data.notification_enabled;
+                                if (this.soundCheckbox) this.soundCheckbox.checked = this.soundEnabled;
+                            }
+                            if (data.notification_sound) {
+                                this.currentSound = data.notification_sound;
+                                const soundOption = document.querySelector(`[data-sound="${data.notification_sound}"]`);
+                                if (soundOption) {
+                                    document.querySelectorAll('.sound-option').forEach(opt => opt.classList.remove('active'));
+                                    soundOption.classList.add('active');
+                                }
+                            }
+                            if (window.orderNotificationSystem) {
+                                window.orderNotificationSystem.updateSound(this.currentSound);
+                                window.orderNotificationSystem.setSoundEnabled(this.soundEnabled);
+                            }
+                            appliedFromBackend = true;
+                        }
                     }
                 }
-                
-                // Set sound
-                if (settings.sound) {
-                    this.currentSound = settings.sound;
-                    const soundOption = document.querySelector(`[data-sound="${settings.sound}"]`);
-                    if (soundOption) {
-                        document.querySelectorAll('.sound-option').forEach(opt => opt.classList.remove('active'));
-                        soundOption.classList.add('active');
+            } catch (_) {}
+
+            if (!appliedFromBackend) {
+                try {
+                    const saved = localStorage.getItem('soundSettings');
+                    if (saved) {
+                        const settings = JSON.parse(saved);
+                        if (typeof settings.enabled !== 'undefined') {
+                            this.soundEnabled = settings.enabled;
+                            if (this.soundCheckbox) this.soundCheckbox.checked = this.soundEnabled;
+                        }
+                        if (settings.sound) {
+                            this.currentSound = settings.sound;
+                            const soundOption = document.querySelector(`[data-sound="${settings.sound}"]`);
+                            if (soundOption) {
+                                document.querySelectorAll('.sound-option').forEach(opt => opt.classList.remove('active'));
+                                soundOption.classList.add('active');
+                            }
+                            if (window.orderNotificationSystem) {
+                                window.orderNotificationSystem.updateSound(this.currentSound);
+                                window.orderNotificationSystem.setSoundEnabled(this.soundEnabled);
+                            }
+                        }
+                    } else {
+                        this.saveSettings();
                     }
-                    
-                    // Update notification system sound
-                    if (window.orderNotificationSystem) {
-                        window.orderNotificationSystem.updateSound(this.currentSound);
-                        window.orderNotificationSystem.setSoundEnabled(this.soundEnabled);
-                        console.log('Loaded and applied saved sound to notification system:', this.currentSound);
-                    }
+                } catch (error) {
+                    console.log('Error loading sound settings:', error);
                 }
-                
-                console.log('Loaded saved sound setting:', settings);
-            } else {
-                // If no saved settings, save the default
-                this.saveSettings();
             }
-        } catch (error) {
-            console.log('Error loading sound settings:', error);
-        }
+        })();
     }
 }
 

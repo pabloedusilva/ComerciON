@@ -12,6 +12,18 @@
     }
   }
 
+  async function fetchSettings() {
+    try {
+      const res = await fetch('/api/public/settings');
+      const data = await res.json();
+      if (!res.ok || !data.sucesso) throw new Error(data.mensagem || 'Falha ao carregar configurações');
+      return data.data;
+    } catch (e) {
+      console.warn('Configurações públicas indisponíveis:', e.message);
+      return null;
+    }
+  }
+
   function setImg(el, url) {
     if (!el || !url) return;
     if (el.tagName === 'IMG') el.src = url; else el.style.backgroundImage = `url('${url}')`;
@@ -96,13 +108,77 @@
     if (link && layout?.instagram?.handle) link.href = `https://www.instagram.com/${layout.instagram.handle}/`;
   }
 
+  function formatWhatsLink(phone) {
+    if (!phone) return null;
+    // Remove caracteres não numéricos e força DDI+DDD+numero
+    const digits = String(phone).replace(/\D+/g, '');
+    if (!digits) return null;
+    // Se não tiver DDI, assumir Brasil 55 para compatibilidade
+    const withDDI = digits.length <= 11 ? '55' + digits : digits;
+    return `https://wa.me/${withDDI}`;
+  }
+
+  function applyFooter(settings, layout) {
+    if (!settings) return;
+    // Contato
+    const phoneLink = document.querySelector('.footer-section .contact-link[href^="tel:"]');
+    const phoneSpan = phoneLink?.querySelector('span');
+    if (phoneLink && settings.phone) {
+      const telDigits = String(settings.phone).replace(/\D+/g, '');
+      phoneLink.href = `tel:+${telDigits.length <= 11 ? '55' + telDigits : telDigits}`;
+      if (phoneSpan) phoneSpan.textContent = settings.phone;
+    }
+    const emailLink = document.querySelector('.footer-section .contact-link[href^="mailto:"]');
+    const emailSpan = emailLink?.querySelector('span');
+    if (emailLink && settings.email) {
+      emailLink.href = `mailto:${settings.email}`;
+      if (emailSpan) emailSpan.textContent = settings.email;
+    }
+    const addressLink = document.querySelector('.footer-section .contact-link[href*="google.com/maps"]');
+    const addressSpan = addressLink?.querySelector('span');
+    if (addressLink && settings.address) {
+      const encoded = encodeURIComponent(settings.address);
+      addressLink.href = `https://www.google.com/maps/search/?api=1&query=${encoded}`;
+      if (addressSpan) addressSpan.textContent = settings.address;
+    }
+
+    // Social (Instagram + WhatsApp)
+    const social = document.querySelector('.footer-section .social-links');
+    if (social) {
+      const instaHandle = layout?.instagram?.handle;
+      const whatsUrl = formatWhatsLink(settings.phone);
+      // Limpa e recria apenas os que precisamos
+      social.innerHTML = '';
+      if (instaHandle) {
+        const a = document.createElement('a');
+        a.href = `https://www.instagram.com/${instaHandle}/`;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.setAttribute('aria-label', 'Instagram');
+        a.innerHTML = '<i class="fab fa-instagram"></i>';
+        social.appendChild(a);
+      }
+      if (whatsUrl) {
+        const a = document.createElement('a');
+        a.href = whatsUrl;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.setAttribute('aria-label', 'WhatsApp');
+        a.innerHTML = '<i class="fab fa-whatsapp"></i>';
+        social.appendChild(a);
+      }
+    }
+  }
+
   async function init() {
-    const layout = await fetchLayout();
-    if (!layout) return;
-    applyLogo(layout);
-    applyHome(layout);
-    applyMenuCarousel(layout);
-    applyInstagram(layout);
+    const [layout, settings] = await Promise.all([fetchLayout(), fetchSettings()]);
+    if (layout) {
+      applyLogo(layout);
+      applyHome(layout);
+      applyMenuCarousel(layout);
+      applyInstagram(layout);
+    }
+    if (settings) applyFooter(settings, layout);
   }
 
   document.addEventListener('DOMContentLoaded', init);

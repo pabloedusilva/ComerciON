@@ -53,7 +53,7 @@
 
         <div class="auth-footer">
           <span>Não tem conta?</span>
-          <a href="cadastro.html" class="link-accent">Crie uma agora</a>
+          <a href="/cadastro" class="link-accent">Crie uma agora</a>
         </div>
       </div>
     </div>
@@ -101,7 +101,7 @@
         this.querySelector('.auth-submit').classList.add('loading');
         this.querySelector('.auth-submit').textContent = 'Entrando...';
         setTimeout(()=>{
-          window.location.href = '../menu.html';
+          window.location.href = '/menu';
         }, 1200);
       }
     });

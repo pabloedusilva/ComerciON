@@ -128,7 +128,7 @@ function updateCart() {
           <div class="cart-empty-icon"><i class="fa-regular fa-face-frown"></i></div>
           <h2 class="cart-empty-title">Seu carrinho está vazio</h2>
           <p class="cart-empty-sub">Adicione pizzas ou bebidas para começar</p>
-          <a href="menu.html" class="cart-empty-cta">Ver Cardápio</a>
+          <a href="/menu" class="cart-empty-cta">Ver Cardápio</a>
         </div>
       `);
     }
