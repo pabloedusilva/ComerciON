@@ -22,7 +22,7 @@ src/
 ├── middleware/      # Middlewares
 ├── services/        # Serviços externos
 ├── utils/           # Utilitários
-├── database/        # Migrations e seeders
+├── database/        # (sem migrations/seeders no código)
 └── sockets/         # Socket.IO
 ```
 
@@ -35,12 +35,6 @@ npm install
 # Configurar variáveis de ambiente
 cp .env.example .env
 
-# Executar migrations
-npm run migrate
-
-# Popular banco de dados
-npm run seed
-
 # Iniciar em desenvolvimento
 npm run dev
 ```
@@ -49,9 +43,7 @@ npm run dev
 
 - `npm start` - Produção
 - `npm run dev` - Desenvolvimento
-- `npm test` - Testes
-- `npm run migrate` - Migrations
-- `npm run seed` - Seeders
+- (removidos) scripts de teste, migrations e seeders do código-fonte
 
 ## 🔐 Autenticação
 

@@ -6,9 +6,6 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "criar-tabelas": "node criar_tabelas_DELETAR.js",
-    "test": "jest",
-    "test:watch": "jest --watch",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
@@ -45,10 +42,7 @@
     "xss-clean": "^0.1.4"
   },
   "devDependencies": {
-    "@types/jest": "^29.5.3",
-    "jest": "^29.6.2",
-    "nodemon": "^3.0.1",
-    "supertest": "^6.3.3"
+    "nodemon": "^3.0.1"
   },
   "engines": {
     "node": ">=16.0.0",

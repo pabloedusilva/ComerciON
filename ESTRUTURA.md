@@ -145,25 +145,7 @@ backend/
 │   │   └── dateUtils.js              # Utilitários de data
 │   │
 │   ├── 📁 database/
-│   │   ├── 📁 migrations/
-│   │   │   ├── 001_create_users.js
-│   │   │   ├── 002_create_categories.js
-│   │   │   ├── 003_create_products.js
-│   │   │   ├── 004_create_orders.js
-│   │   │   ├── 005_create_order_items.js
-│   │   │   ├── 006_create_reviews.js
-│   │   │   ├── 007_create_delivery_areas.js
-│   │   │   ├── 008_create_store_settings.js
-│   │   │   ├── 009_create_payments.js
-│   │   │   └── 010_create_notifications.js
-│   │   │
-│   │   ├── 📁 seeders/
-│   │   │   ├── admin-user.js         # Admin padrão
-│   │   │   ├── categories.js         # Categorias iniciais
-│   │   │   ├── products.js           # Produtos iniciais
-│   │   │   └── settings.js           # Configurações iniciais
-│   │   │
-│   │   └── connection.js             # Conexão MySQL
+│   │   └── connection.js             # Conexão MySQL (sem migrations/seeders no repositório)
 │   │
 │   ├── 📁 sockets/
 │   │   ├── adminSocket.js            # Socket.IO admin
@@ -180,10 +162,7 @@ backend/
 │   │
 │   └── 📁 temp/                      # Arquivos temporários
 │
-├── 📁 tests/
-│   ├── 📁 unit/
-│   ├── 📁 integration/
-│   └── 📁 e2e/
+├── 📁 tests/                          # (removido do repositório)
 │
 ├── 📁 docs/
 │   ├── API.md                        # Documentação API
@@ -191,8 +170,6 @@ backend/
 │   └── SECURITY.md                   # Segurança
 │
 ├── 📁 scripts/
-│   ├── start.js                      # Script inicialização
-│   ├── seed.js                       # Popular DB
 │   └── backup.js                     # Backup DB
 │
 ├── .env.example                      # Exemplo variáveis
