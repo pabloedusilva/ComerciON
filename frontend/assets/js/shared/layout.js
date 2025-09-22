@@ -1,4 +1,4 @@
-// Carrega configurações do site (layout) do backend e aplica na UI
+// layout.js - carregar e aplicar layout público (logo, home, carousel, instagram)
 (function(){
   async function fetchLayout() {
     try {
@@ -19,27 +19,22 @@
 
   function applyLogo(layout) {
     if (!layout?.logo_url) return;
-    // Header logos
     document.querySelectorAll('.menu-area .logo img, .header-logo img, .footer-logo, .admin-header .header-logo img').forEach(img => {
       setImg(img, layout.logo_url);
     });
-    // About page hero image logo if any
     const aboutHeroImg = document.querySelector('.about-hero-image img');
     if (aboutHeroImg) setImg(aboutHeroImg, layout.logo_url);
   }
 
   function applyHome(layout) {
-    // Background da home (index)
     if (layout?.home_background_url) {
       const bg = document.querySelector('.bg-image');
       if (bg) bg.style.backgroundImage = `url('${layout.home_background_url}')`;
       const rightImg = document.querySelector('.right-home .right-image img');
       if (rightImg && !rightImg.getAttribute('data-fixed')) {
-        // não sobrescrever se marcado como fixo
         setImg(rightImg, layout.home_background_url);
       }
     }
-    // Textos
     if (layout?.home_title) {
       const el = document.querySelector('.left-text1, #previewTitle');
       if (el) el.textContent = layout.home_title;
@@ -59,10 +54,7 @@
     if (!hero) return;
     const slides = Array.isArray(layout?.carousel) ? layout.carousel : [];
     hero.innerHTML = '';
-    if (!slides.length) {
-      // Sem slides: não renderiza nada
-      return;
-    }
+    if (!slides.length) return;
     slides.forEach((slide, i) => {
       const div = document.createElement('div');
       div.className = 'carousel-slide' + (i === 0 ? ' active' : '');
@@ -76,15 +68,11 @@
       cap.textContent = slide.caption || '';
       hero.appendChild(div);
     });
-
-    // Autoplay simples baseado na quantidade de slides
     const container = document.querySelector('.hero-carousel');
     if (!container) return;
-    // evita inicializar duas vezes
     if (container.dataset.autoplayInit === '1') return;
     container.dataset.autoplayInit = '1';
-    if (slides.length <= 1) return; // com 1 slide, não alterna
-
+    if (slides.length <= 1) return;
     let idx = 0;
     setInterval(() => {
       const els = container.querySelectorAll('.carousel-slide');

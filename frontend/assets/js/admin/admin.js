@@ -2693,6 +2693,7 @@ document.getElementById('exportOrdersBtn')?.addEventListener('click', () => expo
 // Layout Management Functions
 const layoutManager = {
     // State management
+    eventsBound: false,
     currentLayout: {
         background: '../../assets/images/default-images/background.jpg',
         logo: '../../assets/images/default-images/logo_pizza.png',
@@ -2748,6 +2749,7 @@ const layoutManager = {
     },
 
     setupEventListeners() {
+        if (this.eventsBound) return; // evita múltiplos binds que causam duplicação
         // Background image upload
         const backgroundInput = document.getElementById('backgroundInput');
         if (backgroundInput) {
@@ -2788,6 +2790,8 @@ const layoutManager = {
                 this.selectSlide(slide);
             }
         });
+
+        this.eventsBound = true; // marca como ligado uma vez
     },
 
     loadStoredLayout() {
@@ -2974,7 +2978,8 @@ const layoutManager = {
 
     // Carousel functions
     handleCarouselUpload(event) {
-        const files = Array.from(event.target.files);
+        const inputEl = event.target;
+        const files = Array.from(inputEl.files || []);
         if (!files.length) return;
 
         files.forEach(file => {
@@ -2992,6 +2997,8 @@ const layoutManager = {
             reader.readAsDataURL(file);
         });
 
+        // limpa valor do input para não re-disparar com os mesmos arquivos
+        inputEl.value = '';
         showNotification(`${files.length} imagem(ns) adicionada(s) ao carousel!`, 'success');
     },
 
