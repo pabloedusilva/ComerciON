@@ -1,7 +1,7 @@
 // Model Admin - Acesso ao dashboard
 const bcrypt = require('bcrypt');
 const { pool } = require('../config/database');
-const { BCRYPT_ROUNDS } = require('../config/environment');
+const { bcryptRounds } = require('../config/environment');
 
 class Admin {
     constructor(data) {
@@ -124,7 +124,7 @@ class Admin {
             }
 
             // Hash da senha
-            const senhaHash = await bcrypt.hash(senha, BCRYPT_ROUNDS);
+            const senhaHash = await bcrypt.hash(senha, bcryptRounds);
 
             const query = `
                 INSERT INTO admins (nome, email, senha, nivel_acesso, criado_por)
@@ -149,7 +149,7 @@ class Admin {
                 throw new Error('Senha atual incorreta');
             }
 
-            const novaSenhaHash = await bcrypt.hash(novaSenha, BCRYPT_ROUNDS);
+            const novaSenhaHash = await bcrypt.hash(novaSenha, bcryptRounds);
             
             const query = 'UPDATE admins SET senha = ? WHERE id = ?';
             await pool.execute(query, [novaSenhaHash, this.id]);

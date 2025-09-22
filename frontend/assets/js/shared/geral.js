@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const assetsPath = getAssetsPath();
     console.log('Assets path:', assetsPath);
 
-    const api = fetch(`/api/public/catalog/products`)
+  const api = fetch(`/api/public/catalog/products`)
   .then(async (response) => await response.json())
   .then((result) => {
     if(!result.sucesso){ throw new Error(result.mensagem || 'Falha ao carregar catálogo'); }
@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .cloneNode(true); //cloneNode() = Clona o elemento selecionado com a qtd do JSON
       pizzaItem.setAttribute("data-key", index); // colocando atributo e valor
 
-      pizzaItem.querySelector(".pizza-item--img img").src = item.img;
+  pizzaItem.querySelector(".pizza-item--img img").src = item.img || (assetsPath + 'images/default-images/pizza-desenho.png');
       pizzaItem.querySelector(
         ".pizza-item--price"
       ).innerHTML = `${item.price[2].toLocaleString("pt-br", {
@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .cloneNode(true);
       drinkItem.setAttribute("data-key", index);
 
-      drinkItem.querySelector(".pizza-item--img img").src = item.img;
+  drinkItem.querySelector(".pizza-item--img img").src = item.img || (assetsPath + 'images/default-images/pizza-desenho.png');
       drinkItem.querySelector(
         ".pizza-item--price"
       ).innerHTML = `${item.price[2].toLocaleString("pt-br", {
@@ -139,7 +139,8 @@ function openModal(key, type) {
   modalType = type;
   currentData = type === 'pizza' ? pizzas : drinks;
 
-  document.querySelector(".pizzaBig img").src = currentData[key].img;
+  const assetsPath = getAssetsPath();
+  document.querySelector(".pizzaBig img").src = currentData[key].img || (assetsPath + 'images/default-images/pizza-desenho.png');
   document.querySelector(".pizzaInfo h1").innerHTML = currentData[key].name;
   document.querySelector(".pizzaInfo--desc").innerHTML = currentData[key].description;
   document.querySelector(".pizzaInfo--actualPrice").innerHTML = `${currentData[key].price[2].toLocaleString("pt-br", {

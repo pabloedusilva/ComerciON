@@ -12,13 +12,29 @@ const Product = {
         price_small DECIMAL(10,2) NOT NULL DEFAULT 0,
         price_medium DECIMAL(10,2) NOT NULL DEFAULT 0,
         price_large DECIMAL(10,2) NOT NULL DEFAULT 0,
-        img VARCHAR(512) DEFAULT NULL,
+  img MEDIUMTEXT DEFAULT NULL,
         status ENUM('active','inactive') NOT NULL DEFAULT 'active',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `;
     await pool.execute(sql);
+
+    // Garantir que a coluna img suporte conteúdo grande (urls longas/base64)
+    try {
+      const [cols] = await pool.execute("SHOW COLUMNS FROM products LIKE 'img'");
+      if (cols && cols[0] && typeof cols[0].Type === 'string') {
+        const type = String(cols[0].Type).toLowerCase();
+        if (!(type.includes('mediumtext') || type.includes('longtext'))) {
+          await pool.execute('ALTER TABLE products MODIFY COLUMN img MEDIUMTEXT NULL');
+        }
+      }
+    } catch (e) {
+      // não bloquear a aplicação caso falhe; logar apenas em dev
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('Aviso ao ajustar coluna products.img:', e.message);
+      }
+    }
   },
 
   async listAll({ onlyActive = true } = {}) {

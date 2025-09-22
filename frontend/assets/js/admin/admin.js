@@ -495,9 +495,14 @@ function removeLoadingState() {
 // Carregar produtos do backend
 async function loadProductsFromAPI() {
     try {
-        const response = await fetch('/api/public/catalog/products');
+        const token = localStorage.getItem('admin_token');
+        const response = await fetch('/api/admin/products', {
+            headers: {
+                'Authorization': token ? `Bearer ${token}` : ''
+            }
+        });
         const result = await response.json();
-        if (!result.sucesso) throw new Error(result.mensagem || 'Falha ao carregar produtos');
+        if (!response.ok || !result.sucesso) throw new Error(result.mensagem || 'Falha ao carregar produtos');
         products = result.data || [];
         renderProductsTable();
     } catch (error) {
@@ -1648,10 +1653,13 @@ function renderProductsTable() {
     tbody.innerHTML = '';
 
     products.forEach(product => {
+        const imgSrc = product.img && typeof product.img === 'string' && product.img.trim() !== ''
+            ? product.img
+            : '/assets/images/default-images/pizza-desenho.png';
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>
-                <img src="${product.img}" alt="${product.name}" class="product-img">
+                <img src="${imgSrc}" alt="${product.name}" class="product-img" onerror="this.onerror=null;this.src='/assets/images/default-images/pizza-desenho.png'">
             </td>
             <td>${product.name}</td>
             <td>${product.category === 'pizza' ? 'Pizza' : 'Bebida'}</td>
@@ -1880,10 +1888,13 @@ function renderFilteredProducts(filteredProducts) {
     tbody.innerHTML = '';
 
     filteredProducts.forEach(product => {
+        const imgSrc = product.img && typeof product.img === 'string' && product.img.trim() !== ''
+            ? product.img
+            : '/assets/images/default-images/pizza-desenho.png';
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>
-                <img src="${product.img}" alt="${product.name}" class="product-img">
+                <img src="${imgSrc}" alt="${product.name}" class="product-img" onerror="this.onerror=null;this.src='/assets/images/default-images/pizza-desenho.png'">
             </td>
             <td>${product.name}</td>
             <td>${product.category === 'pizza' ? 'Pizza' : 'Bebida'}</td>
@@ -2112,13 +2123,13 @@ function handleImageInput(e, ctx) {
 
 function processSelectedFile(file, { imgEl, previewBox, form }) {
     const validTypes = ['image/jpeg','image/png','image/webp','image/gif'];
-    const maxSize = 2 * 1024 * 1024; // 2MB
+    const maxSize = 3 * 1024 * 1024; // 3MB (alinhado com o backend)
     if (!validTypes.includes(file.type)) {
         showNotification('Formato inválido. Use JPG, PNG, WEBP ou GIF.', 'error');
         return;
     }
     if (file.size > maxSize) {
-        showNotification('Imagem muito grande. Tamanho máximo: 2MB.', 'warning');
+        showNotification('Imagem muito grande. Tamanho máximo: 3MB.', 'warning');
         return;
     }
     const reader = new FileReader();
@@ -2161,7 +2172,8 @@ async function saveProduct() {
             parseFloat(formData.get('price3'))
         ],
         sizes: ['320g', '530g', '860g'],
-        img: uploadedImage || '../../assets/images/default-images/pizza-desenho.png',
+        // Enviar base64 quando houver upload; caso contrário, enviar null para usar fallback no frontend
+        img: uploadedImage || null,
         status: 'active'
     };
 

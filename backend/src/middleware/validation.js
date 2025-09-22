@@ -146,3 +146,46 @@ module.exports = {
     sanitizarEntrada,
     verificarValidacao
 };
+
+// ===== Produtos =====
+const isBase64Image = (val) => typeof val === 'string' && /^data:image\/(png|jpe?g|webp|gif);base64,/.test(val);
+const estimateBase64SizeBytes = (b64) => {
+    // tamanho aproximado: 3/4 do comprimento removendo cabeçalho
+    const content = b64.split(',')[1] || '';
+    return Math.floor((content.length * 3) / 4);
+};
+
+const validarProdutoBase = [
+    body('name').isString().isLength({ min: 2, max: 255 }).withMessage('Nome inválido'),
+    body('category').isIn(['pizza','drink']).withMessage('Categoria inválida'),
+    body('description').optional().isString().isLength({ max: 5000 }).withMessage('Descrição muito longa'),
+    body('price').isArray({ min: 1, max: 3 }).withMessage('Preço deve ser array de até 3 itens'),
+    body('price.*').isFloat({ min: 0, max: 9999 }).withMessage('Preço inválido'),
+    body('status').optional().isIn(['active','inactive']).withMessage('Status inválido')
+];
+
+const validarProdutoImagem = [
+    body('img').custom((val) => {
+        if (val == null || val === '') return true; // sem imagem é permitido
+        if (!isBase64Image(val)) return true; // se for URL string normal, também permitimos
+        const size = estimateBase64SizeBytes(val);
+        const max = 3 * 1024 * 1024; // 3MB
+        if (size > max) throw new Error('Imagem muito grande (máx 3MB)');
+        return true;
+    })
+];
+
+const validarProdutoCreate = [
+    ...validarProdutoBase,
+    ...validarProdutoImagem,
+    verificarValidacao
+];
+
+const validarProdutoUpdate = [
+    ...validarProdutoBase,
+    ...validarProdutoImagem,
+    verificarValidacao
+];
+
+module.exports.validarProdutoCreate = validarProdutoCreate;
+module.exports.validarProdutoUpdate = validarProdutoUpdate;

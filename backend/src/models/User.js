@@ -1,7 +1,7 @@
 // Model User - Clientes da pizzaria
 const bcrypt = require('bcrypt');
 const { pool } = require('../config/database');
-const { BCRYPT_ROUNDS } = require('../config/environment');
+const { bcryptRounds } = require('../config/environment');
 
 class User {
     constructor(data) {
@@ -30,7 +30,7 @@ class User {
             }
 
             // Hash da senha
-            const senhaHash = await bcrypt.hash(senha, BCRYPT_ROUNDS);
+            const senhaHash = await bcrypt.hash(senha, bcryptRounds);
 
             const query = `
                 INSERT INTO usuarios (nome, email, senha, telefone, endereco, cidade, estado, cep)
@@ -139,7 +139,7 @@ class User {
                 throw new Error('Senha atual incorreta');
             }
 
-            const novaSenhaHash = await bcrypt.hash(novaSenha, BCRYPT_ROUNDS);
+            const novaSenhaHash = await bcrypt.hash(novaSenha, bcryptRounds);
             
             const query = 'UPDATE usuarios SET senha = ? WHERE id = ?';
             await pool.execute(query, [novaSenhaHash, this.id]);

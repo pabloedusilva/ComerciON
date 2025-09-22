@@ -66,6 +66,8 @@ app.set('trust proxy', 1);
 
 // Servir arquivos estáticos do frontend
 app.use(express.static(path.join(__dirname, '../../frontend')));
+// Servir uploads públicos (mesma pasta usada pelo uploadService: backend/public/uploads)
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
 // Rotas da API
 app.use('/api', routes);
