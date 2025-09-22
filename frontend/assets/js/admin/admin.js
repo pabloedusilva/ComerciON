@@ -4032,16 +4032,40 @@ class DeliveryManager {
     constructor() {
         this.states = [];
         this.cities = [];
-        this.deliveryAreas = JSON.parse(localStorage.getItem('deliveryAreas')) || [];
+        this.deliveryAreas = [];
         this.init();
     }
 
     async init() {
         this.bindEvents();
         await this.loadStates();
+        await this.loadAreasFromServer();
         this.renderDeliveryAreas();
         this.updateDeliveryCount();
-        this.renderDeliveryStats();
+        await this.renderDeliveryStats();
+    }
+
+    getToken() { return localStorage.getItem('admin_token'); }
+
+    async apiFetch(path, options = {}) {
+        const headers = options.headers || {};
+        const token = this.getToken();
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        if (!(options.body instanceof FormData)) headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+        const res = await fetch(path, { ...options, headers });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.sucesso === false) throw new Error(data.mensagem || `Falha na requisição: ${path}`);
+        return data;
+    }
+
+    async loadAreasFromServer() {
+        try {
+            const data = await this.apiFetch('/api/admin/delivery/areas');
+            this.deliveryAreas = Array.isArray(data.areas) ? data.areas : [];
+        } catch (e) {
+            console.error('Erro ao carregar áreas do servidor:', e);
+            this.deliveryAreas = [];
+        }
     }
 
     bindEvents() {
@@ -4200,40 +4224,36 @@ class DeliveryManager {
             return;
         }
 
-        // Check if area already exists
+        // Check if area already exists (local)
         const existingArea = this.deliveryAreas.find(area => 
-            area.stateId === stateId && area.cityId === cityId
+            String(area.stateId) === String(stateId) && String(area.cityId) === String(cityId)
         );
 
-        if (existingArea) {
-            const confirmed = await customConfirm(
-                `A cidade ${selectedCity.nome} já está configurada com taxa de R$ ${existingArea.fee.toFixed(2)}. Deseja atualizar?`,
-                'Área já existe',
-                'Atualizar',
-                'Cancelar'
-            );
-            
-            if (!confirmed) return;
-            
-            existingArea.fee = fee;
-        } else {
-            const newArea = {
-                id: Date.now(),
-                stateId,
-                cityId,
-                stateName: selectedState.nome,
-                stateUf: selectedState.sigla,
-                cityName: selectedCity.nome,
-                fee
-            };
-            
-            this.deliveryAreas.push(newArea);
+        const payload = {
+            stateId: Number(stateId),
+            cityId: Number(cityId),
+            stateName: selectedState.nome,
+            stateUf: selectedState.sigla,
+            cityName: selectedCity.nome,
+            fee
+        };
+        if (existingArea) payload.id = existingArea.id;
+
+        // Persist to server
+        try {
+            const resp = await this.apiFetch('/api/admin/delivery/areas', { method: 'POST', body: JSON.stringify(payload) });
+            const saved = resp.area;
+            const idx = this.deliveryAreas.findIndex(a => a.id === saved.id);
+            if (idx >= 0) this.deliveryAreas[idx] = saved; else this.deliveryAreas.push(saved);
+        } catch (err) {
+            console.error('Erro ao salvar área:', err);
+            showNotification('Erro ao salvar área de entrega', 'error');
+            return;
         }
 
-        this.saveDeliveryAreas();
         this.renderDeliveryAreas();
         this.updateDeliveryCount();
-        this.renderDeliveryStats();
+        await this.renderDeliveryStats();
         e.target.reset();
         
         // Reset selects
@@ -4256,11 +4276,18 @@ class DeliveryManager {
 
         if (!confirmed) return;
 
-        this.deliveryAreas = this.deliveryAreas.filter(a => a.id !== areaId);
-        this.saveDeliveryAreas();
+        try {
+            await this.apiFetch(`/api/admin/delivery/areas/${areaId}`, { method: 'DELETE' });
+        } catch (e) {
+            console.error('Erro ao remover área no servidor:', e);
+            showNotification('Erro ao remover área no servidor', 'error');
+            return;
+        }
+
+    this.deliveryAreas = this.deliveryAreas.filter(a => a.id !== areaId);
         this.renderDeliveryAreas();
         this.updateDeliveryCount();
-        this.renderDeliveryStats();
+    await this.renderDeliveryStats();
         
         showNotification('Área de entrega removida com sucesso!', 'success');
     }
@@ -4356,9 +4383,7 @@ class DeliveryManager {
         }
     }
 
-    saveDeliveryAreas() {
-        localStorage.setItem('deliveryAreas', JSON.stringify(this.deliveryAreas));
-    }
+    // removed localStorage persistence; data lives on server
 
     // Public method to get delivery fee for a city
     getDeliveryFee(cityName, stateName) {
@@ -4369,58 +4394,24 @@ class DeliveryManager {
         return area ? area.fee : null;
     }
 
-    // Generate mock delivery statistics
-    generateMockStats() {
-        if (this.deliveryAreas.length === 0) return null;
+    async renderDeliveryStats() {
+        try {
+            const resp = await this.apiFetch('/api/admin/delivery/stats');
+            const stats = resp.stats || { totalDeliveries: 0, avgTicket: 0, citiesCount: 0, topCities: [] };
 
-        // Generate random stats for each configured city
-        const cityStats = this.deliveryAreas.map(area => {
-            const deliveries = Math.floor(Math.random() * 50) + 10; // 10-60 deliveries
-            const avgTicket = Math.random() * 30 + 35; // R$ 35-65
-            const revenue = deliveries * avgTicket;
+            const totalDeliveriesEl = document.getElementById('totalDeliveries');
+            const avgTicketEl = document.getElementById('avgDeliveryValue');
+            const citiesCountEl = document.getElementById('topCitiesCount');
 
-            return {
-                ...area,
-                deliveries,
-                avgTicket,
-                revenue
-            };
-        });
+            if (totalDeliveriesEl) totalDeliveriesEl.textContent = String(stats.totalDeliveries || 0);
+            if (avgTicketEl) avgTicketEl.textContent = `R$ ${(stats.avgTicket || 0).toFixed ? stats.avgTicket.toFixed(2) : Number(stats.avgTicket || 0).toFixed(2)}`;
+            if (citiesCountEl) citiesCountEl.textContent = String(stats.citiesCount || 0);
 
-        // Sort by delivery count
-        cityStats.sort((a, b) => b.deliveries - a.deliveries);
-
-        const totalDeliveries = cityStats.reduce((sum, city) => sum + city.deliveries, 0);
-        const totalRevenue = cityStats.reduce((sum, city) => sum + city.revenue, 0);
-        const avgTicket = totalRevenue / totalDeliveries;
-
-        return {
-            totalDeliveries,
-            avgTicket,
-            citiesCount: this.deliveryAreas.length,
-            topCities: cityStats.slice(0, 3) // Top 3 cities
-        };
-    }
-
-    renderDeliveryStats() {
-        const stats = this.generateMockStats();
-        
-        if (!stats) {
+            this.renderTopCities(Array.isArray(stats.topCities) ? stats.topCities : []);
+        } catch (e) {
+            console.error('Falha ao carregar estatísticas de entrega:', e);
             this.renderEmptyStats();
-            return;
         }
-
-        // Update overview stats
-        const totalDeliveriesEl = document.getElementById('totalDeliveries');
-        const avgTicketEl = document.getElementById('avgDeliveryValue');
-        const citiesCountEl = document.getElementById('topCitiesCount');
-
-        if (totalDeliveriesEl) totalDeliveriesEl.textContent = stats.totalDeliveries;
-        if (avgTicketEl) avgTicketEl.textContent = `R$ ${stats.avgTicket.toFixed(2)}`;
-        if (citiesCountEl) citiesCountEl.textContent = stats.citiesCount;
-
-        // Render top cities
-        this.renderTopCities(stats.topCities);
     }
 
     renderTopCities(topCities) {
@@ -4451,8 +4442,8 @@ class DeliveryManager {
                         </div>
                     </div>
                     <div class="city-stats">
-                        <div class="delivery-count">${city.deliveries} entregas</div>
-                        <div class="revenue-total">R$ ${city.revenue.toFixed(2)} em vendas</div>
+                        <div class="delivery-count">${city.deliveries ?? 0} entregas</div>
+                        <div class="revenue-total">R$ ${(city.revenue ?? 0).toFixed ? city.revenue.toFixed(2) : Number(city.revenue ?? 0).toFixed(2)} em vendas</div>
                     </div>
                 </div>
             `;
@@ -4468,9 +4459,9 @@ class DeliveryManager {
         const avgTicketEl = document.getElementById('avgDeliveryValue');
         const citiesCountEl = document.getElementById('topCitiesCount');
 
-        if (totalDeliveriesEl) totalDeliveriesEl.textContent = '0';
-        if (avgTicketEl) avgTicketEl.textContent = 'R$ 0,00';
-        if (citiesCountEl) citiesCountEl.textContent = '0';
+    if (totalDeliveriesEl) totalDeliveriesEl.textContent = '0';
+    if (avgTicketEl) avgTicketEl.textContent = 'R$ 0,00';
+    if (citiesCountEl) citiesCountEl.textContent = String(this.deliveryAreas.length || 0);
 
         container.innerHTML = `
             <div class="stats-empty">
