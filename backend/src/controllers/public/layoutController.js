@@ -1,9 +1,9 @@
-const StoreSettings = require('../../models/StoreSettings');
+const Layout = require('../../models/Layout');
 
 const PublicLayoutController = {
   async getLayout(req, res) {
     try {
-      const settings = await StoreSettings.get();
+  const settings = await Layout.get();
       // Expor apenas o necessário
       res.json({
         sucesso: true,

@@ -1,4 +1,4 @@
-const StoreSettings = require('../../models/StoreSettings');
+const Layout = require('../../models/Layout');
 const { saveBase64Image, deleteImageByUrl } = require('../../services/uploadService');
 
 function sanitizeStr(s, max = 500) {
@@ -10,7 +10,7 @@ function sanitizeStr(s, max = 500) {
 const LayoutController = {
   async getSettings(req, res) {
     try {
-      const settings = await StoreSettings.get();
+  const settings = await Layout.get();
       res.json({ sucesso: true, data: settings });
     } catch (e) {
       res.status(500).json({ sucesso: false, mensagem: 'Erro ao carregar configurações' });
@@ -22,7 +22,7 @@ const LayoutController = {
       const { image } = req.body; // pode ser url ou dataURL base64
       if (!image) return res.status(400).json({ sucesso: false, mensagem: 'Imagem é obrigatória' });
 
-      const current = await StoreSettings.get();
+  const current = await Layout.get();
       let logoUrl = image;
       if (/^data:image\//.test(image)) {
         // upload local seguro
@@ -32,7 +32,7 @@ const LayoutController = {
       if (current.logo_url && current.logo_url !== logoUrl) {
         await deleteImageByUrl(current.logo_url);
       }
-      const updated = await StoreSettings.update({ logo_url: logoUrl });
+  const updated = await Layout.update({ logo_url: logoUrl });
       res.json({ sucesso: true, data: updated });
     } catch (e) {
       res.status(500).json({ sucesso: false, mensagem: e.message || 'Erro ao atualizar logo' });
@@ -44,7 +44,7 @@ const LayoutController = {
       const { image } = req.body;
       if (!image) return res.status(400).json({ sucesso: false, mensagem: 'Imagem é obrigatória' });
 
-      const current = await StoreSettings.get();
+  const current = await Layout.get();
       let bgUrl = image;
       if (/^data:image\//.test(image)) {
         bgUrl = await saveBase64Image(image, 'site');
@@ -52,7 +52,7 @@ const LayoutController = {
       if (current.home_background_url && current.home_background_url !== bgUrl) {
         await deleteImageByUrl(current.home_background_url);
       }
-      const updated = await StoreSettings.update({ home_background_url: bgUrl });
+  const updated = await Layout.update({ home_background_url: bgUrl });
       res.json({ sucesso: true, data: updated });
     } catch (e) {
       res.status(500).json({ sucesso: false, mensagem: e.message || 'Erro ao atualizar background' });
@@ -64,7 +64,7 @@ const LayoutController = {
       const title = sanitizeStr(req.body.title, 255);
       const subtitle = sanitizeStr(req.body.subtitle, 255);
       const description = sanitizeStr(req.body.description, 2000);
-      const updated = await StoreSettings.update({
+  const updated = await Layout.update({
         home_title: title,
         home_subtitle: subtitle,
         home_description: description,
@@ -82,7 +82,7 @@ const LayoutController = {
         return res.status(400).json({ sucesso: false, mensagem: 'Slides inválidos' });
       }
       // carregar atual para eventualmente deletar imagens antigas
-      const current = await StoreSettings.get();
+  const current = await Layout.get();
       const oldUrls = new Set((current.carousel || []).map(s => s.image_url).filter(Boolean));
 
       const processed = [];
@@ -98,7 +98,7 @@ const LayoutController = {
       }
       if (processed.length === 0) return res.status(400).json({ sucesso: false, mensagem: 'Nenhum slide válido' });
 
-      const updated = await StoreSettings.update({ carousel: processed });
+  const updated = await Layout.update({ carousel: processed });
 
       // apagar arquivos locais que não estão mais em uso
       for (const leftover of oldUrls) {
@@ -115,7 +115,7 @@ const LayoutController = {
       const enabled = !!req.body.enabled;
       const text = sanitizeStr(req.body.text, 255);
       const handle = sanitizeStr((req.body.handle || '').replace(/^@+/, ''), 100);
-      const updated = await StoreSettings.update({
+  const updated = await Layout.update({
         instagram_enabled: enabled ? 1 : 0,
         instagram_text: text,
         instagram_handle: handle,
