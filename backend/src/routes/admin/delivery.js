@@ -13,7 +13,7 @@ router.get('/areas', ctrl.listAreas);
 router.post('/areas', ctrl.upsertArea);
 // DELETE remove área
 router.delete('/areas/:id', ctrl.deleteArea);
-// GET estatísticas (sempre zeradas por enquanto)
-router.get('/stats', ctrl.getZeroStats);
+// GET estatísticas reais de entregas
+router.get('/stats', ctrl.getStats);
 
 module.exports = router;

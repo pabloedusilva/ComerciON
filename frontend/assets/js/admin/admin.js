@@ -4461,7 +4461,8 @@ class DeliveryManager {
 
     if (totalDeliveriesEl) totalDeliveriesEl.textContent = '0';
     if (avgTicketEl) avgTicketEl.textContent = 'R$ 0,00';
-    if (citiesCountEl) citiesCountEl.textContent = String(this.deliveryAreas.length || 0);
+    // Quando não há entregas, não mostrar nenhuma cidade no contador
+    if (citiesCountEl) citiesCountEl.textContent = '0';
 
         container.innerHTML = `
             <div class="stats-empty">
