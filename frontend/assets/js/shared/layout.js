@@ -45,7 +45,6 @@
       body:not(.data-ready) .footer-logo,
       body:not(.data-ready) .auth-logo,
       body:not(.data-ready) .about-hero-image img,
-      body:not(.data-ready) .right-home .right-image img,
       body:not(.data-ready) .hero-carousel,
       body:not(.data-ready) .hero-carousel .carousel-track,
       body:not(.data-ready) .instagram-section,
@@ -130,8 +129,6 @@
         bg.style.backgroundImage = `url('${layout.home_background_url}')`;
         reveal(bg);
       }
-      const rightImg = document.querySelector('.right-home .right-image img');
-      if (rightImg && !rightImg.getAttribute('data-fixed')) { setImg(rightImg, layout.home_background_url); reveal(rightImg); }
     }
     if (layout?.home_title) {
       const el = document.querySelector('.left-text1, #previewTitle');
@@ -283,7 +280,6 @@
       // Prepare skeletons and hide real content (non-index pages)
       const logoEl = document.querySelector('.menu-area .logo img, .header-logo img');
       const heroBg = document.querySelector('.bg-image');
-      const heroRight = document.querySelector('.right-home .right-image img');
       const aboutHeroImg = document.querySelector('.about-hero-image img');
       const footerLogo = document.querySelector('.footer-logo');
       const authLogos = Array.from(document.querySelectorAll('.auth-logo'));
@@ -296,7 +292,7 @@
       const footerContactLinks = document.querySelectorAll('.footer-section .contact-link');
       const socialLinks = document.querySelector('.footer-section .social-links');
 
-      [logoEl, heroBg, heroRight, aboutHeroImg, footerLogo, ...authLogos, t1, t2, t3, carouselTrack, carouselContainer, instaSection]
+      [logoEl, heroBg, aboutHeroImg, footerLogo, ...authLogos, t1, t2, t3, carouselTrack, carouselContainer, instaSection]
         .filter(Boolean).forEach(markHidden);
 
       // Insert minimalist skeleton blocks near key sections
@@ -325,7 +321,6 @@
       // Sem layout → esconder seções com conteúdo padrão para não expor defaults
       const hero = document.querySelector('.hero-carousel');
       const heroBg = document.querySelector('.bg-image');
-      const heroRight = document.querySelector('.right-home .right-image img');
       const t1 = document.querySelector('.left-text1');
       const t2 = document.querySelector('.left-text2');
       const t3 = document.querySelector('.left-text3');
@@ -333,7 +328,6 @@
       
       if (hero) hero.classList.add('hide-if-no-data');
       if (heroBg) heroBg.classList.add('hide-if-no-data');
-      if (heroRight) heroRight.classList.add('hide-if-no-data');
       [t1, t2, t3].filter(Boolean).forEach(el => el.classList.add('hide-if-no-data'));
       if (logoEl) logoEl.classList.add('hide-if-no-data');
     }

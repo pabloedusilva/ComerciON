@@ -105,7 +105,20 @@ header = header.innerHTML = `<div class="menu-area">
 
 let activePage = window.location.pathname;
 let navLinks = document.querySelectorAll("nav .menu a").forEach((link) => {
-  if (link.href.includes(`${activePage}`)) {
+  // Remove existing active classes first
+  link.classList.remove("active");
+  
+  // Get the href and clean it for comparison
+  let linkPath = new URL(link.href).pathname;
+  
+  // Handle index page specially - only activate for exact match
+  if (activePage === '/' || activePage.includes('index')) {
+    if (linkPath === '/' || linkPath.includes('index')) {
+      link.classList.add("active");
+    }
+  } else if (activePage.includes('menu') && linkPath.includes('menu')) {
+    link.classList.add("active");
+  } else if (activePage.includes('sobre') && linkPath.includes('sobre')) {
     link.classList.add("active");
   }
 });

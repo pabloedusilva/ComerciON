@@ -37,16 +37,7 @@ body {
     background: transparent
 }
 
-.logo {
-    display: block;
-    height: 55px;
-    font-size: 2rem;
-    font-weight: 600
-}
-
-.logo img {
-    height: 100%
-}
+/* Logo styles moved to shared/style.css for consistency */
 
 #checkbox {
     display: none
@@ -368,92 +359,80 @@ body {
     width: 100%;
     max-width: 1300px;
     display: flex;
+    justify-content: center;
+    align-items: center;
     background: transparent
 }
 
-.left-home {
+.center-home {
     display: flex;
     justify-content: center;
+    align-items: center;
     flex-direction: column;
-    width: 55%
+    width: 100%;
+    text-align: center;
 }
 
-.left-area {
-    width: 82%
+.center-area {
+    width: min(760px, 92%);
+    margin: 0 auto;
+    text-align: center;
 }
 
 .left-text1 {
     font-size: 3.5rem;
-    font-weight: 700
+    font-weight: 700;
+    text-align: center;
 }
 
 .left-text2 {
     font-size: 2.5rem;
-    font-weight: 300
+    font-weight: 300;
+    text-align: center;
 }
 
 .left-text3 {
-    margin: 25px 0;
+    margin: 25px auto;
     font-size: .9rem;
     font-weight: 300;
-    color: #ddd
+    color: #ddd;
+    text-align: center;
+    max-width: 600px;
 }
 
 .button {
     background: #fab427;
-    width: 45%;
+    width: 100%;
+    max-width: 320px;
     padding: 14px 18px;
     border-radius: 6px;
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
-    transition: all .3s
+    transition: all .3s;
+    margin: 0 auto;
 }
 
 .button:hover {
     background: #e0a225
 }
 
-.left-home a {
+.center-home a {
     display: block;
     text-decoration: none;
     color: #fff;
     font-size: 1.1rem;
-    font-weight: 500
+    font-weight: 500;
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
 }
 
 .fa-arrow-right {
     margin-left: 10px;
     font-size: 1rem;
     color: #fff
-}
-
-.right-home {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 50%
-}
-
-.right-image {
-    width: 90%
-}
-
-.right-image img {
-    width: auto;
-    max-width: 100%;
-    max-height: calc(100vh - 200px);
-    height: auto;
-    display: block;
-    filter: blur(8px);
-    transform: translateZ(0);
-    transition: filter .4s ease;
-}
-
-/* Remove blur when the image has loaded */
-.right-image img.is-loaded {
-    filter: blur(0);
 }
 
 footer {
@@ -500,17 +479,18 @@ footer a:hover::after {
     }
 
     .left-text3 {
-        margin: 25px 0;
+        margin: 25px auto;
         font-size: .8rem
     }
 
     .button {
-        width: 40%;
+        max-width: 300px;
         padding: 13px 17px
     }
 
-    .left-home a {
-        font-size: .9rem
+    .center-home a {
+        font-size: .9rem;
+        max-width: 300px;
     }
 
     .fa-arrow-right {
@@ -527,11 +507,13 @@ footer a:hover::after {
 
 @media(max-width: 1010px) {
     .button {
-        padding: 12px 16px
+        padding: 12px 16px;
+        max-width: 280px;
     }
 
-    .left-home a {
-        font-size: .8rem
+    .center-home a {
+        font-size: .8rem;
+        max-width: 280px;
     }
 
     .fa-arrow-right {
@@ -550,7 +532,7 @@ footer a:hover::after {
     }
 
     .left-text3 {
-        margin: 20px 0;
+        margin: 20px auto;
         font-size: .75rem
     }
 }
@@ -558,7 +540,7 @@ footer a:hover::after {
 @media(max-width: 744px) {
     .home-area {
         align-items: center;
-        flex-direction: column-reverse
+        flex-direction: column;
     }
 
     .mobile-left {
@@ -580,12 +562,7 @@ footer a:hover::after {
         position: relative;
     }
 
-    .logo {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-        height: 40px;
-    }
+    /* Logo mobile styles handled by shared/style.css */
 
     .menu {
         position: fixed;
@@ -633,13 +610,13 @@ footer a:hover::after {
         display: flex;
     }
 
-    .left-home {
+    .center-home {
         align-items: center;
         width: 100%
     }
 
-    .left-area {
-        width: 55%
+    .center-area {
+        width: min(600px, 92%);
     }
 
     .left-text1 {
@@ -651,71 +628,62 @@ footer a:hover::after {
     }
 
     .left-text3 {
-        margin: 15px 0;
+        margin: 15px auto;
         font-size: .65rem
     }
 
     .button {
-        width: 50%
+        max-width: 260px;
     }
 
-    .right-home {
-        width: 100%
-    }
-
-    .right-image {
-        display: flex;
-        justify-content: center;
-        max-width: 75%
-    }
-
-    .right-image img {
-        width: 75%
+    .center-home a {
+        max-width: 260px;
     }
 }
 
 @media(max-width: 752px) {
     .home-area {
-        justify-content: flex-end
+        justify-content: center
     }
 }
 
 @media(max-width: 580px) {
-    .right-image {
-        display: flex;
-        justify-content: center;
-        width: 100%
-    }
-
-    .right-image img {
-        width: 90%
-    }
-
-    .left-area {
-        width: 82%
+    .center-area {
+        width: 92%;
     }
 
     .left-text3 {
-        margin: 20px 0
+        margin: 20px auto
     }
 
-    .left-home {
+    .center-home {
         margin-top: 10px
+    }
+
+    .button {
+        max-width: 240px;
+    }
+
+    .center-home a {
+        max-width: 240px;
     }
 }
 
 @media(max-width: 450px) {
-    .right-image img {
-        width: 100%;
-        max-width: 100%;
-    }
-
     body {
         height: 100vh
     }
 
     footer {
         line-height: 80px
+    }
+
+    .button {
+        max-width: 220px;
+    }
+
+    .center-home a {
+        max-width: 220px;
     }
 }
 
@@ -729,7 +697,11 @@ footer a:hover::after {
     }
 
     .button {
-        width: 60%
+        max-width: 200px;
+    }
+
+    .center-home a {
+        max-width: 200px;
     }
 }
 
@@ -761,7 +733,7 @@ footer a:hover::after {
         width: 200px;
     }
 
-    /* Hide desktop profile in mobile */
+/* === REMOVED: Previous home layout adjustments - now using center-based layout === */    /* Hide desktop profile in mobile */
     .desktop-profile-menu {
         display: none !important;
     }
@@ -782,9 +754,7 @@ footer a:hover::after {
         width: 16px;
     }
 
-    .logo {
-        height: 35px;
-    }
+/* Logo responsive styles handled by shared/style.css for consistency */
 }
 
 /* Regra global para remover linha dourada dos dropdowns em todos os tamanhos - HOME */

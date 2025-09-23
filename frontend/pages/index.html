@@ -69,8 +69,8 @@
 
     <main class="home">
         <div class="home-area">
-            <section class="left-home">
-                <div class="left-area">
+            <section class="center-home">
+                <div class="center-area">
                     <div class="left-text1">Pizzas 10% OFF</div>
                     <div class="left-text2">Confira no cardápio</div>
                     <div class="left-text3">Lorem ipsum dolor sit amet
@@ -84,11 +84,6 @@
                     </a>
                 </div>
             </section>
-            <section class="right-home">
-                <div class="right-image">
-                    <img src="../assets/images/default-images/pizza-desenho.png" alt="Pizza" decoding="async" fetchpriority="high">
-                </div>
-            </section>
         </div>
     </main>
       <footer>
@@ -96,20 +91,6 @@
             </footer>
             <script src="../assets/js/shared/nav.js"></script>
             <script src="../assets/js/shared/layout.js"></script>
-            <script>
-                // Remove blur filter once the hero image has fully loaded
-                (function(){
-                    var img = document.querySelector('.right-image img');
-                    if(!img) return;
-                    if (img.complete) {
-                        img.classList.add('is-loaded');
-                    } else {
-                        img.addEventListener('load', function(){
-                            img.classList.add('is-loaded');
-                        });
-                    }
-                })();
-            </script>
             
             <!-- Sistema de Autenticação -->
             <script src="../assets/js/shared/auth.js"></script>
