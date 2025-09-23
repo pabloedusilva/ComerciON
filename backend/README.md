@@ -45,6 +45,17 @@ npm run dev
 - `npm run dev` - Desenvolvimento
 - (removidos) scripts de teste, migrations e seeders do código-fonte
 
+### Banco de dados (local/dev)
+
+- Criar tabelas base e registros mínimos:
+	- Via Node: execute `node scripts/seed.js`
+	- Isso garante a existência de `Layout` (id=1), `Settings` (id=1) e `delivery_areas`
+	- Não cria pedidos (orders); as estatísticas de entrega ficarão vazias até existirem pedidos entregues
+
+- Testar estatísticas de entregas (somente leitura):
+	- `node scripts/test_delivery_stats.js`
+	- O retorno vazio indica ausência de pedidos entregues no momento
+
 ## 🔐 Autenticação
 
 Sistema JWT com níveis de acesso:

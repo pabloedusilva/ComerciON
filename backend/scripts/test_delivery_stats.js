@@ -1,4 +1,4 @@
-// Temporary smoke test for delivery stats
+ // Temporary smoke test for delivery stats
 const { getStats } = require('../src/controllers/admin/deliveryController');
 
 (async () => {

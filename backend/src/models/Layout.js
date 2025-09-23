@@ -23,8 +23,8 @@ const Layout = {
 	async get() {
 		const [rows] = await pool.execute('SELECT * FROM `Layout` WHERE id = 1');
 		if (!rows[0]) {
-			// Sem registro: retornar defaults completos
-			return { ...DEFAULTS };
+			// Sem registro: retornar defaults completos, marcando origem como default
+			return { ...DEFAULTS, __source: 'default' };
 		}
 		const r = rows[0];
 		// Quando há registro, sempre refletir fielmente o DB
@@ -41,17 +41,18 @@ const Layout = {
 		}
 		return {
 			id: 1,
-			logo_url: r.logo_url || DEFAULTS.logo_url,
-			home_background_url: r.home_background_url || DEFAULTS.home_background_url,
-			home_title: r.home_title || DEFAULTS.home_title,
-			home_subtitle: r.home_subtitle || DEFAULTS.home_subtitle,
-			home_description: r.home_description || DEFAULTS.home_description,
+			logo_url: r.logo_url || null,
+			home_background_url: r.home_background_url || null,
+			home_title: r.home_title || null,
+			home_subtitle: r.home_subtitle || null,
+			home_description: r.home_description || null,
 			carousel,
-			instagram_enabled: Number(r.instagram_enabled ?? 1),
-			instagram_text: r.instagram_text || DEFAULTS.instagram_text,
-			instagram_handle: r.instagram_handle || DEFAULTS.instagram_handle,
+			instagram_enabled: Number(r.instagram_enabled ?? 0),
+			instagram_text: r.instagram_text || null,
+			instagram_handle: r.instagram_handle || null,
 			updated_at: r.updated_at,
 			created_at: r.created_at,
+			__source: 'db',
 		};
 	},
 

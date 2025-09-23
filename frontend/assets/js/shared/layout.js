@@ -38,6 +38,21 @@
       @media (prefers-reduced-motion: reduce) {
         .skeleton { animation: none; }
       }
+
+      /* Hide default assets until data is ready to avoid flashes */
+      body:not(.data-ready) .menu-area .logo img,
+      body:not(.data-ready) .header-logo img,
+      body:not(.data-ready) .footer-logo,
+      body:not(.data-ready) .auth-logo,
+      body:not(.data-ready) .about-hero-image img,
+      body:not(.data-ready) .right-home .right-image img,
+      body:not(.data-ready) .hero-carousel,
+      body:not(.data-ready) .hero-carousel .carousel-track,
+      body:not(.data-ready) .instagram-section,
+      body:not(.data-ready) .footer-section .contact-link,
+      body:not(.data-ready) .footer-section .social-links {
+        visibility: hidden !important;
+      }
     `;
     const style = document.createElement('style');
     style.id = 'layout-skeleton-styles';
@@ -140,7 +155,10 @@
     if (!slides.length) {
       // Sem dados → esconder o bloco do carousel para não expor defaults
       const container = document.querySelector('.hero-carousel');
-      if (container) container.classList.add('hide-if-no-data');
+      if (container) {
+        container.classList.add('hide-if-no-data');
+        container.style.display = 'none';
+      }
       return;
     }
     slides.forEach((slide, i) => {
@@ -158,6 +176,7 @@
     });
   const container = document.querySelector('.hero-carousel');
     if (!container) return;
+  container.style.display = '';
   reveal(container);
   reveal(hero);
     if (container.dataset.autoplayInit === '1') return;
@@ -249,42 +268,55 @@
   }
 
   async function init() {
-    injectSkeletonStyles();
+    // Show loader overlay on all pages immediately
+    const loaderContent = document.querySelector('.loader-content');
+    if (loaderContent) {
+      loaderContent.classList.add('show');
+    }
+    
+    // Check if we're on index page for special handling
+    const isIndexPage = window.location.pathname === '/' || window.location.pathname.includes('index');
+    
+    if (!isIndexPage) {
+      injectSkeletonStyles();
+      
+      // Prepare skeletons and hide real content (non-index pages)
+      const logoEl = document.querySelector('.menu-area .logo img, .header-logo img');
+      const heroBg = document.querySelector('.bg-image');
+      const heroRight = document.querySelector('.right-home .right-image img');
+      const aboutHeroImg = document.querySelector('.about-hero-image img');
+      const footerLogo = document.querySelector('.footer-logo');
+      const authLogos = Array.from(document.querySelectorAll('.auth-logo'));
+      const t1 = document.querySelector('.left-text1');
+      const t2 = document.querySelector('.left-text2');
+      const t3 = document.querySelector('.left-text3');
+      const carouselTrack = document.querySelector('.hero-carousel .carousel-track');
+      const carouselContainer = document.querySelector('.hero-carousel');
+      const instaSection = document.querySelector('.instagram-section');
+      const footerContactLinks = document.querySelectorAll('.footer-section .contact-link');
+      const socialLinks = document.querySelector('.footer-section .social-links');
 
-    // Prepare skeletons and hide real content
-  const logoEl = document.querySelector('.menu-area .logo img, .header-logo img');
-    const heroBg = document.querySelector('.bg-image');
-    const heroRight = document.querySelector('.right-home .right-image img');
-  const aboutHeroImg = document.querySelector('.about-hero-image img');
-  const footerLogo = document.querySelector('.footer-logo');
-  const authLogos = Array.from(document.querySelectorAll('.auth-logo'));
-    const t1 = document.querySelector('.left-text1');
-    const t2 = document.querySelector('.left-text2');
-    const t3 = document.querySelector('.left-text3');
-    const carouselTrack = document.querySelector('.hero-carousel .carousel-track');
-    const carouselContainer = document.querySelector('.hero-carousel');
-    const instaSection = document.querySelector('.instagram-section');
-    const footerContactLinks = document.querySelectorAll('.footer-section .contact-link');
-    const socialLinks = document.querySelector('.footer-section .social-links');
+      [logoEl, heroBg, heroRight, aboutHeroImg, footerLogo, ...authLogos, t1, t2, t3, carouselTrack, carouselContainer, instaSection]
+        .filter(Boolean).forEach(markHidden);
 
-    [logoEl, heroBg, heroRight, aboutHeroImg, footerLogo, ...authLogos, t1, t2, t3, carouselTrack, carouselContainer, instaSection]
-      .filter(Boolean).forEach(markHidden);
-
-    // Insert minimalist skeleton blocks near key sections
-    if (logoEl) appendSkeleton(logoEl, 'skeleton-logo');
-  authLogos.forEach(el => appendSkeleton(el, 'skeleton-logo'));
-  if (footerLogo) appendSkeleton(footerLogo, 'skeleton-logo');
-  // Evitar skeleton para .bg-image (fixo) para não empurrar layout nas páginas como index
-    if (carouselTrack) appendSkeleton(carouselTrack, 'skeleton-carousel');
-  if (aboutHeroImg) appendSkeleton(aboutHeroImg, 'skeleton-hero');
-    if (t1) appendSkeleton(t1, 'skeleton-text-line');
-    if (t2) appendSkeleton(t2, 'skeleton-text-line small');
-    if (t3) appendSkeleton(t3, 'skeleton-text-line');
-    if (footerContactLinks && footerContactLinks.length) appendSkeleton(footerContactLinks[0], 'skeleton-footer');
-    if (socialLinks) appendSkeleton(socialLinks, 'skeleton-footer');
+      // Insert minimalist skeleton blocks near key sections
+      if (logoEl) appendSkeleton(logoEl, 'skeleton-logo');
+      authLogos.forEach(el => appendSkeleton(el, 'skeleton-logo'));
+      if (footerLogo) appendSkeleton(footerLogo, 'skeleton-logo');
+      if (carouselTrack) appendSkeleton(carouselTrack, 'skeleton-carousel');
+      if (aboutHeroImg) appendSkeleton(aboutHeroImg, 'skeleton-hero');
+      if (t1) appendSkeleton(t1, 'skeleton-text-line');
+      if (t2) appendSkeleton(t2, 'skeleton-text-line small');
+      if (t3) appendSkeleton(t3, 'skeleton-text-line');
+      if (footerContactLinks && footerContactLinks.length) appendSkeleton(footerContactLinks[0], 'skeleton-footer');
+      if (socialLinks) appendSkeleton(socialLinks, 'skeleton-footer');
+    }
 
     const [layout, settings] = await Promise.all([fetchLayout(), fetchSettings()]);
-    if (layout) {
+    const isLayoutDefault = !!layout?.from_default;
+    const isSettingsDefault = !!settings?.from_default;
+    
+    if (layout && !isLayoutDefault) {
       applyLogo(layout);
       applyHome(layout);
       applyMenuCarousel(layout);
@@ -292,25 +324,49 @@
     } else {
       // Sem layout → esconder seções com conteúdo padrão para não expor defaults
       const hero = document.querySelector('.hero-carousel');
+      const heroBg = document.querySelector('.bg-image');
+      const heroRight = document.querySelector('.right-home .right-image img');
+      const t1 = document.querySelector('.left-text1');
+      const t2 = document.querySelector('.left-text2');
+      const t3 = document.querySelector('.left-text3');
+      const logoEl = document.querySelector('.menu-area .logo img, .header-logo img');
+      
       if (hero) hero.classList.add('hide-if-no-data');
       if (heroBg) heroBg.classList.add('hide-if-no-data');
       if (heroRight) heroRight.classList.add('hide-if-no-data');
       [t1, t2, t3].filter(Boolean).forEach(el => el.classList.add('hide-if-no-data'));
       if (logoEl) logoEl.classList.add('hide-if-no-data');
     }
-    if (settings) {
+    
+    if (settings && !isSettingsDefault) {
       applyFooter(settings, layout);
       // Reveal contact links and social after apply
+      const footerContactLinks = document.querySelectorAll('.footer-section .contact-link');
+      const socialLinks = document.querySelector('.footer-section .social-links');
       footerContactLinks.forEach(reveal);
       reveal(socialLinks);
     } else {
       // Hide only sensitive default content
+      const footerContactLinks = document.querySelectorAll('.footer-section .contact-link');
+      const socialLinks = document.querySelector('.footer-section .social-links');
       footerContactLinks.forEach(el => el.classList.add('hide-if-no-data'));
       if (socialLinks) socialLinks.classList.add('hide-if-no-data');
     }
 
-    // Remove skeletons after we finished applying/hiding
-    removeSkeletons();
+    // Marca página como pronta para liberar visibilidade padrão
+    document.body.classList.add('data-ready');
+
+    // Hide loader overlay on all pages after all data is loaded
+    if (loaderContent) {
+      setTimeout(() => {
+        loaderContent.classList.remove('show');
+      }, 500);
+    }
+
+    // Remove skeletons after we finished applying/hiding (non-index only)
+    if (!isIndexPage) {
+      removeSkeletons();
+    }
   }
 
   document.addEventListener('DOMContentLoaded', init);

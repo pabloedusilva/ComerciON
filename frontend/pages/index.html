@@ -7,6 +7,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="shortcut icon" href="../assets/images/default-images/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+        <style id="critical-hide-gate">
+            /* Professional clean light overlay loading state for index */
+            body:not(.data-ready) .home-loader {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(255, 255, 255, 0.96);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                z-index: 9999;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                transition: opacity 0.5s ease, visibility 0.5s ease;
+            }
+            body.data-ready .home-loader {
+                opacity: 0;
+                visibility: hidden;
+            }
+            /* Hide content until ready and skeleton for logos */
+            body:not(.data-ready) .header,
+            body:not(.data-ready) .home,
+            body:not(.data-ready) footer { 
+                visibility: hidden !important; 
+            }
+            body:not(.data-ready) .bg-overlay { 
+                opacity: 1 !important; 
+                background: #000 !important; 
+            }
+            body:not(.data-ready) .logo {
+                background: #f0f0f0 !important;
+                animation: skeleton-pulse 1.5s ease-in-out infinite alternate;
+            }
+            @keyframes skeleton-pulse {
+                0% { background: #f0f0f0 !important; }
+                100% { background: #e0e0e0 !important; }
+            }
+        </style>
+    <link rel="stylesheet" href="../assets/css/shared/style.css">
     <link rel="stylesheet" href="../assets/css/customer/home.css">
     <!-- Preload critical images to speed up first paint without reducing quality -->
     <link rel="preload" as="image" href="../assets/images/default-images/pizza-desenho.png" fetchpriority="high">
@@ -15,6 +56,11 @@
 </head>
 
 <body>
+    <!-- Professional loading overlay with blur and spinner -->
+    <div class="home-loader">
+        <div class="loader-circle"></div>
+    </div>
+    
     <div class="bg-image" aria-hidden="true"></div>
     <div class="bg-overlay" aria-hidden="true"></div>
     <header class="header"></header>

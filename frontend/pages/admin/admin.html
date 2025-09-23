@@ -7,11 +7,31 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <link rel="shortcut icon" href="../../assets/images/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+        <style id="critical-hide-gate">
+            /* Hide all content until ready, show skeleton only for logos */
+            body:not(.data-ready) .sidebar,
+            body:not(.data-ready) .main-content { visibility: hidden !important; }
+            
+            body:not(.data-ready) .logo {
+              background: #f0f0f0 !important;
+              animation: skeleton-pulse 1.5s ease-in-out infinite alternate;
+            }
+            
+            @keyframes skeleton-pulse {
+              0% { background: #f0f0f0 !important; }
+              100% { background: #e0e0e0 !important; }
+            }
+        </style>
+    <link rel="stylesheet" href="../../assets/css/shared/style.css">
     <link rel="stylesheet" href="../../assets/css/admin/admin.css">
     <title>Dashboard Admin - Pizzaria</title>
 </head>
 
 <body>
+    <div class="loader-content">
+        <div class="loader-circle"></div>
+    </div>
+    
     <!-- Sidebar -->
     <aside class="sidebar">
         <div class="sidebar-header">

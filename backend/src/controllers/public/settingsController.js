@@ -7,6 +7,7 @@ const PublicSettingsController = {
       res.json({
         sucesso: true,
         data: {
+          from_default: s.__source === 'default',
           name: s.name,
           phone: s.phone,
           email: s.email,

@@ -14,7 +14,7 @@ const DEFAULTS = {
 const Settings = {
   async get() {
     const [rows] = await pool.execute('SELECT * FROM `Settings` WHERE id = 1');
-    if (!rows[0]) return { ...DEFAULTS };
+    if (!rows[0]) return { ...DEFAULTS, __source: 'default' };
     const r = rows[0];
     return {
       id: 1,
@@ -26,6 +26,7 @@ const Settings = {
       notification_enabled: Number(r.notification_enabled ?? 1),
       updated_at: r.updated_at,
       created_at: r.created_at,
+      __source: 'db',
     };
   },
 

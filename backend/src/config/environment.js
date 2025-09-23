@@ -1,5 +1,9 @@
 // Variáveis de ambiente
-require('dotenv').config();
+const path = require('path');
+const dotenv = require('dotenv');
+// Carrega o .env a partir da raiz do backend, independente do diretório atual de execução
+const envPath = path.resolve(__dirname, '../../.env');
+dotenv.config({ path: envPath });
 
 module.exports = {
     // Server

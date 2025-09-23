@@ -28,7 +28,7 @@ function getNavPath() {
 
 const assetsPath = getAssetsPath();
 const navPath = getNavPath();
-const isIndexPage = /\/index\.html$/i.test(window.location.pathname);
+const isIndexPage = /\/index\.html$/i.test(window.location.pathname) || window.location.pathname === '/';
 
 const mobileCartMarkup = isIndexPage ? '' : `
             <div class="menuMobile-area">

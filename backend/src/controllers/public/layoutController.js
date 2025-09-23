@@ -8,6 +8,7 @@ const PublicLayoutController = {
       res.json({
         sucesso: true,
         data: {
+          from_default: settings.__source === 'default',
           logo_url: settings.logo_url,
           home_background_url: settings.home_background_url,
           home_title: settings.home_title,

@@ -7,6 +7,32 @@
     font-family: "Montserrat", sans-serif
 }
 
+/* Prevent default assets flash until dynamic data is ready */
+body:not(.data-ready) .menu-area .logo img,
+body:not(.data-ready) .header-logo img,
+body:not(.data-ready) .footer-logo,
+body:not(.data-ready) .auth-logo,
+body:not(.data-ready) .about-hero-image img,
+body:not(.data-ready) .right-home .right-image img,
+body:not(.data-ready) .hero-carousel,
+body:not(.data-ready) .hero-carousel .carousel-track,
+body:not(.data-ready) .instagram-section,
+body:not(.data-ready) .footer-section .contact-link,
+body:not(.data-ready) .footer-section .social-links {
+    visibility: hidden !important;
+}
+
+/* Hide public header until data is ready (prevents default logo/links flash) */
+body:not(.data-ready) header.header {
+    visibility: hidden !important;
+}
+
+/* Make home overlay fully opaque until data is ready to hide default background */
+body:not(.data-ready) .bg-overlay {
+    opacity: 1 !important;
+    background: #000 !important;
+}
+
 body {
     background-color: #fafafa;
     font-size: 15px;
@@ -57,15 +83,23 @@ footer:not(.modern-footer) a:hover::after {
     top: 0;
     bottom: 0;
     right: 0;
-    z-index: 0;
-    background: rgba(255, 255, 255, .96);
+    z-index: 9999;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display: flex;
     text-align: center;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
     opacity: 0;
-    transition: all .2s
+    visibility: hidden;
+    transition: all .3s ease
+}
+
+.loader-content.show {
+    opacity: 1;
+    visibility: visible;
 }
 
 .display {
@@ -75,38 +109,22 @@ footer:not(.modern-footer) a:hover::after {
 
 .loader-circle {
     position: absolute;
-    width: 100px;
-    height: 100px;
+    width: 80px;
+    height: 80px;
     border-radius: 50%;
-    animation: ring 2s linear infinite
+    border: 3px solid rgba(250, 180, 39, 0.3);
+    border-top: 3px solid #fab427;
+    animation: spin 1s linear infinite;
 }
 
-.loader-circle::before {
-    position: absolute;
-    content: "";
-    left: 0;
-    top: 0;
-    height: 100%;
-    width: 100%;
-    border-radius: 50%;
-    box-shadow: 0 0 5px rgba(255, 255, 255, .3)
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
-@keyframes ring {
-    0% {
-        transform: rotate(0deg);
-        box-shadow: 1px 3px 2px #fab427
-    }
-
-    50% {
-        transform: rotate(180deg);
-        box-shadow: 1px 3px 2px #fab427
-    }
-
-    100% {
-        transform: rotate(360deg);
-        box-shadow: 1px 3px 2px #fab427
-    }
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 .loader-text {
