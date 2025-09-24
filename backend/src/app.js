@@ -130,6 +130,8 @@ app.get('/admin', async (req, res) => {
     res.sendFile(path.join(__dirname, '../../frontend/pages/admin/admin.html'));
 });
 
+// Rota /developer removida - Agora é uma seção integrada no painel admin
+
 app.get('/dashboard', async (req, res) => {
     // Redirecionar dashboard para /admin
     res.redirect('/admin');

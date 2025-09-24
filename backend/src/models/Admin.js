@@ -10,6 +10,9 @@ class Admin {
         this.email = data.email;
         this.senha = data.senha;
         this.nivel_acesso = data.nivel_acesso;
+        // Campo super_admin adicionado pela migração da seção desenvolvedor
+        // Garantimos boolean para facilitar uso no frontend e middlewares
+        this.super_admin = data.super_admin !== undefined ? !!data.super_admin : (data.nivel_acesso === 'super_admin');
         this.ultimo_login = data.ultimo_login;
         this.tentativas_login = data.tentativas_login;
         this.bloqueado_ate = data.bloqueado_ate;
@@ -207,7 +210,12 @@ class Admin {
     // Remover dados sensíveis para resposta
     toJSON() {
         const { senha, tentativas_login, bloqueado_ate, ...dadosSeguro } = this;
-        return dadosSeguro;
+        // Garantir consistência: incluir flag super_admin explícita e derivada
+        return {
+            ...dadosSeguro,
+            super_admin: !!this.super_admin,
+            is_super_admin: !!this.super_admin // alias opcional para futuros usos
+        };
     }
 }
 

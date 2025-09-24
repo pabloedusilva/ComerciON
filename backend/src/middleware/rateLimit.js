@@ -52,9 +52,26 @@ const limiteCadastro = rateLimit({
     legacyHeaders: false,
 });
 
+// Rate limit específico para seção de desenvolvedor - muito restritivo
+const limiteDeveloper = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minuto
+    max: process.env.NODE_ENV === 'production' ? 20 : 100, // 100 em dev, 20 em prod
+    message: {
+        sucesso: false,
+        mensagem: 'Rate limit excedido para seção de desenvolvedor. Aguarde 1 minuto.'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => {
+        // Chave específica incluindo ID do admin para maior controle
+        return `developer_${req.usuario?.id}_${req.ip}`;
+    }
+});
+
 module.exports = {
     limiteGeral,
     limiteLogin,
     limiteAdmin,
-    limiteCadastro
+    limiteCadastro,
+    limiteDeveloper
 };

@@ -24,6 +24,8 @@
         </style>
     <link rel="stylesheet" href="../../assets/css/shared/style.css">
     <link rel="stylesheet" href="../../assets/css/admin/admin.css">
+    <!-- CSS da Seção de Desenvolvedor (carregado condicionalmente) -->
+    <link rel="stylesheet" href="../../assets/css/admin/developer.css" id="developer-styles" disabled>
     <title>Dashboard Admin - Pizzaria</title>
 </head>
 
@@ -159,6 +161,22 @@
                                 <i class="fas fa-cog"></i>
                             </div>
                             <span class="nav-text">Configurações</span>
+                            <div class="nav-indicator"></div>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Seção de Desenvolvedor - Apenas para Super Admins -->
+            <div class="nav-section" id="developer-nav-section" style="display: none;">
+                <span class="nav-section-title">Desenvolvedor</span>
+                <ul>
+                    <li>
+                        <a href="#developer-section" class="nav-link developer-nav" data-section="developer">
+                            <div class="nav-icon">
+                                <i class="fas fa-code"></i>
+                            </div>
+                            <span class="nav-text">Seção Desenvolvedor</span>
                             <div class="nav-indicator"></div>
                         </a>
                     </li>
@@ -1236,6 +1254,195 @@
                 </div>
             </section>
         </div>
+
+        <!-- Seção de Desenvolvedor (SUPER ADMIN APENAS) -->
+        <section id="developer-section" class="content-section developer-content">
+            <div class="developer-container">
+                <!-- Título da Seção -->
+                <div class="developer-header">
+                    <div class="developer-title">
+                        <i class="fas fa-code"></i>
+                        <h1>Seção de Desenvolvedor</h1>
+                        <span class="security-badge">SUPER ADMIN</span>
+                    </div>
+                    <div class="last-update">
+                        <span id="last-update-time">Carregando...</span>
+                    </div>
+                </div>
+
+                <!-- Status Geral do Sistema -->
+                <div class="status-overview">
+                    <h2><i class="fas fa-heartbeat"></i> Status do Sistema</h2>
+                    <div class="status-grid">
+                        <div class="status-card" id="database-status">
+                            <div class="status-icon">
+                                <i class="fas fa-database"></i>
+                            </div>
+                            <div class="status-info">
+                                <h3>Banco de Dados</h3>
+                                <span class="status-badge loading">Verificando...</span>
+                                <p class="status-details">Aguardando verificação</p>
+                            </div>
+                        </div>
+
+                        <div class="status-card" id="server-status">
+                            <div class="status-icon">
+                                <i class="fas fa-server"></i>
+                            </div>
+                            <div class="status-info">
+                                <h3>Servidor</h3>
+                                <span class="status-badge loading">Verificando...</span>
+                                <p class="status-details">Aguardando verificação</p>
+                            </div>
+                        </div>
+
+                        <div class="status-card" id="payment-api-status">
+                            <div class="status-icon">
+                                <i class="fas fa-credit-card"></i>
+                            </div>
+                            <div class="status-info">
+                                <h3>API de Pagamentos</h3>
+                                <span class="status-badge loading">Verificando...</span>
+                                <p class="status-details">Aguardando verificação</p>
+                            </div>
+                        </div>
+
+                        <div class="status-card" id="redis-status">
+                            <div class="status-icon">
+                                <i class="fas fa-memory"></i>
+                            </div>
+                            <div class="status-info">
+                                <h3>Redis</h3>
+                                <span class="status-badge loading">Verificando...</span>
+                                <p class="status-details">Aguardando verificação</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="status-actions">
+                        <button class="btn-refresh" id="btn-refresh-status">
+                            <i class="fas fa-sync-alt"></i>
+                            Verificar Novamente
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Logs do Sistema -->
+                <div class="logs-section">
+                    <div class="logs-header">
+                        <h2><i class="fas fa-list-alt"></i> Logs do Sistema</h2>
+                        <div class="logs-controls">
+                            <select id="log-level-filter" class="filter-select">
+                                <option value="">Todos os níveis</option>
+                                <option value="debug">Debug</option>
+                                <option value="info">Info</option>
+                                <option value="warn">Warning</option>
+                                <option value="error">Error</option>
+                                <option value="fatal">Fatal</option>
+                            </select>
+                            
+                            <select id="log-source-filter" class="filter-select">
+                                <option value="">Todas as origens</option>
+                                <option value="system">Sistema</option>
+                                <option value="security">Segurança</option>
+                                <option value="developer_section">Seção Dev</option>
+                                <option value="audit">Auditoria</option>
+                            </select>
+
+                            <button class="btn-clear-logs" id="btn-clear-logs">
+                                <i class="fas fa-trash"></i>
+                                Limpar Logs
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="logs-container">
+                        <div class="logs-loading" id="logs-loading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            Carregando logs...
+                        </div>
+                        
+                        <div class="logs-list" id="logs-list">
+                            <!-- Logs serão carregados aqui via JavaScript -->
+                        </div>
+
+                        <div class="logs-pagination" id="logs-pagination">
+                            <!-- Paginação será inserida aqui -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estatísticas do Sistema -->
+                <div class="stats-section">
+                    <h2><i class="fas fa-chart-line"></i> Estatísticas do Sistema</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Uptime do Servidor</h3>
+                                <span class="stat-value" id="server-uptime">Carregando...</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-memory"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Uso de Memória</h3>
+                                <span class="stat-value" id="memory-usage">Carregando...</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-database"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Conexões DB</h3>
+                                <span class="stat-value" id="db-connections">Carregando...</span>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Logs de Erro (7d)</h3>
+                                <span class="stat-value" id="error-logs-count">Carregando...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Informações Técnicas -->
+                <div class="tech-info-section">
+                    <h2><i class="fas fa-info-circle"></i> Informações Técnicas</h2>
+                    <div class="tech-grid">
+                        <div class="tech-card">
+                            <h3>Servidor</h3>
+                            <div class="tech-details" id="server-info">
+                                <p><strong>Node.js:</strong> <span id="node-version">-</span></p>
+                                <p><strong>Plataforma:</strong> <span id="platform">-</span></p>
+                                <p><strong>PID:</strong> <span id="process-id">-</span></p>
+                            </div>
+                        </div>
+
+                        <div class="tech-card">
+                            <h3>Banco de Dados</h3>
+                            <div class="tech-details" id="database-info">
+                                <p><strong>Versão:</strong> <span id="db-version">-</span></p>
+                                <p><strong>Conexões:</strong> <span id="db-connections-total">-</span></p>
+                                <p><strong>Uptime:</strong> <span id="db-uptime">-</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
     <!-- Modals -->

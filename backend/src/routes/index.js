@@ -14,6 +14,7 @@ const adminProductsRoutes = require('./admin/products');
 const adminLayoutRoutes = require('./admin/layout');
 const adminSettingsRoutes = require('./admin/settings');
 const adminDeliveryRoutes = require('./admin/delivery');
+const adminDeveloperRoutes = require('./admin/developer');
 
 // Middleware de log para rotas da API
 router.use((req, res, next) => {
@@ -52,6 +53,7 @@ router.use('/admin/products', adminProductsRoutes);
 router.use('/admin/layout', adminLayoutRoutes);
 router.use('/admin/settings', adminSettingsRoutes);
 router.use('/admin/delivery', adminDeliveryRoutes);
+router.use('/admin/developer', adminDeveloperRoutes);
 
 // Rota 404 para API
 router.use('*', (req, res) => {

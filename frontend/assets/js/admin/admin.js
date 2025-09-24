@@ -26,6 +26,12 @@
                 redirecionarParaLogin();
                 return;
             }
+
+            // Verificar se é super admin para mostrar seção de desenvolvedor
+            const data = await response.json();
+            if (data.admin && data.admin.super_admin) {
+                mostrarSecaoDesenvolvedor();
+            }
             
         } catch (error) {
             console.error('Erro na autenticação:', error);
@@ -33,6 +39,102 @@
             redirecionarParaLogin();
         } finally {
             checkingAuth = false;
+        }
+    }
+
+    async function mostrarSecaoDesenvolvedor() {
+        try {
+            // Dupla verificação de segurança - revalidar super_admin
+            const token = localStorage.getItem(LS_KEY);
+            const response = await fetch('/api/admin/auth/verificar', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (!response.ok) return;
+            const data = await response.json();
+            if (!data.admin?.super_admin) return;
+
+            // Mostrar navegação da seção desenvolvedor
+            const developerNavSection = document.getElementById('developer-nav-section');
+            if (developerNavSection) {
+                developerNavSection.style.display = 'block';
+            }
+
+            // Habilitar CSS da seção desenvolvedor (lazy loading)
+            const developerStyles = document.getElementById('developer-styles');
+            if (developerStyles) {
+                developerStyles.disabled = false;
+            }
+
+            // Configurar evento de clique para lazy load do JavaScript
+            setupDeveloperSectionLazyLoad();
+            
+        } catch (error) {
+            console.error('Erro ao verificar acesso de desenvolvedor:', error);
+        }
+    }
+
+    let developerScriptLoaded = false;
+    let developerSectionInitialized = false;
+
+    function setupDeveloperSectionLazyLoad() {
+        const developerNav = document.querySelector('.developer-nav');
+        if (!developerNav) return;
+
+        developerNav.addEventListener('click', async function(e) {
+            e.preventDefault();
+            
+            // Verificação tripla de segurança antes de carregar
+            if (!(await verificarSuperAdminAccess())) {
+                alert('Acesso negado. Apenas Super Admins podem acessar esta seção.');
+                return;
+            }
+
+            // Carregar script dinamicamente (apenas uma vez)
+            if (!developerScriptLoaded) {
+                await loadDeveloperScript();
+                developerScriptLoaded = true;
+            }
+
+            // Mostrar seção e inicializar
+            mostrarSecaoDesenvolvimento();
+        });
+    }
+
+    async function verificarSuperAdminAccess() {
+        try {
+            const token = localStorage.getItem(LS_KEY);
+            const response = await fetch('/api/admin/auth/verificar', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (!response.ok) return false;
+            const data = await response.json();
+            return data.admin?.super_admin === true;
+        } catch (error) {
+            console.error('Erro na verificação de super admin:', error);
+            return false;
+        }
+    }
+
+    function loadDeveloperScript() {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = '../../assets/js/admin/developer.js';
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error('Falha ao carregar script de desenvolvedor'));
+            document.head.appendChild(script);
+        });
+    }
+
+    function mostrarSecaoDesenvolvimento() {
+        // Usar o sistema de navegação existente
+        showSection('developer');
+        
+        // Inicializar seção apenas uma vez
+        if (!developerSectionInitialized && window.initDeveloperSection) {
+            window.initDeveloperSection();
+            developerSectionInitialized = true;
         }
     }
 
