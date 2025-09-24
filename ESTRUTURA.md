@@ -34,7 +34,6 @@ backend/
 ├── 📁 src/
 │   ├── 📁 config/
 │   │   ├── database.js              # Configuração MySQL Railway
-│   │   ├── redis.js                 # Cache/Sessões
 │   │   ├── cloudinary.js            # Upload de imagens
 │   │   └── environment.js           # Variáveis de ambiente
 │   │
@@ -133,8 +132,7 @@ backend/
 │   │   ├── authService.js            # Lógica de autenticação
 │   │   ├── orderService.js           # Processamento pedidos
 │   │   ├── reportService.js          # Geração relatórios
-│   │   ├── uploadService.js          # Upload imagens
-│   │   └── cacheService.js           # Cache Redis
+│   │   └── uploadService.js          # Upload imagens
 │   │
 │   ├── 📁 utils/
 │   │   ├── constants.js              # Constantes
@@ -188,7 +186,6 @@ backend/
 ### **📦 Principais:**
 - **Node.js** + **Express.js**
 - **MySQL** (Railway Database)
-- **Redis** (Cache/Sessões)
 - **Socket.IO** (Real-time)
 - **JWT** (Autenticação)
 - **Bcrypt** (Hash senhas)

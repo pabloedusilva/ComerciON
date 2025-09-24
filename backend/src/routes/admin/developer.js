@@ -31,4 +31,7 @@ router.delete('/logs/limpar', DeveloperController.limparLogs);
 // GET /api/admin/developer/estatisticas - Estatísticas detalhadas
 router.get('/estatisticas', DeveloperController.estatisticas);
 
+// GET /api/admin/developer/tech-info - Informações técnicas detalhadas
+router.get('/tech-info', DeveloperController.obterInformacoesTecnicas);
+
 module.exports = router;

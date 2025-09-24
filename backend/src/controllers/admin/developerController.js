@@ -363,6 +363,87 @@ class DeveloperController {
             });
         }
     }
+
+    // Obter informações técnicas detalhadas
+    static async obterInformacoesTecnicas(req, res) {
+        try {
+            const informacoes = {
+                servidor: {
+                    node_version: process.version,
+                    plataforma: process.platform,
+                    pid: process.pid,
+                    uptime: process.uptime(),
+                    memoria: process.memoryUsage()
+                },
+                banco_dados: {
+                    versao: 'Carregando...',
+                    conexoes_ativas: 'Carregando...',
+                    uptime: 'Carregando...',
+                    charset: 'Carregando...'
+                }
+            };
+
+            try {
+                // Buscar informações do MySQL
+                const [versaoResult] = await pool.execute('SELECT VERSION() as version');
+                const [statusResult] = await pool.execute(`
+                    SHOW STATUS WHERE Variable_name IN (
+                        'Threads_connected', 
+                        'Uptime',
+                        'character_set_database'
+                    )
+                `);
+                
+                // Processar resultados do status
+                const statusMap = {};
+                statusResult.forEach(row => {
+                    statusMap[row.Variable_name] = row.Value;
+                });
+
+                // Formatar uptime do banco
+                const uptimeSeconds = parseInt(statusMap.Uptime || 0);
+                const days = Math.floor(uptimeSeconds / 86400);
+                const hours = Math.floor((uptimeSeconds % 86400) / 3600);
+                const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+                const uptimeFormatted = `${days}d ${hours}h ${minutes}m`;
+
+                informacoes.banco_dados = {
+                    versao: versaoResult[0].version || 'N/A',
+                    conexoes_ativas: statusMap.Threads_connected || '0',
+                    uptime: uptimeFormatted,
+                    charset: 'UTF-8'
+                };
+
+            } catch (dbError) {
+                console.error('Erro ao buscar informações do banco:', dbError);
+                informacoes.banco_dados = {
+                    versao: 'Erro ao conectar',
+                    conexoes_ativas: 'N/A',
+                    uptime: 'N/A',
+                    charset: 'N/A'
+                };
+            }
+
+            res.json({
+                sucesso: true,
+                dados: informacoes
+            });
+
+        } catch (error) {
+            console.error('Erro ao obter informações técnicas:', error);
+            
+            await SystemLog.error('Erro ao obter informações técnicas', {
+                source: 'developer_section',
+                admin_id: req.usuario.id,
+                metadata: { erro: error.message }
+            });
+
+            res.status(500).json({
+                sucesso: false,
+                mensagem: 'Erro ao obter informações técnicas'
+            });
+        }
+    }
 }
 
 module.exports = DeveloperController;

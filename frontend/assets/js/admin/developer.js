@@ -72,7 +72,7 @@ window.initDeveloperSection = (function() {
             if (data.sucesso) {
                 atualizarStatusCards(data.dados.status_geral.componentes);
                 atualizarEstatisticas(data.dados);
-                atualizarInformacoesTecnicas(data.dados);
+                await atualizarInformacoesTecnicas(data.dados);
                 atualizarUltimaAtualizacao();
                 await carregarLogs();
             }
@@ -138,7 +138,7 @@ window.initDeveloperSection = (function() {
     }
 
     // Atualizar informações técnicas
-    function atualizarInformacoesTecnicas(dados) {
+    async function atualizarInformacoesTecnicas(dados) {
         const infoServidor = dados.info_servidor;
         if (infoServidor) {
             document.getElementById('node-version').textContent = infoServidor.versao_node || 'N/A';
@@ -146,10 +146,37 @@ window.initDeveloperSection = (function() {
             document.getElementById('process-id').textContent = infoServidor.pid || 'N/A';
         }
 
-        // Informações do banco serão atualizadas quando disponíveis
-        document.getElementById('db-version').textContent = 'Carregando...';
-        document.getElementById('db-connections-total').textContent = 'Carregando...';
-        document.getElementById('db-uptime').textContent = 'Carregando...';
+        // Buscar informações detalhadas do banco de dados
+        try {
+            const token = localStorage.getItem(LS_KEY);
+            const response = await fetch('/api/admin/developer/tech-info', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.sucesso && data.dados.banco_dados) {
+                    const dbInfo = data.dados.banco_dados;
+                    document.getElementById('db-version').textContent = dbInfo.versao;
+                    document.getElementById('db-connections-total').textContent = dbInfo.conexoes_ativas;
+                    document.getElementById('db-uptime').textContent = dbInfo.uptime;
+                } else {
+                    // Em caso de erro, mostrar erro
+                    document.getElementById('db-version').textContent = 'Erro ao carregar';
+                    document.getElementById('db-connections-total').textContent = 'Erro ao carregar';
+                    document.getElementById('db-uptime').textContent = 'Erro ao carregar';
+                }
+            } else {
+                throw new Error('Erro na resposta da API');
+            }
+        } catch (error) {
+            console.error('Erro ao carregar informações do banco:', error);
+            document.getElementById('db-version').textContent = 'Erro de conexão';
+            document.getElementById('db-connections-total').textContent = 'N/A';
+            document.getElementById('db-uptime').textContent = 'N/A';
+        }
     }
 
     // Carregar logs

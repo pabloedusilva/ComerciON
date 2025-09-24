@@ -242,42 +242,13 @@ class SystemStatus {
         }
     }
 
-    // Verificar status do Redis (se configurado)
-    static async verificarRedis() {
-        try {
-            // TODO: Implementar verificação do Redis quando estiver configurado
-            const metadata = {
-                configurado: false,
-                ultima_verificacao: new Date()
-            };
-
-            await SystemStatus.atualizarStatus(
-                'redis',
-                'offline',
-                'Redis não configurado',
-                metadata
-            );
-
-            return false;
-        } catch (error) {
-            await SystemStatus.atualizarStatus(
-                'redis',
-                'offline',
-                `Erro no Redis: ${error.message}`,
-                { erro: error.message }
-            );
-            return false;
-        }
-    }
-
     // Executar verificação completa de todos os componentes
     static async verificarTodosComponentes() {
         try {
             const resultados = await Promise.allSettled([
                 SystemStatus.verificarDatabase(),
                 SystemStatus.verificarServer(),
-                SystemStatus.verificarPaymentAPI(),
-                SystemStatus.verificarRedis()
+                SystemStatus.verificarPaymentAPI()
             ]);
 
             const sucessos = resultados.filter(r => r.status === 'fulfilled' && r.value === true).length;

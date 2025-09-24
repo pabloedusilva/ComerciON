@@ -14,14 +14,21 @@
     padding: 2rem;
 }
 
-/* Header da Seção */
+/* Header da Seção - Totalmente transparente */
 #developer-section .developer-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid #e2e8f0;
+    padding: 0; /* Remove todo padding */
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-bottom: none !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    outline: none !important;
 }
 
 #developer-section .developer-title {
@@ -40,18 +47,6 @@
     color: #1e293b;
     margin: 0;
     font-weight: 600;
-}
-
-#developer-section .security-badge {
-    background: linear-gradient(135deg, #dc2626, #b91c1c);
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
 }
 
 #developer-section .last-update {
@@ -86,10 +81,10 @@
     font-size: 1.25rem;
 }
 
-/* Status Cards */
+/* Status Cards - Tamanho uniforme garantido */
 #developer-section .status-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 1.5rem;
     padding: 2rem;
 }
@@ -103,6 +98,9 @@
     border-radius: 8px;
     background: #ffffff;
     transition: all 0.2s ease;
+    min-height: 120px; /* Altura mínima uniforme */
+    height: 120px; /* Altura fixa para todos os cards */
+    width: 100%; /* Largura total disponível */
 }
 
 #developer-section .status-card:hover {

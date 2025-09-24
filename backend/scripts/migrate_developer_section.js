@@ -164,7 +164,6 @@ async function insertDefaultSystemStatus() {
         { component: 'database', status: 'online', message: 'Database connection active' },
         { component: 'server', status: 'online', message: 'Server running' },
         { component: 'payment_api', status: 'offline', message: 'Payment API not configured' },
-        { component: 'redis', status: 'offline', message: 'Redis not configured' },
         { component: 'email_service', status: 'offline', message: 'Email service not configured' }
     ];
     

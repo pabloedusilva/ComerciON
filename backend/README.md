@@ -6,7 +6,6 @@ Backend Node.js completo para sistema de pizzaria com funcionalidades avançadas
 
 - **Node.js** + **Express.js**
 - **MySQL** (Railway Database)
-- **Redis** (Cache/Sessões)
 - **Socket.IO** (Real-time)
 - **JWT** (Autenticação)
 - **Cloudinary** (Upload imagens)
@@ -15,7 +14,7 @@ Backend Node.js completo para sistema de pizzaria com funcionalidades avançadas
 
 ```
 src/
-├── config/          # Configurações (DB, Redis, etc.)
+├── config/          # Configurações (DB, Cloudinary, etc.)
 ├── controllers/     # Lógica de negócio
 ├── models/          # Modelos de dados
 ├── routes/          # Rotas da API
