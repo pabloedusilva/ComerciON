@@ -129,8 +129,18 @@ window.initDeveloperSection = (function() {
             document.getElementById('memory-usage').textContent = `${usedMB}MB / ${totalMB}MB`;
         }
 
-        // Conexões do banco (será implementado quando disponível)
-        document.getElementById('db-connections').textContent = 'N/A';
+        // Conexões do banco (estatísticas iniciais): exibir estimativa se disponível já no dashboard
+        const dbConnElSummary = document.getElementById('db-connections');
+        const dbConnElTech = document.getElementById('db-connections-total');
+        if (dados.info_servidor?.conexoes_ativas_estimadas != null) {
+            const val = dados.info_servidor.conexoes_ativas_estimadas;
+            if (dbConnElSummary && (dbConnElSummary.textContent === 'Carregando...' || dbConnElSummary.textContent === '-' )) {
+                dbConnElSummary.textContent = String(val);
+            }
+            if (dbConnElTech && (dbConnElTech.textContent === '-' || dbConnElTech.textContent === 'Carregando...')) {
+                dbConnElTech.textContent = String(val);
+            }
+        }
 
         // Logs de erro dos últimos 7 dias
         const logsError = dados.estatisticas_logs?.filter(log => log.level === 'error').length || 0;
@@ -159,23 +169,39 @@ window.initDeveloperSection = (function() {
                 const data = await response.json();
                 if (data.sucesso && data.dados.banco_dados) {
                     const dbInfo = data.dados.banco_dados;
-                    document.getElementById('db-version').textContent = dbInfo.versao;
-                    document.getElementById('db-connections-total').textContent = dbInfo.conexoes_ativas;
-                    document.getElementById('db-uptime').textContent = dbInfo.uptime;
+                    // Elementos podem variar de nome (compatibilidade antiga: db-connections-total -> unificado em db-connections)
+                    const elVersion = document.getElementById('db-version');
+                    const elConnections = document.getElementById('db-connections') || document.getElementById('db-connections-total');
+                    const elUptime = document.getElementById('db-uptime');
+                    if (elVersion) elVersion.textContent = dbInfo.versao;
+                    if (elConnections) {
+                        if (dbInfo.conexoes_ativas && dbInfo.conexoes_ativas !== '0') {
+                            elConnections.textContent = dbInfo.conexoes_ativas;
+                        } else if (dados.info_servidor?.conexoes_ativas_estimadas != null) {
+                            elConnections.textContent = dados.info_servidor.conexoes_ativas_estimadas;
+                        }
+                    }
+                    if (elUptime) elUptime.textContent = dbInfo.uptime;
                 } else {
                     // Em caso de erro, mostrar erro
-                    document.getElementById('db-version').textContent = 'Erro ao carregar';
-                    document.getElementById('db-connections-total').textContent = 'Erro ao carregar';
-                    document.getElementById('db-uptime').textContent = 'Erro ao carregar';
+                    const elVersion = document.getElementById('db-version');
+                    const elConnections = document.getElementById('db-connections') || document.getElementById('db-connections-total');
+                    const elUptime = document.getElementById('db-uptime');
+                    if (elVersion) elVersion.textContent = 'Erro ao carregar';
+                    if (elConnections) elConnections.textContent = 'Erro ao carregar';
+                    if (elUptime) elUptime.textContent = 'Erro ao carregar';
                 }
             } else {
                 throw new Error('Erro na resposta da API');
             }
         } catch (error) {
             console.error('Erro ao carregar informações do banco:', error);
-            document.getElementById('db-version').textContent = 'Erro de conexão';
-            document.getElementById('db-connections-total').textContent = 'N/A';
-            document.getElementById('db-uptime').textContent = 'N/A';
+            const elVersion = document.getElementById('db-version');
+            const elConnections = document.getElementById('db-connections') || document.getElementById('db-connections-total');
+            const elUptime = document.getElementById('db-uptime');
+            if (elVersion) elVersion.textContent = 'Erro de conexão';
+            if (elConnections) elConnections.textContent = 'N/A';
+            if (elUptime) elUptime.textContent = 'N/A';
         }
     }
 

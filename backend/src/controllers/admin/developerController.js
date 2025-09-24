@@ -22,14 +22,23 @@ class DeveloperController {
             // Estatísticas recentes dos logs
             const estatisticasLogs = await SystemLog.obterEstatisticas(7);
             
-            // Informações do servidor
+            // Informações do servidor + snapshot simples do pool (conexões)
+            let conexoesAtivas = null;
+            try {
+                // mysql2/promise pool não expõe diretamente métricas públicas, mas _allConnections e _freeConnections existem internamente
+                if (pool && pool._allConnections) {
+                    conexoesAtivas = pool._allConnections.length - pool._freeConnections.length;
+                }
+            } catch (_) { /* silencioso */ }
+
             const infoServidor = {
                 uptime: process.uptime(),
                 memoria: process.memoryUsage(),
                 versao_node: process.version,
                 plataforma: process.platform,
                 pid: process.pid,
-                cpu_usage: process.cpuUsage()
+                cpu_usage: process.cpuUsage(),
+                conexoes_ativas_estimadas: conexoesAtivas
             };
 
             res.json({
