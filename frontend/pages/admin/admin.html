@@ -37,24 +37,26 @@
     <!-- Sidebar -->
     <aside class="sidebar">
         <div class="sidebar-header">
-            <div class="logo">
-                <div class="logo-text">
-                    <h2>Admin Panel</h2>
-                    <span class="logo-subtitle">Gestão completa</span>
-                    <!-- Status da loja (dinâmico) -->
+            <div class="sidebar-header-inner">
+                <div class="logo-block">
+                    <div class="logo-text">
+                        <h2>Admin Panel</h2>
+                        <span class="logo-subtitle">Gestão completa</span>
+                    </div>
+                </div>
+                <div class="meta-block">
                     <span id="sidebarStatusPill" class="status-pill open" aria-live="polite" title="Status da loja">
                         <i class="fas fa-circle"></i> Aberta
                     </span>
-                    <!-- Data e hora em tempo real -->
                     <div class="datetime-display" id="sidebarDateTime">
                         <span class="date-text" id="dateText">--</span>
                         <span class="time-text" id="timeText">--:--</span>
                     </div>
                 </div>
+                <button class="sidebar-toggle" id="sidebarToggle" aria-label="Alternar sidebar">
+                    <i class="fas fa-bars"></i>
+                </button>
             </div>
-            <button class="sidebar-toggle" id="sidebarToggle">
-                <i class="fas fa-bars"></i>
-            </button>
         </div>
 
         <nav class="sidebar-nav">

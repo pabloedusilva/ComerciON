@@ -70,11 +70,44 @@ body {
 
 /* Sidebar Header - Modernizado */
 .sidebar-header {
-    padding: 2rem 1.5rem 1.5rem;
+    padding: 1.75rem 1.5rem 1.25rem;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
     position: relative;
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.35);
+    backdrop-filter: blur(6px);
 }
+
+/* Container interno novo para organização em grid */
+.sidebar-header-inner {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr auto; /* conteúdo + botão */
+    grid-template-rows: auto auto; /* linha 1 título/subtitulo | linha 2 status/data */
+    grid-template-areas:
+        "logo toggle"
+        "meta toggle";
+    column-gap: 0.75rem;
+    row-gap: 0.55rem;
+    align-items: center;
+    position: relative;
+    min-height: 88px; /* altura adequada para acomodar duas linhas */
+}
+
+.logo-block { grid-area: logo; min-width: 0; }
+.meta-block { grid-area: meta; display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; min-width:0; }
+.sidebar-header-inner .sidebar-toggle { grid-area: toggle; }
+
+/* Garantir que nada esconda conteúdo principal ao colapsar */
+.sidebar.collapsed .sidebar-header-inner {
+    grid-template-columns: 1fr; /* botão some para modo colapsado em mobile / aparece overlay se necessário */
+    grid-template-areas:
+        "logo"
+        "meta";
+}
+
+/* Quando a sidebar estiver colapsada, reduzir padding para evitar área “vazia” e manter proporção */
+/* Ajuste de padding em modo colapsado sem remover totalmente conteúdo visível (até transição JS ocultar) */
+.sidebar.collapsed .sidebar-header { padding: 1.2rem .85rem 1rem; }
 
 .logo {
     display: flex;
@@ -82,10 +115,14 @@ body {
     justify-content: flex-start;
 }
 
-.logo-text {
-    transition: all 0.4s ease;
-    overflow: hidden;
-}
+.logo-text { transition: all .4s ease; display: flex; flex-direction: column; gap: .2rem; max-width:100%; }
+
+/* Título com truncamento para evitar quebra / vazamento horizontal */
+/* Título agora pode quebrar se for realmente necessário antes de causar overflow horizontal */
+.logo-text h2 { word-break: break-word; line-height:1.1; }
+
+/* Subtitle também truncado se necessário */
+.logo-subtitle { font-weight:500; opacity:.85; }
 
 /* Status pill dentro do header lateral */
 .sidebar-header .status-pill {
@@ -193,9 +230,35 @@ body {
     margin-top: 0.25rem;
 }
 
-.sidebar.collapsed .logo-text {
-    opacity: 0;
-    width: 0;
+/* Em modo colapsado (desktop), realmente ocultamos texto para ícones ficarem limpos */
+.sidebar.collapsed .logo-text { opacity:0; width:0; pointer-events:none; }
+
+/* Garante que o status pill e datetime não "estourem" horizontalmente em situações extremas */
+/* Elementos meta ajustáveis */
+.sidebar-header .status-pill { flex-shrink:0; }
+.sidebar-header .datetime-display { display:flex; align-items:center; gap:.35rem; }
+
+/* Caso o texto interno do status cresça demais (traduções, etc.), aplicar truncamento elegante */
+/* Status permanece em linha sem forçar truncamento invisível agora */
+.sidebar-header .status-pill { white-space:nowrap; }
+
+/* Responsividade específica */
+@media (max-width: 1024px) {
+    .sidebar-header-inner { row-gap:.4rem; min-height:82px; }
+    .logo-text h2 { font-size:1.3rem; }
+}
+
+@media (max-width: 768px) {
+    .sidebar-header { padding:1.4rem 1.1rem 1rem; }
+    .sidebar-header-inner { grid-template-columns: 1fr auto; }
+    .logo-text h2 { font-size:1.25rem; }
+    .meta-block { gap:.5rem; }
+}
+
+@media (max-width: 520px) {
+    .sidebar-header-inner { grid-template-columns: 1fr; grid-template-areas: "logo" "meta"; }
+    .sidebar-header-inner .sidebar-toggle { position:absolute; top:.9rem; right:1rem; }
+    .meta-block { justify-content:flex-start; }
 }
 
 .sidebar-toggle {
