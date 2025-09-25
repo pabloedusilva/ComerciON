@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>Meu Perfil - Pizzaria</title>
+	<link rel="shortcut icon" href="../../assets/images/default-images/favicon.ico" type="image/x-icon">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+	<link rel="stylesheet" href="../../assets/css/shared/style.css">
+	<link rel="stylesheet" href="../../assets/css/customer/profile.css">
+</head>
+<body>
+	<div class="loader-content">
+		<div class="loader-circle"></div>
+	</div>
+
+	<header class="header"></header>
+
+	<main>
+		<div class="profile-container" id="profile-page" data-auth-required="true">
+			<div class="profile-header">
+				<i class="fa-solid fa-user-circle icon"></i>
+				<h1>Meu Perfil</h1>
+			</div>
+			<div id="profile-alert" class="alert hidden" aria-live="polite"></div>
+
+			<div class="profile-card">
+				<h3 class="section-title">Informações Básicas</h3>
+				<div class="profile-grid">
+					<div class="form-group">
+						<label for="nome">Nome completo</label>
+						<div class="input-wrapper">
+							<i class="fas fa-user"></i>
+							<input id="nome" type="text" autocomplete="name" required placeholder="Seu nome completo">
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="telefone">Telefone</label>
+						<div class="input-wrapper">
+							<i class="fas fa-phone"></i>
+							<input id="telefone" type="text" placeholder="(XX) XXXXX-XXXX" autocomplete="tel">
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="email">Email</label>
+						<div class="input-wrapper">
+							<i class="fas fa-envelope"></i>
+							<input id="email" type="email" autocomplete="email" disabled placeholder="seuemail@exemplo.com">
+						</div>
+						<span class="hint">Para alterar o email, use a seção "Segurança" abaixo.</span>
+					</div>
+					<div></div>
+				</div>
+                <br><br>
+				<div class="profile-grid">
+					<div class="form-group">
+						<label for="endereco">Endereço</label>
+						<div class="input-wrapper">
+							<i class="fas fa-location-dot"></i>
+							<input id="endereco" type="text" autocomplete="street-address" placeholder="Rua, número, complemento">
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="cidade">Cidade</label>
+						<div class="input-wrapper">
+							<i class="fas fa-city"></i>
+							<input id="cidade" type="text" autocomplete="address-level2" placeholder="Sua cidade">
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="estado">Estado</label>
+						<div class="input-wrapper">
+							<i class="fas fa-flag"></i>
+							<input id="estado" type="text" maxlength="2" placeholder="UF" autocomplete="address-level1">
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="cep">CEP</label>
+						<div class="input-wrapper">
+							<i class="fas fa-map-pin"></i>
+							<input id="cep" type="text" placeholder="00000-000" autocomplete="postal-code">
+						</div>
+					</div>
+				</div>
+				<div class="form-actions">
+					<button id="btn-salvar" class="btn btn-primary" aria-label="Salvar alterações do perfil"><i class="fa-solid fa-save"></i> Salvar alterações</button>
+				</div>
+			</div>
+
+			<div class="profile-card">
+				<h3 class="section-title">Segurança</h3>
+				<div class="profile-grid">
+					<div class="form-group">
+						<label for="novo-email">Novo email</label>
+						<div class="input-wrapper">
+							<i class="fas fa-envelope"></i>
+							<input id="novo-email" type="email" placeholder="seuemail@exemplo.com">
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="senha-confirmar-email">Senha atual</label>
+						<div class="input-wrapper">
+							<i class="fas fa-lock"></i>
+							<input id="senha-confirmar-email" type="password" autocomplete="current-password" placeholder="Sua senha atual">
+						</div>
+					</div>
+				</div>
+				<div class="form-actions">
+					<button id="btn-alterar-email" class="btn btn-secondary" aria-label="Alterar email"><i class="fa-solid fa-envelope"></i> Alterar email</button>
+				</div>
+				<hr class="divider">
+				<div class="profile-grid">
+					<div class="form-group">
+						<label for="senha-atual">Senha atual</label>
+						<div class="input-wrapper">
+							<i class="fas fa-lock"></i>
+							<input id="senha-atual" type="password" autocomplete="current-password" placeholder="Sua senha atual">
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="nova-senha">Nova senha</label>
+						<div class="input-wrapper">
+							<i class="fas fa-key"></i>
+							<input id="nova-senha" type="password" autocomplete="new-password" placeholder="Crie uma nova senha">
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="confirmar-senha">Confirmar nova senha</label>
+						<div class="input-wrapper">
+							<i class="fas fa-key"></i>
+							<input id="confirmar-senha" type="password" autocomplete="new-password" placeholder="Repita a nova senha">
+						</div>
+					</div>
+				</div>
+				<div class="form-actions">
+					<button id="btn-alterar-senha" class="btn danger" aria-label="Alterar senha"><i class="fa-solid fa-key"></i> Alterar senha</button>
+				</div>
+			</div>
+		</div>
+	</main>
+
+	<footer class="modern-footer">
+		<div class="footer-container">
+			<div class="footer-content">
+				<div class="footer-brand">
+					<img src="../../assets/images/default-images/logo_pizza.png" alt="Pizzaria Logo" class="footer-logo">
+					<p>Sabor que conquista</p>
+				</div>
+				<div class="footer-links">
+					<div class="footer-section">
+						<h4>Menu</h4>
+						<ul>
+							<li><a href="/menu#pizzas">Pizzas</a></li>
+							<li><a href="/menu#bebidas">Bebidas</a></li>
+							<li><a href="/">Home</a></li>
+						</ul>
+					</div>
+					<div class="footer-section">
+						<h4>Contato</h4>
+						<ul>
+							<li>
+								<a class="contact-link" href="tel:+5511999999999" aria-label="Ligar para (11) 99999-9999">
+									<i class="fas fa-phone" aria-hidden="true"></i>
+									<span>(11) 99999-9999</span>
+								</a>
+							</li>
+							<li>
+								<a class="contact-link" href="mailto:contato@pizzaria.com" aria-label="Enviar e-mail para contato@pizzaria.com">
+									<i class="fas fa-envelope" aria-hidden="true"></i>
+									<span>contato@pizzaria.com</span>
+								</a>
+							</li>
+							<li>
+								<a class="contact-link" href="https://www.google.com/maps/search/?api=1&query=S%C3%A3o%20Paulo%2C%20SP" target="_blank" rel="noopener noreferrer" aria-label="Abrir endereço no Google Maps">
+									<i class="fas fa-map-marker-alt" aria-hidden="true"></i>
+									<span>São Paulo, SP</span>
+								</a>
+							</li>
+						</ul>
+					</div>
+					<div class="footer-section">
+						<h4>Siga-nos</h4>
+						<div class="social-links">
+							<a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+							<a href="#" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="footer-bottom">
+				<div class="footer-credits">
+					<p>&copy; 2025 Pizzaria. Todos os direitos reservados.</p>
+					<p class="dev-credit">
+						<a href="https://github.com/pabloedusilva" target="_blank" rel="noopener noreferrer">
+							Desenvolvido por Pablo Silva
+						</a>
+					</p>
+				</div>
+			</div>
+		</div>
+	</footer>
+
+	<script src="../../assets/js/shared/nav.js"></script>
+	<script src="../../assets/js/shared/layout.js"></script>
+	<script src="../../assets/js/shared/auth.js"></script>
+	<script src="../../assets/js/customer/perfil.js"></script>
+</body>
+</html>

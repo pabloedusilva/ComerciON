@@ -28,4 +28,12 @@ module.exports = {
     // Rate Limiting
     rateLimitWindow: parseInt(process.env.RATE_LIMIT_WINDOW) || 15 * 60 * 1000, // 15 min
     rateLimitMax: parseInt(process.env.RATE_LIMIT_MAX) || 100,
+
+    // Auth Hardening
+    strictSessionUA: (process.env.STRICT_SESSION_UA || 'true') === 'true',
+    strictSessionIP: (process.env.STRICT_SESSION_IP || 'false') === 'true',
+    loginAttemptWindowMs: parseInt(process.env.LOGIN_ATTEMPT_WINDOW_MS) || (15 * 60 * 1000), // 15 min
+    loginAttemptMax: parseInt(process.env.LOGIN_ATTEMPT_MAX) || 5,
+    loginLockMinutes: parseInt(process.env.LOGIN_LOCK_MINUTES) || 15,
+    maxActiveSessionsPerUser: parseInt(process.env.MAX_ACTIVE_SESSIONS_PER_USER) || 5,
 };

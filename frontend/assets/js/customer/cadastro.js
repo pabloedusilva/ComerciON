@@ -276,30 +276,37 @@ function submitForm() {
     submitButton.textContent = 'Criando conta...';
     submitButton.disabled = true;
     
-    // Simular processo de cadastro
-    setTimeout(() => {
-        // Coletar dados do formulário
-        const formData = {
-            firstName: document.getElementById('firstName').value.trim(),
-            lastName: document.getElementById('lastName').value.trim(),
-            email: document.getElementById('email').value.trim(),
-            phone: document.getElementById('phone').value.trim(),
-            password: document.getElementById('password').value,
-            newsletter: document.getElementById('newsletter').checked
-        };
-        
-        // Aqui você enviaria os dados para o backend
-        console.log('Dados do cadastro:', formData);
-        
-        // Simular sucesso
-        showSuccessMessage();
-        
-        // Redirecionar após sucesso
-        setTimeout(() => {
-            window.location.href = '/login?registered=true';
-        }, 2000);
-        
-    }, 1500);
+    (async () => {
+        try {
+            // Coletar dados do formulário
+            const formData = {
+                nome: (document.getElementById('firstName').value.trim() + ' ' + document.getElementById('lastName').value.trim()).trim(),
+                email: document.getElementById('email').value.trim(),
+                telefone: document.getElementById('phone').value.trim(),
+                senha: document.getElementById('password').value
+            };
+
+            const res = await fetch('/api/customer/auth/registrar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.mensagem || 'Falha no cadastro');
+            }
+            showSuccessMessage();
+            setTimeout(() => {
+                const params = new URLSearchParams(window.location.search);
+                const redirect = params.get('redirect');
+                const dest = redirect ? ('/login?redirect=' + encodeURIComponent(redirect)) : '/login?registered=true';
+                window.location.href = dest;
+            }, 1200);
+        } catch (err) {
+            removeLoadingState(submitButton, originalText);
+            alert(err.message || 'Erro no cadastro');
+        }
+    })();
 }
 
 // Mostrar mensagem de sucesso

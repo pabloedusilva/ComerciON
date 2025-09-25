@@ -43,9 +43,10 @@ const mobileProfileMarkup = isIndexPage ? '' : `
                 </div>
                 <div class="profile-dropdown" id="profileDropdown">
                     <ul>
-                        <li><a href="#"><i class="fa-solid fa-user-circle"></i> Meu Perfil</a></li>
-                        <li><a href="#"><i class="fa-solid fa-shopping-bag"></i> Meus Pedidos</a></li>
-                        <li><a href="#" class="logout"><i class="fa-solid fa-sign-out-alt"></i> Sair</a></li>
+                        <li data-auth-required="true" style="display:none"><a href="/perfil"><i class="fa-solid fa-user-circle"></i> Meu Perfil</a></li>
+                        <li data-auth-required="true" style="display:none"><a href="/pedidos"><i class="fa-solid fa-shopping-bag"></i> Meus Pedidos</a></li>
+                        <li data-auth-required="true" style="display:none"><a href="#" class="logout"><i class="fa-solid fa-sign-out-alt"></i> Sair</a></li>
+                        <li data-auth-required="false"><a href="/login"><i class="fa-solid fa-right-to-bracket"></i> Fazer login ou cadastre-se</a></li>
                     </ul>
                 </div>
             </div>`;
@@ -57,9 +58,10 @@ const desktopProfileMarkup = isIndexPage ? '' : `
                         </div>
                         <div class="profile-dropdown" id="profileDropdownDesktop">
                             <ul>
-                                <li><a href="#"><i class="fa-solid fa-user-circle"></i> Meu Perfil</a></li>
-                                <li><a href="#"><i class="fa-solid fa-shopping-bag"></i> Meus Pedidos</a></li>
-                                <li><a href="#" class="logout"><i class="fa-solid fa-sign-out-alt"></i> Sair</a></li>
+                                <li data-auth-required="true" style="display:none"><a href="/perfil"><i class="fa-solid fa-user-circle"></i> Meu Perfil</a></li>
+                                <li data-auth-required="true" style="display:none"><a href="/pedidos"><i class="fa-solid fa-shopping-bag"></i> Meus Pedidos</a></li>
+                                <li data-auth-required="true" style="display:none"><a href="#" class="logout"><i class="fa-solid fa-sign-out-alt"></i> Sair</a></li>
+                                <li data-auth-required="false"><a href="/login"><i class="fa-solid fa-right-to-bracket"></i> Fazer login ou cadastre-se</a></li>
                             </ul>
                         </div>
                     </div>
@@ -188,6 +190,23 @@ try {
 // - Se NÃO estiver no menu.html: redireciona para menu e sinaliza para abrir o carrinho
 // - Se já estiver no menu.html: deixa o cart.js/geral.js cuidarem da abertura
 (function(){
+    // Regras de proteção de navegação: bloquear acesso sem autenticação
+    const guardLinks = (root) => {
+        const links = root.querySelectorAll('[data-auth-required="true"] a');
+        links.forEach(a => {
+            a.addEventListener('click', (ev) => {
+                const auth = window.AuthSystem; // resolver no momento do clique
+                const isAuth = !!(auth && typeof auth.isAuthenticated === 'function' && auth.isAuthenticated());
+                if (!isAuth) {
+                    ev.preventDefault();
+                    window.location.href = '/login?redirect=' + encodeURIComponent(a.getAttribute('href'));
+                }
+            });
+        });
+    };
+    if (profileDropdown) guardLinks(profileDropdown);
+    if (profileDropdownDesktop) guardLinks(profileDropdownDesktop);
+
     const opener = document.querySelector('.menu-openner');
     if (!opener) return;
 
@@ -214,4 +233,14 @@ try {
             } catch(_) {}
         }
     });
+})();
+
+// Aplicar estado do dropdown conforme autenticação já disponível
+(function ensureAuthDropdownState(){
+    const auth = window.AuthSystem;
+    if (!auth) return;
+    setTimeout(() => {
+        if (auth.isAuthenticated()) auth.updateUIForAuthenticatedUser(auth.user);
+        else auth.updateUIForUnauthenticatedUser();
+    }, 0);
 })();

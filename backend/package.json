@@ -7,7 +7,9 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "db:fix-auth": "node ./scripts/fix_auth_schema.js",
+    "db:harden-auth": "node ./scripts/run_sql.js ./scripts/hardening_auth_schema.sql"
   },
   "keywords": [
     "nodejs",

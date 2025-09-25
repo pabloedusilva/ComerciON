@@ -97,6 +97,16 @@ app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, '../../frontend/pages/customer/login.html'));
 });
 
+// Páginas do cliente (URLs sem .html)
+app.get('/perfil', (req, res) => {
+    res.sendFile(path.join(__dirname, '../../frontend/pages/customer/perfil.html'));
+});
+
+app.get('/pedidos', (req, res) => {
+    // Placeholder: crie a página de pedidos se necessário
+    res.sendFile(path.join(__dirname, '../../frontend/pages/customer/perfil.html'));
+});
+
 // Rotas Admin
 app.get('/admin-login', (req, res) => {
     // Evitar cache para impedir voltar após logout

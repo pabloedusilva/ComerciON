@@ -116,7 +116,7 @@ async function ensureSessionsTable() {
             token_hash VARCHAR(255) NOT NULL,
             admin_id INT NULL,
             user_id INT NULL,
-            tipo_usuario ENUM('admin', 'customer') NOT NULL,
+            tipo_usuario ENUM('admin', 'cliente') NOT NULL,
             ip_address VARCHAR(45) NULL,
             user_agent TEXT NULL,
             criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -127,7 +127,7 @@ async function ensureSessionsTable() {
             INDEX idx_user_id (user_id),
             INDEX idx_expira_em (expira_em),
             FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            FOREIGN KEY (user_id) REFERENCES usuarios(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
     console.log('✔ Tabela sessoes criada/verificada');

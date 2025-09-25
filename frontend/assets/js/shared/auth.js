@@ -3,12 +3,20 @@ class AuthSystem {
     constructor() {
         this.baseURL = '';
         this.token = this.getToken();
+        this.user = this.getUser();
         this.init();
     }
 
     init() {
         this.checkAuthStatus();
         this.setupLogoutHandlers();
+        // Ativar proteção de checkout globalmente (defesa em profundidade)
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.checkoutProtection());
+        } else {
+            // DOM já pronto
+            this.checkoutProtection();
+        }
     }
 
     // Gerenciamento de Token
@@ -31,6 +39,32 @@ class AuthSystem {
         this.token = null;
     }
 
+    // Gerenciar usuário (nome no dropdown)
+    getUser() {
+        try {
+            const data = localStorage.getItem('auth_user') || sessionStorage.getItem('auth_user');
+            return data ? JSON.parse(data) : null;
+        } catch(_) { return null; }
+    }
+
+    setUser(user, remember = true) {
+        try {
+            const str = JSON.stringify(user || null);
+            if (remember) {
+                localStorage.setItem('auth_user', str);
+            } else {
+                sessionStorage.setItem('auth_user', str);
+            }
+            this.user = user || null;
+        } catch(_) {}
+    }
+
+    removeUser() {
+        try { localStorage.removeItem('auth_user'); } catch(_) {}
+        try { sessionStorage.removeItem('auth_user'); } catch(_) {}
+        this.user = null;
+    }
+
     // Verificar se está logado
     isAuthenticated() {
         return !!this.token;
@@ -38,10 +72,14 @@ class AuthSystem {
 
     // Verificar status de autenticação
     async checkAuthStatus() {
-        if (!this.token) return false;
+        if (!this.token) {
+            // Garantir UI consistente quando não autenticado
+            this.updateUIForUnauthenticatedUser();
+            return false;
+        }
 
         try {
-            const response = await fetch('/api/customer/auth/perfil', {
+            const response = await fetch('/api/customer/auth/verificar', {
                 headers: {
                     'Authorization': `Bearer ${this.token}`
                 }
@@ -49,14 +87,18 @@ class AuthSystem {
 
             if (response.ok) {
                 const data = await response.json();
+                try { this.setUser(data.usuario, true); } catch(_) {}
                 this.updateUIForAuthenticatedUser(data.usuario);
                 return true;
             } else {
                 this.removeToken();
+                this.removeUser();
+                this.updateUIForUnauthenticatedUser();
                 return false;
             }
         } catch (error) {
             console.error('Erro ao verificar autenticação:', error);
+            this.updateUIForUnauthenticatedUser();
             return false;
         }
     }
@@ -76,6 +118,7 @@ class AuthSystem {
 
             if (response.ok) {
                 this.setToken(data.token, remember);
+                try { this.setUser(data.usuario, true); } catch(_) {}
                 this.updateUIForAuthenticatedUser(data.usuario);
                 return { success: true, user: data.usuario };
             } else {
@@ -126,6 +169,7 @@ class AuthSystem {
             console.error('Erro no logout:', error);
         } finally {
             this.removeToken();
+            this.removeUser();
             this.updateUIForUnauthenticatedUser();
             // Redirecionar para home
             if (window.location.pathname !== '/') {
@@ -163,23 +207,25 @@ class AuthSystem {
     // Atualizar UI para usuário logado
     updateUIForAuthenticatedUser(user) {
         // Atualizar elementos de navegação
-        const profileDropdowns = document.querySelectorAll('.profile-dropdown ul');
-        profileDropdowns.forEach(dropdown => {
-            const profileLink = dropdown.querySelector('a[href="#"]');
-            if (profileLink && profileLink.textContent.includes('Meu Perfil')) {
-                // Atualizar nome do usuário se disponível
-                if (user && user.nome) {
-                    profileLink.innerHTML = `<i class="fa-solid fa-user-circle"></i> ${user.nome}`;
-                }
+        const dropdownRoots = document.querySelectorAll('.profile-dropdown ul');
+        dropdownRoots.forEach(root => {
+            root.querySelectorAll('[data-auth-required="true"]').forEach(li => li.style.display = '');
+            root.querySelectorAll('[data-auth-required="false"]').forEach(li => li.style.display = 'none');
+            const userItem = root.querySelector('a[href="/perfil"]');
+            if (userItem && user && user.nome) {
+                userItem.innerHTML = `<i class="fa-solid fa-user-circle"></i> ${user.nome}`;
             }
         });
-
-        // Mostrar elementos autenticados
         this.toggleAuthElements(true);
     }
 
     // Atualizar UI para usuário não logado
     updateUIForUnauthenticatedUser() {
+        const dropdownRoots = document.querySelectorAll('.profile-dropdown ul');
+        dropdownRoots.forEach(root => {
+            root.querySelectorAll('[data-auth-required="true"]').forEach(li => li.style.display = 'none');
+            root.querySelectorAll('[data-auth-required="false"]').forEach(li => li.style.display = '');
+        });
         this.toggleAuthElements(false);
     }
 
@@ -211,7 +257,8 @@ class AuthSystem {
     // Proteger rota (redirecionar se não autenticado)
     requireAuth() {
         if (!this.isAuthenticated()) {
-            window.location.href = '/login';
+            const current = window.location.pathname + window.location.search + window.location.hash;
+            window.location.href = '/login?redirect=' + encodeURIComponent(current);
             return false;
         }
         return true;
@@ -219,28 +266,26 @@ class AuthSystem {
 
     // Proteger checkout
     checkoutProtection() {
-        const checkoutBtn = document.querySelector('.checkout-btn, [data-checkout]');
-        if (checkoutBtn) {
-            checkoutBtn.addEventListener('click', (e) => {
+        const candidates = document.querySelectorAll('.cart--finalizar, .checkout-btn, [data-checkout]');
+        if (!candidates || candidates.length === 0) return;
+        candidates.forEach((btn) => {
+            if (btn.getAttribute('data-auth-guarded') === '1') return;
+            btn.setAttribute('data-auth-guarded', '1');
+            btn.addEventListener('click', (e) => {
                 if (!this.isAuthenticated()) {
                     e.preventDefault();
-                    const shouldRedirect = confirm('Você precisa estar logado para finalizar a compra. Deseja fazer login agora?');
-                    if (shouldRedirect) {
-                        // Salvar carrinho atual
-                        try {
-                            const cart = localStorage.getItem('pizza_cart');
-                            if (cart) {
-                                localStorage.setItem('pizza_cart_backup', cart);
-                            }
-                        } catch (e) {}
-                        
-                        window.location.href = '/login?redirect=checkout';
-                    }
+                    if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+                    try {
+                        const cart = localStorage.getItem('pizza_cart');
+                        if (cart) localStorage.setItem('pizza_cart_backup', cart);
+                        localStorage.setItem('pizzaria_open_cart_on_load', '1');
+                    } catch(_) {}
+                    window.location.href = '/login?redirect=' + encodeURIComponent('/menu#checkout');
                     return false;
                 }
                 return true;
-            });
-        }
+            }, { capture: true });
+        });
     }
 }
 

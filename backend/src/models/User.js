@@ -21,7 +21,14 @@ class User {
     // Criar novo usuário
     static async criar(dados) {
         try {
-            const { nome, email, senha, telefone, endereco, cidade, estado, cep } = dados;
+            const { nome, email, senha } = dados;
+            // Campos opcionais: converter undefined/strings vazias em NULL para o banco
+            const norm = (v) => (v == null || (typeof v === 'string' && v.trim() === '') ? null : v);
+            const telefone = norm(dados.telefone);
+            const endereco = norm(dados.endereco);
+            const cidade = norm(dados.cidade);
+            const estado = norm(dados.estado);
+            const cep = norm(dados.cep);
             
             // Verificar se email já existe
             const emailExiste = await User.buscarPorEmail(email);
@@ -33,8 +40,8 @@ class User {
             const senhaHash = await bcrypt.hash(senha, bcryptRounds);
 
             const query = `
-                INSERT INTO usuarios (nome, email, senha, telefone, endereco, cidade, estado, cep)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO usuarios (nome, email, senha, telefone, endereco, cidade, estado, cep, data_cadastro, ativo)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), TRUE)
             `;
 
             const [resultado] = await pool.execute(query, [

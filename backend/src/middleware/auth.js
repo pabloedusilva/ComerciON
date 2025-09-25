@@ -1,6 +1,6 @@
 // Middleware de Autenticação JWT
 const jwt = require('jsonwebtoken');
-const { jwtSecret } = require('../config/environment');
+const { jwtSecret, strictSessionUA, strictSessionIP } = require('../config/environment');
 const { pool } = require('../config/database');
 const User = require('../models/User');
 const Admin = require('../models/Admin');
@@ -26,7 +26,6 @@ const verificarToken = async (req, res, next) => {
             SELECT * FROM sessoes 
             WHERE token_hash = ? AND expira_em > NOW() AND ativo = TRUE
         `;
-        
         const [sessoes] = await pool.execute(query, [tokenHash]);
         
         if (sessoes.length === 0) {
@@ -37,11 +36,25 @@ const verificarToken = async (req, res, next) => {
         }
 
         const sessao = sessoes[0];
+
+        // Fingerprint: validar user agent e opcionalmente IP
+        if (strictSessionUA) {
+            const ua = (req.get('User-Agent') || '').slice(0, 300);
+            if (ua && sessao.user_agent && ua !== sessao.user_agent) {
+                return res.status(401).json({ sucesso: false, mensagem: 'Sessão inválida (fingerprint-UA)' });
+            }
+        }
+        if (strictSessionIP) {
+            const ip = req.ip;
+            if (ip && sessao.ip_address && ip !== sessao.ip_address) {
+                return res.status(401).json({ sucesso: false, mensagem: 'Sessão inválida (fingerprint-IP)' });
+            }
+        }
         
         // Buscar usuário baseado no tipo
         let usuario;
-        if (sessao.tipo_usuario === 'cliente') {
-            usuario = await User.buscarPorId(sessao.usuario_id);
+        if (sessao.tipo_usuario === 'cliente' || sessao.tipo_usuario === 'customer') {
+            usuario = await User.buscarPorId(sessao.user_id || sessao.usuario_id);
         } else if (sessao.tipo_usuario === 'admin') {
             usuario = await Admin.buscarPorId(sessao.admin_id);
         }
@@ -85,7 +98,7 @@ const verificarToken = async (req, res, next) => {
 // Middleware específico para clientes
 const autenticarCliente = async (req, res, next) => {
     await verificarToken(req, res, () => {
-        if (req.tipoUsuario !== 'cliente') {
+        if (!(req.tipoUsuario === 'cliente' || req.tipoUsuario === 'customer')) {
             return res.status(403).json({
                 sucesso: false,
                 mensagem: 'Acesso negado - apenas clientes'

@@ -47,6 +47,34 @@ function updateCart() {
       
       pizzasValor += cart[i].price * cart[i].qt;
 
+  // Proteção de checkout extremamente rígida
+  const enforceCheckoutAuth = () => {
+    const auth = window.AuthSystem;
+    const candidates = document.querySelectorAll('.cart--finalizar, .checkout-btn, [data-checkout]');
+    if (!candidates || candidates.length === 0) return;
+    candidates.forEach((btn) => {
+      // Evitar múltiplos binds quando updateCart() é chamado várias vezes
+      if (btn.getAttribute('data-auth-guarded') === '1') return;
+      btn.setAttribute('data-auth-guarded', '1');
+      btn.addEventListener('click', (ev) => {
+        const isAuth = !!(auth && typeof auth.isAuthenticated === 'function' && auth.isAuthenticated());
+        if (!isAuth) {
+          ev.preventDefault();
+          // Impede outros listeners, inclusive em fase de captura
+          if (typeof ev.stopImmediatePropagation === 'function') ev.stopImmediatePropagation();
+          try {
+            const curr = localStorage.getItem('pizza_cart');
+            if (curr) localStorage.setItem('pizza_cart_backup', curr);
+            // Garante abertura do carrinho ao voltar do login
+            localStorage.setItem('pizzaria_open_cart_on_load', '1');
+          } catch(_) {}
+          window.location.href = '/login?redirect=/menu%23checkout';
+        }
+      }, { capture: true });
+    });
+  };
+  // Defer para garantir DOM pronto e elementos presentes
+  setTimeout(enforceCheckoutAuth, 0);
       let pizzaSizeName = pizzaItem.sizes[cart[i].size];
       let pizzaName = `${pizzaItem.name} (${pizzaSizeName})`;
       

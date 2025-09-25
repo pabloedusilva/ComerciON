@@ -5,6 +5,7 @@ const router = express.Router();
 // Rotas de autenticação
 const customerAuthRoutes = require('./customer/auth');
 const adminAuthRoutes = require('./admin/auth');
+const customerRoutes = require('./customer');
 // Rotas de catálogo público e admin produtos
 const publicCatalogRoutes = require('./public/catalog');
 const publicLayoutRoutes = require('./public/layout');
@@ -44,6 +45,7 @@ if (process.env.NODE_ENV === 'development') {
 
 // Rotas de autenticação
 router.use('/customer/auth', customerAuthRoutes);
+router.use('/customer', customerRoutes);
 router.use('/admin/auth', adminAuthRoutes);
 router.use('/public/catalog', publicCatalogRoutes);
 router.use('/public/layout', publicLayoutRoutes);

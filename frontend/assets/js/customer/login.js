@@ -1,134 +1,109 @@
-// Sistema de Login do Cliente
-document.addEventListener('DOMContentLoaded', function() {
-    const loginForm = document.getElementById('loginForm');
-    const emailInput = document.getElementById('email');
-    const senhaInput = document.getElementById('senha');
-    const lembrarCheckbox = document.getElementById('lembrar');
-    const loginBtn = document.getElementById('loginBtn');
-    const errorDiv = document.getElementById('loginError');
-    const successDiv = document.getElementById('loginSuccess');
-
-    // Verificar se já está logado
-    if (window.AuthSystem && window.AuthSystem.isAuthenticated()) {
-        window.location.href = '/';
-        return;
+// Login page logic (external, CSP-friendly)
+(function(){
+    function getQueryParam(name) {
+        const params = new URLSearchParams(window.location.search);
+        return params.get(name);
     }
 
-    // Verificar parâmetros de URL para redirect
-    const urlParams = new URLSearchParams(window.location.search);
-    const redirectAfterLogin = urlParams.get('redirect');
+    function togglePasswordVisibility() {
+        const btn = document.querySelector('.toggle-password');
+        if (!btn) return;
+        btn.addEventListener('click', function(){
+            const input = document.getElementById('password');
+            const icon = this.querySelector('i');
+            if (!input || !icon) return;
+            const isPassword = input.getAttribute('type') === 'password';
+            input.setAttribute('type', isPassword ? 'text' : 'password');
+            icon.classList.toggle('fa-eye');
+            icon.classList.toggle('fa-eye-slash');
+        });
+    }
 
-    // Handler do formulário de login
-    if (loginForm) {
-        loginForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const email = emailInput.value.trim();
-            const senha = senhaInput.value;
-            const lembrar = lembrarCheckbox ? lembrarCheckbox.checked : false;
+    async function doLogin(){
+        const email = document.getElementById('email');
+        const password = document.getElementById('password');
+        const emailError = document.getElementById('emailError');
+        const passwordError = document.getElementById('passwordError');
+        const submitBtn = document.querySelector('.auth-submit');
 
-            // Validação básica
-            if (!email || !senha) {
-                showError('Preencha todos os campos');
-                return;
+        if (!email || !password || !emailError || !passwordError || !submitBtn) return;
+
+        emailError.textContent = '';
+        passwordError.textContent = '';
+
+        let valid = true;
+        if(!email.value || !/^\S+@\S+\.\S+$/.test(email.value)){
+            emailError.textContent = 'Informe um e-mail válido.';
+            valid = false;
+        }
+        if(!password.value || password.value.length < 6){
+            passwordError.textContent = 'A senha deve ter no mínimo 6 caracteres.';
+            valid = false;
+        }
+        if(!valid) return;
+
+        try {
+            submitBtn.classList.add('loading');
+            submitBtn.textContent = 'Entrando...';
+            submitBtn.disabled = true;
+
+            const res = await fetch('/api/customer/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email.value.trim(), senha: password.value })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                throw new Error(data.mensagem || 'Email ou senha incorretos');
             }
 
-            // Validação de email
-            if (!isValidEmail(email)) {
-                showError('Email inválido');
-                return;
+            if (window.AuthSystem && data.token) {
+                window.AuthSystem.setToken(data.token, true);
+                try { window.AuthSystem.setUser(data.usuario, true); } catch(_) {}
+                window.AuthSystem.updateUIForAuthenticatedUser(data.usuario);
+            } else if (data.token) {
+                localStorage.setItem('auth_token', data.token);
             }
 
-            // Desabilitar botão durante login
-            setLoadingState(true);
+            const redirect = getQueryParam('redirect');
+            window.location.href = redirect || '/menu';
+        } catch (err) {
+            if (password) password.value = '';
+            if (passwordError) passwordError.textContent = (err && err.message) ? err.message : 'Falha no login';
+        } finally {
+            if (submitBtn) {
+                submitBtn.classList.remove('loading');
+                submitBtn.textContent = 'Entrar';
+                submitBtn.disabled = false;
+            }
+        }
+    }
 
-            try {
-                const result = await window.AuthSystem.login(email, senha, lembrar);
-                
-                if (result.success) {
-                    showSuccess('Login realizado com sucesso!');
-                    
-                    // Restaurar carrinho se necessário
-                    try {
-                        const backupCart = localStorage.getItem('pizza_cart_backup');
-                        if (backupCart) {
-                            localStorage.setItem('pizza_cart', backupCart);
-                            localStorage.removeItem('pizza_cart_backup');
-                        }
-                    } catch (e) {}
-
-                    // Redirecionar após login
-                    setTimeout(() => {
-                        if (redirectAfterLogin === 'checkout') {
-                            window.location.href = '/menu?checkout=1';
-                        } else {
-                            window.location.href = '/';
-                        }
-                    }, 1500);
-                } else {
-                    showError(result.message || 'Erro no login');
+    function init(){
+        togglePasswordVisibility();
+        const submitBtn = document.querySelector('.auth-submit');
+        if (submitBtn) {
+            submitBtn.addEventListener('click', function(e){
+                e.preventDefault();
+                doLogin();
+            });
+        }
+        const form = document.getElementById('loginForm');
+        if (form) {
+            form.setAttribute('method', 'POST');
+            form.addEventListener('submit', function(e){ e.preventDefault(); doLogin(); });
+            form.addEventListener('keydown', function(e){
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    doLogin();
                 }
-            } catch (error) {
-                console.error('Erro no login:', error);
-                showError('Erro de conexão');
-            } finally {
-                setLoadingState(false);
-            }
-        });
-    }
-
-    // Funções auxiliares
-    function showError(message) {
-        if (errorDiv) {
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-        }
-        if (successDiv) {
-            successDiv.style.display = 'none';
+            });
         }
     }
 
-    function showSuccess(message) {
-        if (successDiv) {
-            successDiv.textContent = message;
-            successDiv.style.display = 'block';
-        }
-        if (errorDiv) {
-            errorDiv.style.display = 'none';
-        }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
     }
-
-    function setLoadingState(loading) {
-        if (loginBtn) {
-            loginBtn.disabled = loading;
-            loginBtn.textContent = loading ? 'Entrando...' : 'Entrar';
-        }
-        
-        if (emailInput) emailInput.disabled = loading;
-        if (senhaInput) senhaInput.disabled = loading;
-        if (lembrarCheckbox) lembrarCheckbox.disabled = loading;
-    }
-
-    function isValidEmail(email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
-    }
-
-    // Link para cadastro
-    const cadastroLink = document.getElementById('cadastroLink');
-    if (cadastroLink) {
-        cadastroLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            window.location.href = '/cadastro';
-        });
-    }
-
-    // Link "Esqueci minha senha"
-    const esqueciSenhaLink = document.getElementById('esqueciSenha');
-    if (esqueciSenhaLink) {
-        esqueciSenhaLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            alert('Funcionalidade de recuperação de senha será implementada em breve!');
-        });
-    }
-});
+})();
