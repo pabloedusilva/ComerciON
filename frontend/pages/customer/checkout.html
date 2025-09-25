@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="shortcut icon" href="../../assets/images/default-images/favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="../../assets/css/shared/style.css">
+  <link rel="stylesheet" href="../../assets/css/customer/checkout.css">
+  <title>Checkout - Pizzaria</title>
+</head>
+<body class="checkout-page">
+  <div class="loader-content"><div class="loader-circle"></div></div>
+  <header class="header"></header>
+
+  <main class="checkout">
+    <div class="checkout-container">
+      <div class="checkout-topbar">
+        <a href="/menu#checkout" class="top-link"><i class="fas fa-arrow-left"></i> Voltar ao carrinho</a>
+      </div>
+      <h1 class="checkout-title">Finalizar pedido</h1>
+
+      <div class="stepper" role="tablist" aria-label="Etapas do checkout">
+        <button class="step" data-step="1" type="button" role="tab" aria-current="step" aria-label="Etapa 1: Dados pessoais">
+          <span class="step-icon" aria-hidden="true">
+            <i class="icon-default fas fa-user"></i>
+            <i class="icon-check fas fa-check"></i>
+          </span>
+          <span class="step-label">Dados</span>
+        </button>
+        <span class="connector" aria-hidden="true"></span>
+        <button class="step" data-step="2" type="button" role="tab" aria-label="Etapa 2: Endereço de entrega" disabled>
+          <span class="step-icon" aria-hidden="true">
+            <i class="icon-default fas fa-map-marker-alt"></i>
+            <i class="icon-check fas fa-check"></i>
+          </span>
+          <span class="step-label">Endereço</span>
+        </button>
+        <span class="connector" aria-hidden="true"></span>
+        <button class="step" data-step="3" type="button" role="tab" aria-label="Etapa 3: Revisão do pedido" disabled>
+          <span class="step-icon" aria-hidden="true">
+            <i class="icon-default fas fa-clipboard-check"></i>
+            <i class="icon-check fas fa-check"></i>
+          </span>
+          <span class="step-label">Revisão</span>
+        </button>
+      </div>
+
+      <div class="checkout-grid">
+        <section class="card step-card" data-step-content="1">
+          <h2 class="card-title">Dados pessoais</h2>
+          <form id="personalForm" novalidate>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="nome">Nome</label>
+                <input type="text" id="nome" name="nome" placeholder="Seu nome" autocomplete="name" required>
+              </div>
+              <div class="form-group">
+                <label for="telefone">Telefone</label>
+                <input type="tel" id="telefone" name="telefone" placeholder="(11) 99999-9999" autocomplete="tel" inputmode="tel" required>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="email">E-mail</label>
+                <input type="email" id="email" name="email" placeholder="voce@exemplo.com" autocomplete="email" required disabled>
+              </div>
+            </div>
+            <div class="step-actions">
+              <button type="button" class="btn-primary" id="goStep2">Continuar</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card step-card" data-step-content="2" hidden>
+          <h2 class="card-title">Endereço de entrega</h2>
+          <form id="addressForm" novalidate>
+            <div class="form-row">
+              <div class="form-group cep-group">
+                <label for="cep">CEP</label>
+                <div class="input-with-action">
+                  <input type="text" id="cep" name="cep" placeholder="00000-000" maxlength="9" autocomplete="postal-code" inputmode="numeric" required>
+                  <button type="button" id="buscarCep" class="btn-light" aria-label="Buscar CEP"><i class="fas fa-search"></i></button>
+                </div>
+                <small class="help">Digite o CEP e vamos preencher pra você.</small>
+                <small class="input-error" id="cepError"></small>
+              </div>
+              <div class="form-group">
+                <label for="endereco">Endereço</label>
+                <input type="text" id="endereco" name="endereco" placeholder="Rua/Avenida" autocomplete="address-line1" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group number">
+                <label for="numero">Número</label>
+                <input type="text" id="numero" name="numero" placeholder="123" autocomplete="address-line2" required>
+              </div>
+              <div class="form-group complement">
+                <label for="complemento">Complemento</label>
+                <input type="text" id="complemento" name="complemento" placeholder="Apto, bloco...">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="bairro">Bairro</label>
+                <input type="text" id="bairro" name="bairro" placeholder="Bairro" required>
+              </div>
+              <div class="form-group">
+                <label for="cidade">Cidade</label>
+                <input type="text" id="cidade" name="cidade" placeholder="Cidade" required>
+              </div>
+              <div class="form-group uf">
+                <label for="estado">UF</label>
+                <input type="text" id="estado" name="estado" placeholder="SP" maxlength="2" required>
+              </div>
+            </div>
+
+            <div class="step-actions">
+              <button type="button" class="btn-ghost" id="backToStep1"><i class="fas fa-arrow-left"></i> Voltar</button>
+              <button type="button" class="btn-primary" id="goStep3">Continuar</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card step-card" data-step-content="3" hidden>
+          <h2 class="card-title">Revisão do pedido</h2>
+          <div class="summary-card">
+            <div id="orderItems" class="order-items"></div>
+            <div class="totals">
+              <div class="row"><span>Itens</span><span id="resumoItens">R$ --</span></div>
+              <div class="row"><span>Taxa de entrega</span><span id="resumoEntrega">R$ --</span></div>
+              <div class="row"><span>Subtotal</span><span id="resumoSubtotal">R$ --</span></div>
+              <div class="row"><span>Desconto (-10%)</span><span id="resumoDesconto">R$ --</span></div>
+              <div class="row total"><span>Total</span><span id="resumoTotal">R$ --</span></div>
+            </div>
+          </div>
+          <div class="step-actions">
+            <button type="button" class="btn-ghost" id="backToStep2"><i class="fas fa-arrow-left"></i> Voltar</button>
+            <a href="/payment" class="btn-primary" id="goPayment">Prosseguir para o pagamento</a>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script src="../../assets/js/shared/nav.js"></script>
+  <script src="../../assets/js/shared/layout.js"></script>
+  <script src="../../assets/js/shared/auth.js"></script>
+  <script src="../../assets/js/customer/checkout.js"></script>
+</body>
+</html>

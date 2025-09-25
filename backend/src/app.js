@@ -97,6 +97,15 @@ app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, '../../frontend/pages/customer/login.html'));
 });
 
+// Checkout & Payment pages (extensionless)
+app.get('/checkout', (req, res) => {
+    res.sendFile(path.join(__dirname, '../../frontend/pages/customer/checkout.html'));
+});
+
+app.get('/payment', (req, res) => {
+    res.sendFile(path.join(__dirname, '../../frontend/pages/customer/payment.html'));
+});
+
 // Páginas do cliente (URLs sem .html)
 app.get('/perfil', (req, res) => {
     res.sendFile(path.join(__dirname, '../../frontend/pages/customer/perfil.html'));

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pagamento - Pizzaria</title>
+  <link rel="icon" href="/assets/images/favicon.ico" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/shared/style.css" />
+  <link rel="stylesheet" href="/assets/css/customer/checkout.css" />
+</head>
+<body>
+  <header class="header"></header>
+  <main class="container" style="max-width: 900px; padding: 24px 16px;">
+    <h1 class="page-title">Pagamento</h1>
+    <p class="muted">Esta é uma simulação de pagamento para fins de integração.</p>
+
+    <section class="card" style="padding: 24px; margin-top: 16px;">
+      <div class="summary">
+        <div class="row"><span>Total</span><strong id="payTotal">--</strong></div>
+        <button id="simulatePay" class="btn btn-primary" style="width: 100%; margin-top: 12px;">Pagar</button>
+        <button id="backToCheckout" class="btn btn-secondary" style="width: 100%; margin-top: 8px;">Voltar ao checkout</button>
+      </div>
+    </section>
+
+    <dialog id="successModal" class="modal">
+      <div class="modal-content">
+        <h2>Pedido realizado com sucesso 🎉</h2>
+        <p>Obrigado pela sua compra! Seu pedido foi processado.</p>
+        <div class="modal-actions">
+          <button id="goToHome" class="btn btn-primary">Ir para a página inicial</button>
+          <button id="closeSuccess" class="btn">Fechar</button>
+        </div>
+      </div>
+    </dialog>
+  </main>
+
+  <script src="/assets/js/shared/auth.js" defer></script>
+  <script src="/assets/js/shared/layout.js" defer></script>
+  <script src="/assets/js/shared/nav.js" defer></script>
+  <script src="/assets/js/customer/payment.js" defer></script>
+</body>
+</html>

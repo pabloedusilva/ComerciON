@@ -327,35 +327,54 @@ function initRatingInteractionsOnce() {
   });
 }
 
-document.querySelector(".cart--finalizar").addEventListener("click", () => {
-  cart = [];
-  localStorage.setItem("pizza_cart", JSON.stringify(cart));
-  updateCart();
-  document.querySelector(".fa-cart-shopping").classList.remove("pulse");
-  document.querySelector(".loader-content").classList.add("display");
+document.querySelector(".cart--finalizar").addEventListener("click", (e) => {
+  e.preventDefault();
+  const auth = window.AuthSystem;
+  const isAuth = !!(auth && typeof auth.isAuthenticated === 'function' && auth.isAuthenticated());
+  if (!isAuth) {
+    try {
+      const curr = localStorage.getItem('pizza_cart');
+      if (curr) localStorage.setItem('pizza_cart_backup', curr);
+      localStorage.setItem('pizzaria_open_cart_on_load', '1');
+    } catch(_) {}
+    window.location.href = '/login?redirect=' + encodeURIComponent('/menu#checkout');
+    return;
+  }
+  // Rota segura do checkout
+  window.location.href = '/checkout';
+});
 
-  setTimeout(() => {
-    document.querySelector(".loader-content").classList.remove("display");
+// Pós-pagamento: abrir modal de "pedido sendo preparado" e depois avaliação
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    const shouldShow = localStorage.getItem('pizzaria_show_post_payment_success') === '1';
+    if (!shouldShow) return;
+    // Limpar flag para não repetir
+    localStorage.removeItem('pizzaria_show_post_payment_success');
 
-    document.querySelector(".success.pizzaWindowArea").style.opacity = 0;
-    document.querySelector(".success.pizzaWindowArea").style.display = "flex";
+    const loader = document.querySelector('.loader-content');
+    const successArea = document.querySelector('.success.pizzaWindowArea');
+    if (loader) loader.classList.add('display');
+
+    // Pequena simulação de carregamento antes de mostrar o sucesso
     setTimeout(() => {
-      document.querySelector(".success.pizzaWindowArea").style.opacity = 1;
-    }, 200);
-    document.querySelector(".success.pizzaWindowArea").style.display = "flex";
-
-    setTimeout(() => {
-      document.querySelector(".success.pizzaWindowArea").style.opacity = 0;
-      setTimeout(() => {
-        document.querySelector(".success.pizzaWindowArea").style.display =
-          "none";
-        updateCart();
-        closeModal();
-        // Abrir avaliação após fechar sucesso
-        ratingState.openedAfterSuccess = true;
-        initRatingInteractionsOnce();
-        openRatingModal();
-      }, 200);
-    }, 4000);
-  }, 2100);
+      if (loader) loader.classList.remove('display');
+      if (successArea) {
+        successArea.style.opacity = 0;
+        successArea.style.display = 'flex';
+        setTimeout(() => { successArea.style.opacity = 1; }, 200);
+        // Manter visível por 4s como antes
+        setTimeout(() => {
+          successArea.style.opacity = 0;
+          setTimeout(() => {
+            successArea.style.display = 'none';
+            // Após fechar sucesso, exibir avaliação
+            ratingState.openedAfterSuccess = true;
+            initRatingInteractionsOnce();
+            openRatingModal();
+          }, 200);
+        }, 4000);
+      }
+    }, 900);
+  } catch(_) {}
 });

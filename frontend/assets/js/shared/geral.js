@@ -297,12 +297,12 @@ document.querySelector(".pizzaInfo--addButton").addEventListener("click", () => 
 // ##CART - Esta função será sobrescrita pelo cart.js
 // Removida para evitar conflitos, usando apenas a versão do cart.js
 
-//FINALIZAR PEDIDO
-document.querySelector(".cart--finalizar").addEventListener("click", () => {
-  document.querySelector("aside").classList.remove("show");
-  cart = [];
-  updateCart();
-  localStorage.setItem("pizza_cart", JSON.stringify(cart));
+// FINALIZAR PEDIDO: não limpar o carrinho aqui; navegar para checkout
+document.querySelector('.cart--finalizar').addEventListener('click', (e) => {
+  e.preventDefault();
+  try { document.querySelector('aside')?.classList.remove('show'); } catch(_) {}
+  // Auth guard é aplicado globalmente em auth.js/cart.js
+  window.location.href = '/checkout';
 });
 
 //## MOBILE EVENTS

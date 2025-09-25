@@ -5,8 +5,8 @@ body:not(.data-ready) .profile-container { visibility: hidden !important; }
 
 .profile-container {
   max-width: 980px;
-  margin: 80px auto 48px;
-  padding: 0 16px;
+  margin: 100px auto 56px; /* mais afastado do topo e respira melhor */
+  padding: 0 24px; /* mais afastado das laterais */
 }
 
 .profile-header {
@@ -31,7 +31,7 @@ body:not(.data-ready) .profile-container { visibility: hidden !important; }
   border: 1px solid rgba(0,0,0,.08);
   border-radius: 14px;
   box-shadow: 0 6px 18px rgba(0,0,0,.06);
-  padding: 20px;
+  padding: 22px 20px; /* padrão dos cards do checkout */
   margin-bottom: 16px;
 }
 
@@ -54,9 +54,22 @@ body:not(.data-ready) .profile-container { visibility: hidden !important; }
 .hint { font-size: .85rem; color: #6b7280; }
 
 .form-actions { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
-.btn { border: 0; border-radius: 10px; padding: 10px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all .2s ease; }
-.btn-primary { background: #fab427; color: #1e2530; }
+.btn { 
+  border: none; 
+  border-radius: 12px; 
+  padding: 12px 16px; 
+  cursor: pointer; 
+  display: inline-flex; 
+  align-items: center; 
+  justify-content: center;
+  gap: 8px; 
+  transition: all .2s ease; 
+  font-weight: 700;
+}
+.btn:focus { outline: none; box-shadow: 0 0 0 3px rgba(0,0,0,0.05); }
+.btn-primary { background: #fab427; color: #fff; }
 .btn-primary:hover { background: #e0a225; transform: translateY(-1px); }
+.btn-primary:focus { box-shadow: 0 0 0 3px rgba(250, 180, 39, 0.22); }
 .btn-secondary { background: #2c3e50; color: #fff; }
 .btn-secondary:hover { background: #25374a; transform: translateY(-1px); }
 .btn.danger { background: #dc3545; color: #fff; }
@@ -71,4 +84,5 @@ body:not(.data-ready) .profile-container { visibility: hidden !important; }
 
 @media (max-width: 680px) {
   .profile-grid { grid-template-columns: 1fr; }
+  .profile-container { margin: 90px auto 40px; padding: 0 16px; }
 }
