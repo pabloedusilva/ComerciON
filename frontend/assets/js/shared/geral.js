@@ -307,7 +307,9 @@ document.querySelector('.cart--finalizar').addEventListener('click', (e) => {
 
 //## MOBILE EVENTS
 document.querySelector(".menu-openner").addEventListener("click", () => {
-  // Abrir carrinho mesmo vazio (UX mobile): o conteúdo vazio será renderizado em updateCart
+  // Em mobile, abrir carrinho; em desktop ele já fica visível
+  const isMobile = window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
+  if (!isMobile) return;
   const aside = document.querySelector("aside");
   if (aside) {
     aside.classList.add("show");

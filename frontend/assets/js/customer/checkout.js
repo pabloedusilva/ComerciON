@@ -168,14 +168,32 @@
     if (step3Btn) { if (isAddressValid()) step3Btn.removeAttribute('disabled'); else step3Btn.setAttribute('disabled',''); }
   }
 
+  function clearErrors(ids){ ids.forEach(id => document.getElementById(id)?.classList.remove('field-error')); }
+  function markErrors(ids){
+    let first = null;
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const val = (el.value || '').trim();
+      el.classList.toggle('field-error', !val);
+      if (!val && !first) first = el;
+    });
+    if (first && typeof first.scrollIntoView === 'function') {
+      first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      try { first.focus({ preventScroll: true }); } catch(_) { try { first.focus(); } catch(_) {} }
+    }
+  }
+
   document.getElementById('goStep2').addEventListener('click', ()=>{
-    if (!isPersonalValid()) { alert('Preencha seus dados pessoais.'); return; }
+    clearErrors(requiredPersonal);
+    if (!isPersonalValid()) { markErrors(requiredPersonal); return; }
     setActiveStep(2);
   });
   document.getElementById('backToStep1').addEventListener('click', ()=> setActiveStep(1));
 
   document.getElementById('goStep3').addEventListener('click', async ()=>{
-    if (!isAddressValid()) { alert('Preencha o endereço completo.'); return; }
+    clearErrors(requiredAddress);
+    if (!isAddressValid()) { markErrors(requiredAddress); return; }
     // Persist address if missing in profile
     try {
       const payload = {
@@ -234,8 +252,13 @@
     btn.addEventListener('click', ()=>{
       const stepNum = Number(btn.getAttribute('data-step'));
       if (btn.hasAttribute('disabled')) return;
-      if (stepNum===2 && !isPersonalValid()) return;
-      if (stepNum===3 && (!isPersonalValid() || !isAddressValid())) return;
+      if (stepNum===2 && !isPersonalValid()) { clearErrors(requiredPersonal); markErrors(requiredPersonal); return; }
+      if (stepNum===3 && (!isPersonalValid() || !isAddressValid())) { 
+        clearErrors([...requiredPersonal, ...requiredAddress]);
+        if (!isPersonalValid()) markErrors(requiredPersonal);
+        else markErrors(requiredAddress);
+        return; 
+      }
       if (stepNum===3) buildOrderSummary();
       setActiveStep(stepNum);
     });

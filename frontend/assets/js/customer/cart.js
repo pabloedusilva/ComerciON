@@ -16,7 +16,10 @@ document.querySelector(".menu-openner").addEventListener("click", () => {
 });
 
 document.querySelector(".menu-closer").addEventListener("click", () => {
-  document.querySelector("aside").style.left = "100vw";
+  const aside = document.querySelector("aside");
+  if (!aside) return;
+  aside.classList.remove('show');
+  aside.style.left = "100vw";
 });
 
 function updateCart() {
@@ -26,7 +29,6 @@ function updateCart() {
     // Mostrar totais quando houver itens
     const details = document.querySelector('.cart--details');
     if (details) details.style.display = '';
-    document.querySelector("aside").classList.add("show");
     document.querySelector(".cart").innerHTML = ""; //Limpar carrinho
 
     let pizzasValor = 0;
@@ -156,9 +158,29 @@ function updateCart() {
           <div class="cart-empty-icon"><i class="fa-regular fa-face-frown"></i></div>
           <h2 class="cart-empty-title">Seu carrinho está vazio</h2>
           <p class="cart-empty-sub">Adicione pizzas ou bebidas para começar</p>
-          <a href="/menu" class="cart-empty-cta">Ver Cardápio</a>
+          <a href="/menu#pizzas" class="cart-empty-cta">Ver Cardápio</a>
         </div>
       `);
+      // Tornar o CTA mais inteligente: se já estamos no menu, apenas fechar o carrinho e focar no cardápio
+      const cta = cartEl.querySelector('.cart-empty-cta');
+      if (cta) {
+        cta.addEventListener('click', (ev) => {
+          if (window.location.pathname === '/menu') {
+            ev.preventDefault();
+            const aside = document.querySelector('aside');
+            if (aside) {
+              aside.classList.remove('show');
+              aside.style.left = '100vw';
+            }
+            const anchor = document.getElementById('pizzas');
+            if (anchor && typeof anchor.scrollIntoView === 'function') {
+              anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+              window.location.hash = '#pizzas';
+            }
+          }
+        });
+      }
     }
     // Ocultar totais e botão finalizar no estado vazio
     const details = document.querySelector('.cart--details');
@@ -170,13 +192,20 @@ function updateCart() {
     document.querySelector(".subtotal span:last-child").textContent = zero;
     document.querySelector(".desconto span:last-child").textContent = zero;
     document.querySelector(".total span:last-child").textContent = zero;
-    // Mantemos o aside aberto para mostrar o estado vazio
-    const aside = document.querySelector('aside');
-    if (aside) {
-      aside.classList.add('show');
-      aside.style.left = 0;
-    }
+    // Não abrir automaticamente o carrinho no estado vazio; respeitar estado atual
   }
+
+  // Em telas grandes (desktop), manter o carrinho visível como antes
+  try {
+    const isDesktop = window.matchMedia && window.matchMedia('(min-width: 821px)').matches;
+    if (isDesktop) {
+      const aside = document.querySelector('aside');
+      if (aside) {
+        aside.classList.add('show');
+        aside.style.left = 0;
+      }
+    }
+  } catch(_) {}
 }
 
 // Auto-abertura do carrinho quando viemos de outra página mobile
