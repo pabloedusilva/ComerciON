@@ -228,6 +228,16 @@
 
 // Estado global da aplicação
 let currentSection = 'dashboard';
+
+// Loader overlay helpers for Admin SPA
+function showLoaderOverlay() {
+    const el = document.querySelector('.loader-content');
+    if (el) el.classList.add('show');
+}
+function hideLoaderOverlay() {
+    const el = document.querySelector('.loader-content');
+    if (el) el.classList.remove('show');
+}
 let products = [];
 let orders = [];
 let clients = [];
@@ -972,6 +982,40 @@ async function loadMockData() {
     renderClientsTable();
 }
 
+// Carregar apenas clientes (para seção Clientes)
+async function loadCustomersFromAPI() {
+    try {
+        const token = localStorage.getItem('admin_token');
+        const resp = await fetch('/api/admin/customers', { headers: { 'Authorization': token ? `Bearer ${token}` : '' } });
+        const result = await resp.json();
+        if (!resp.ok || !result.sucesso) throw new Error(result.mensagem || 'Falha ao carregar clientes');
+        const rows = Array.isArray(result.data) ? result.data : [];
+        clients = rows.map(u => ({
+            id: u.id,
+            nome: u.nome,
+            email: u.email,
+            telefone: u.telefone || '—',
+            pedidos: Number(u.pedidos ?? 0),
+            totalGasto: Number(u.total_gasto ?? 0),
+            ultimoPedido: u.ultimo_pedido || null,
+            endereco: {
+                rua: u.endereco || '',
+                numero: '',
+                bairro: '',
+                cidade: u.cidade || '',
+                estado: u.estado || '',
+                cep: u.cep || '',
+                complemento: ''
+            },
+            preferenciaSabores: []
+        }));
+    } catch (e) {
+        console.warn('Clientes: usando fallback vazio. Motivo:', e.message);
+        clients = [];
+    }
+    renderClientsTable();
+}
+
 // Configuração de event listeners - Melhorada para responsividade
 function setupEventListeners() {
     // Navegação da sidebar
@@ -1536,7 +1580,7 @@ function loadConfigDefaults() {
 }
 
 // Mostrar seção
-function showSection(sectionName) {
+async function showSection(sectionName) {
     // Esconder todas as seções
     document.querySelectorAll('.content-section').forEach(section => {
         section.classList.remove('active');
@@ -1545,16 +1589,12 @@ function showSection(sectionName) {
     // Mostrar seção selecionada
     const targetSection = document.getElementById(`${sectionName}-section`);
     if (targetSection) {
+        // Mostrar loader imediatamente ao trocar de seção
+        showLoaderOverlay();
+
         targetSection.classList.add('active');
         currentSection = sectionName;
-        // If switching to dashboard, force charts to resize to new container sizes
-        if (sectionName === 'dashboard' && window.charts) {
-            try { charts.sales?.resize(); } catch (_) {}
-            try { charts.salesReport?.resize(); } catch (_) {}
-            try { charts.products?.resize(); } catch (_) {}
-            try { charts.peakHours?.resize(); } catch (_) {}
-        }
-        
+
         // Atualizar sidebar - adicionar classe active ao link correto
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
         const targetNavLink = document.querySelector(`.nav-link[data-section="${sectionName}"]`);
@@ -1580,29 +1620,39 @@ function showSection(sectionName) {
             pageTitle.textContent = titles[sectionName] || 'Admin Panel';
         }
 
-        // Ajustes específicos por seção
-        if (sectionName === 'relatorios') {
-            // Criar gráficos se não existirem
-            if (!charts.salesReport || !charts.products || !charts.peakHours) {
-                setupReportsCharts();
+        try {
+            // Ajustes específicos por seção (aguardar dados do banco antes de esconder loader)
+            if (sectionName === 'dashboard') {
+                // Garantir gráficos e buscar dados do dashboard
+                try { charts?.sales?.resize(); } catch(_) {}
+                await refreshDashboardFromAPI();
+                setTimeout(() => resizeCharts(), 50);
+            } else if (sectionName === 'relatorios') {
+                if (!charts.salesReport || !charts.products || !charts.peakHours) {
+                    setupReportsCharts();
+                }
+                setTimeout(() => resizeCharts(), 50);
+                await updateReportsCharts();
+            } else if (sectionName === 'produtos') {
+                await loadProductsFromAPI();
+                setTimeout(() => resizeCharts(), 50);
+            } else if (sectionName === 'pedidos') {
+                await loadMockData(); // inclui pedidos e clientes
+            } else if (sectionName === 'clientes') {
+                await loadCustomersFromAPI();
+            } else if (sectionName === 'layout') {
+                await initLayoutSection();
+            } else if (sectionName === 'funcionamento') {
+                initFuncionamentoSection();
+            } else if (sectionName === 'avaliacoes') {
+                reviewsManager.renderReviews();
+                reviewsManager.updateSummary();
+            } else {
+                // fallback: pequeno atraso para transição suave
+                await new Promise(r => setTimeout(r, 100));
             }
-            // Garantir que redimensionem e atualizem após ficarem visíveis
-            setTimeout(() => {
-                resizeCharts();
-                updateReportsCharts();
-            }, 50);
-        } else {
-            setTimeout(() => resizeCharts(), 50);
-        }
-        
-        // Inicializar gerenciadores específicos
-        if (sectionName === 'layout') {
-            initLayoutSection();
-        } else if (sectionName === 'funcionamento') {
-            initFuncionamentoSection();
-        } else if (sectionName === 'avaliacoes') {
-            reviewsManager.renderReviews();
-            reviewsManager.updateSummary();
+        } finally {
+            hideLoaderOverlay();
         }
     }
 }
@@ -3170,15 +3220,15 @@ const layoutManager = {
         ]
     },
 
-    init() {
+    async init() {
         this.setupEventListeners();
         // Primeiro tentar carregar do backend; se falhar, usa cache local
-        this.loadFromServer().then(() => {
-            this.updatePreviews();
-        }).catch(() => {
+        try {
+            await this.loadFromServer();
+        } catch(_) {
             this.loadStoredLayout();
-            this.updatePreviews();
-        });
+        }
+        this.updatePreviews();
     },
 
     getToken() { return localStorage.getItem('admin_token'); },
@@ -3625,10 +3675,10 @@ window.cancelSlideEdit = () => layoutManager.cancelSlideEdit();
 window.removeSlide = (index) => layoutManager.removeSlide(index);
 
 // Initialize layout manager when layout section is accessed
-function initLayoutSection() {
+async function initLayoutSection() {
     if (document.getElementById('layout-section')) {
-        layoutManager.init();
-        instagramManager.init();
+        await layoutManager.init();
+        await instagramManager.init();
     }
 }
 
@@ -3965,8 +4015,8 @@ const instagramManager = {
         text: ''
     },
 
-    init() {
-        this.load();
+    async init() {
+        await this.load();
         this.bindUI();
         this.render();
         this.updatePreview();
