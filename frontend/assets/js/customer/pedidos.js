@@ -34,7 +34,11 @@
       const json = await res.json().catch(()=>({}));
       if (res.ok && json.sucesso && Array.isArray(json.data)) {
         reviewedOrders.clear(); orderRatings.clear();
-        json.data.forEach(r => { reviewedOrders.add(r.order_id); orderRatings.set(r.order_id, Number(r.rating)||0); });
+        json.data.forEach(r => {
+          const oid = Number(r.order_id);
+          reviewedOrders.add(oid);
+          orderRatings.set(oid, Number(r.rating) || 0);
+        });
       }
     } catch(_) { /* silencioso */ }
   }
@@ -135,7 +139,7 @@
         if (!reviewedOrders.has(ord.id) && !promptedOrders.has(ord.id)) {
           promptedOrders.add(ord.id);
           persistPrompted();
-          openReviewModal(ord.id);
+          openRatingModal(ord.id);
           break; // abre só um de cada vez
         }
       }
@@ -157,107 +161,133 @@
   // ================== Reviews ==================
   function bindReviewButtons(){
     document.querySelectorAll('.btn-review').forEach(btn=>{
-      btn.addEventListener('click', ()=> openReviewModal(parseInt(btn.dataset.orderId,10)));
+      btn.addEventListener('click', ()=> openRatingModal(parseInt(btn.dataset.orderId,10)));
     });
   }
 
   function markReviewed(orderId){
-    reviewedOrders.add(orderId);
-    // re-render para remover botão
-    try { load(); } catch(_) {}
+    const oid = Number(orderId);
+    reviewedOrders.add(oid);
+    // re-render para remover botão rapidamente
+    try {
+      // Se tivermos a lista atual em cache, forçamos um render rápido
+      if (Array.isArray(currentOrders) && currentOrders.length) {
+        // precisamos da lista completa; como mantemos apenas id/status em currentOrders,
+        // fazemos um reload leve mesmo assim.
+        load();
+      } else {
+        load();
+      }
+    } catch(_) {}
   }
 
-  function openReviewModal(orderId){
-    let modal = document.getElementById('reviewModal');
-    if (modal) modal.remove();
-    modal = document.createElement('div');
-    modal.id = 'reviewModal';
-    modal.className = 'rv-overlay';
-    modal.setAttribute('role','dialog');
-    modal.setAttribute('aria-modal','true');
-    modal.setAttribute('aria-label','Avaliar pedido');
-    modal.innerHTML = `
-      <div class="rv-modal" tabindex="-1">
-        <button id="rvClose" aria-label="Fechar" class="rv-close">&times;</button>
-        <h3 id="rvTitle" class="rv-title">Avaliar Pedido #${orderId}</h3>
-        <p class="rv-sub">Sua opinião ajuda a manter a qualidade. Classifique de 1 a 5 estrelas.</p>
-        <div id="rvStars" aria-labelledby="rvTitle" role="radiogroup" class="rv-stars">
-          ${[1,2,3,4,5].map(i=>`<button type="button" class="rv-star-btn" data-val="${i}" role="radio" aria-checked="false" aria-label="${i} estrela${i>1?'s':''}"><i data-val="${i}" class="fas fa-star rv-star"></i></button>`).join('')}
-        </div>
-        <label for="rvComment" class="rv-label">Comentário (opcional)</label>
-        <textarea id="rvComment" rows="4" maxlength="4000" class="rv-textarea" placeholder="Conte como foi sua experiência (opcional)"></textarea>
-        <div class="rv-actions">
-          <button id="rvSkip" class="rv-btn rv-btn-gray">Agora não</button>
-          <div class="rv-actions-right">
-            <button id="rvCancel" class="rv-btn rv-btn-secondary">Cancelar</button>
-            <button id="rvSubmit" disabled class="rv-btn rv-btn-primary is-disabled">Enviar</button>
-          </div>
-        </div>
-        <div id="rvMsg" class="rv-msg"></div>
-      </div>`;
-    document.body.appendChild(modal);
-    const close = ()=> modal && modal.remove();
-    modal.addEventListener('click', e=>{ if(e.target===modal) close(); });
-    modal.querySelector('#rvClose').addEventListener('click', close);
-    modal.querySelector('#rvCancel').addEventListener('click', close);
+  // ===== Novo modal com o mesmo estilo do menu =====
+  let ratingState = { value: 0, inited: false, orderId: null };
 
-    let currentRating = 0;
-    const starBtns = modal.querySelectorAll('.rv-star-btn');
-    function paint(){
-      starBtns.forEach(btn=>{
-        const v = Number(btn.dataset.val);
-        if (v <= currentRating) btn.classList.add('active'); else btn.classList.remove('active');
-        btn.setAttribute('aria-checked', v === currentRating ? 'true' : 'false');
+  function openRatingModal(orderId){
+    ratingState.orderId = orderId;
+    const ratingArea = document.querySelector('.rating.pizzaWindowArea');
+    if (!ratingArea) return;
+    // Reset visual
+    ratingState.value = 0;
+    document.querySelectorAll('.rating-stars .star').forEach(s => {
+      s.classList.remove('active','fa-solid');
+      s.classList.add('fa-regular');
+      s.setAttribute('aria-checked','false');
+    });
+    const ta = document.getElementById('ratingComment');
+    if (ta) ta.value = '';
+    const submitBtn = document.getElementById('ratingSubmit');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Enviar avaliação'; }
+    const successAnim = document.getElementById('ratingSuccessAnimation');
+    if (successAnim) successAnim.classList.remove('show');
+
+    // Abrir modal
+    ratingArea.style.opacity = 0;
+    ratingArea.style.display = 'flex';
+    setTimeout(()=>{ ratingArea.style.opacity = 1; }, 200);
+
+    initRatingInteractionsOnce();
+  }
+
+  function closeRatingModal(){
+    const ratingArea = document.querySelector('.rating.pizzaWindowArea');
+    if (!ratingArea) return;
+    const successAnim = document.getElementById('ratingSuccessAnimation');
+    if (successAnim) successAnim.classList.remove('show');
+    ratingArea.style.opacity = 0;
+    setTimeout(()=>{ ratingArea.style.display = 'none'; }, 200);
+  }
+
+  function showRatingSuccessAnimation(){
+    const successAnim = document.getElementById('ratingSuccessAnimation');
+    if (successAnim) successAnim.classList.add('show');
+  }
+
+  function initRatingInteractionsOnce(){
+    if (ratingState.inited) return; ratingState.inited = true;
+    // Estrelas
+    document.querySelectorAll('.rating-stars .star').forEach(star => {
+      star.addEventListener('click', () => {
+        const val = parseInt(star.getAttribute('data-value')) || 0;
+        ratingState.value = val;
+        document.querySelectorAll('.rating-stars .star').forEach(s => {
+          const sVal = parseInt(s.getAttribute('data-value')) || 0;
+          const active = sVal <= val;
+          s.classList.toggle('active', active);
+          if (active) { s.classList.remove('fa-regular'); s.classList.add('fa-solid'); }
+          else { s.classList.add('fa-regular'); s.classList.remove('fa-solid'); }
+          s.setAttribute('aria-checked', active ? 'true' : 'false');
+        });
+        const submitBtn = document.getElementById('ratingSubmit');
+        if (submitBtn) submitBtn.disabled = ratingState.value === 0;
       });
-    }
-    starBtns.forEach(btn=>{
-      btn.addEventListener('click', ()=>{ currentRating = Number(btn.dataset.val); paint(); updateSubmitState(); });
-      btn.addEventListener('keydown', (e)=>{
-        if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault(); currentRating = Math.min(5, currentRating+1 || 1); paint(); updateSubmitState(); }
-        if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { e.preventDefault(); currentRating = Math.max(1, currentRating-1 || 1); paint(); updateSubmitState(); }
+      star.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); star.click(); }
+        if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault();
+          const next = Math.min(5, (ratingState.value||0) + 1); document.querySelector(`.rating-stars .star[data-value="${next}"]`)?.click(); }
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { e.preventDefault();
+          const prev = Math.max(1, (ratingState.value||1) - 1); document.querySelector(`.rating-stars .star[data-value="${prev}"]`)?.click(); }
       });
     });
-    paint();
 
-    const submitBtn = modal.querySelector('#rvSubmit');
-    function updateSubmitState(){
-      const disabled = currentRating < 1;
-      submitBtn.disabled = disabled;
-      submitBtn.classList.toggle('is-disabled', disabled);
+    // Botões
+    document.querySelector('.rating-close')?.addEventListener('click', closeRatingModal);
+    document.getElementById('ratingSkip')?.addEventListener('click', closeRatingModal);
+
+    // Submit para API real
+    const submitBtn = document.getElementById('ratingSubmit');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', async () => {
+        if (ratingState.value === 0 || !ratingState.orderId) return;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Enviando...';
+        try {
+          const res = await fetch('/api/customer/reviews', {
+            method: 'POST',
+            headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order_id: ratingState.orderId, rating: ratingState.value, comment: (document.getElementById('ratingComment')?.value || '').trim() })
+          });
+          const data = await res.json().catch(()=>({}));
+          if (!res.ok || data.sucesso===false) throw new Error(data.mensagem || 'Falha ao enviar');
+          showRatingSuccessAnimation();
+          // Atualiza cache local para mostrar estrelas imediatamente
+          try { orderRatings.set(ratingState.orderId, ratingState.value); } catch(_) {}
+          markReviewed(ratingState.orderId);
+          setTimeout(()=>{ closeRatingModal(); }, 1400);
+        } catch(err){
+          // Feedback mínimo: reabilitar botão
+          alert('Erro ao enviar avaliação: ' + err.message);
+          submitBtn.disabled = false; submitBtn.textContent = 'Enviar avaliação';
+        }
+      });
     }
-    updateSubmitState();
 
-  const skipBtn = modal.querySelector('#rvSkip');
-  skipBtn.addEventListener('click', ()=> close());
-  submitBtn.addEventListener('click', async ()=>{
-      if (currentRating < 1) return; // guard
-      submitBtn.disabled = true; submitBtn.textContent = 'Enviando...';
-      const msgEl = modal.querySelector('#rvMsg'); msgEl.textContent='';
-      try {
-        const res = await fetch('/api/customer/reviews', { method:'POST', headers: { ...headers, 'Content-Type':'application/json' }, body: JSON.stringify({ order_id: orderId, rating: currentRating, comment: modal.querySelector('#rvComment').value }) });
-        const data = await res.json().catch(()=>({}));
-        if(!res.ok || data.sucesso===false) throw new Error(data.mensagem || 'Falha ao enviar');
-  msgEl.className = 'rv-msg success';
-  msgEl.textContent = '✅ Avaliação registrada! Obrigado.';
-        markReviewed(orderId);
-        setTimeout(()=> close(), 1200);
-      } catch(err){
-  msgEl.className = 'rv-msg error';
-  msgEl.textContent = 'Erro: ' + err.message;
-        submitBtn.disabled = false; submitBtn.textContent = 'Enviar'; updateSubmitState();
-      }
-    });
-
-    // Focus & ESC / trap básico
-    const focusables = Array.from(modal.querySelectorAll('button, textarea')); 
-    const firstEl = focusables[0];
-    const lastEl = focusables[focusables.length -1];
-    if (firstEl) firstEl.focus();
-    modal.addEventListener('keydown', (e)=>{
-      if (e.key === 'Escape') { e.preventDefault(); close(); }
-      if (e.key === 'Tab') {
-        if (e.shiftKey && document.activeElement === firstEl) { e.preventDefault(); lastEl.focus(); }
-        else if (!e.shiftKey && document.activeElement === lastEl) { e.preventDefault(); firstEl.focus(); }
+    // Fechar com ESC quando aberto
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const area = document.querySelector('.rating.pizzaWindowArea');
+        if (area && area.style.display === 'flex') closeRatingModal();
       }
     });
   }
@@ -295,7 +325,7 @@
           if (was && was !== 'entregue' && !reviewedOrders.has(id) && !promptedOrders.has(id)) {
             promptedOrders.add(id); persistPrompted();
             // recarrega lista e abre modal
-            load().then(()=> openReviewModal(id));
+            load().then(()=> openRatingModal(id));
           } else {
             // se não temos no cache, força recarga para refletir
             if (!was) load();

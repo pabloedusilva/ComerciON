@@ -24,6 +24,7 @@
         </style>
     <link rel="stylesheet" href="../../assets/css/shared/style.css">
     <link rel="stylesheet" href="../../assets/css/admin/admin.css">
+    <link rel="stylesheet" href="../../assets/css/admin/notifications.css">
     <!-- CSS da Seção de Desenvolvedor (carregado condicionalmente) -->
     <link rel="stylesheet" href="../../assets/css/admin/developer.css" id="developer-styles" disabled>
     <title>Dashboard Admin - Pizzaria</title>
@@ -1350,8 +1351,40 @@
     </div>
 
     <!-- Order Notifications System -->
-    <div id="orderNotificationContainer" class="notification-container">
-        <!-- Notifications will be inserted here -->
+    <!-- HTML template: clean, minimal, fully separated from JS/CSS -->
+    <template id="orderNotificationTemplate">
+        <div class="order-notification" data-id="">
+            <div class="notif">
+                <button class="notif__close" aria-label="Fechar notificação" title="Fechar">&times;</button>
+                <div class="notif__head" aria-label="Resumo do pedido">
+                    <div class="notif__left">
+                        <div class="notif__title">
+                            <span class="notif__badge">Novo pedido</span>
+                            <span class="notif__id">#0</span>
+                        </div>
+                        <time class="notif__time" datetime="">--:--</time>
+                    </div>
+                </div>
+                <div class="notif__body">
+                    <div class="notif__row">
+                        <div class="notif__customer">
+                            <strong class="notif__name">Cliente</strong>
+                            <span class="notif__phone"></span>
+                        </div>
+                        <span class="notif__value" aria-label="Valor do pedido">R$ 0,00</span>
+                    </div>
+                    <div class="notif__address" title=""></div>
+                </div>
+                <div class="notif__actions">
+                    <button class="btn btn--ghost" data-action="view" type="button">Ver</button>
+                    <button class="btn btn--primary" data-action="accept" type="button">Aceitar</button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <div id="orderNotificationContainer" class="notification-container" role="region" aria-live="polite" aria-label="Notificações de novos pedidos">
+        <!-- Notifications will be inserted here from template -->
     </div>
 
     <!-- Audio for notifications -->
@@ -1364,6 +1397,8 @@
     <script src="../../assets/js/shared/layout.js"></script>
     <!-- Socket.IO client -->
     <script src="/socket.io/socket.io.js"></script>
+    <script src="../../assets/js/admin/notification-sound.js"></script>
+    <script src="../../assets/js/admin/notifications.js"></script>
     <script src="../../assets/js/admin/admin.js"></script>
 </body>
 

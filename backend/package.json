@@ -6,15 +6,17 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "criar-tabelas": "node criar_tabelas_DELETAR.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "db:fix-auth": "node ./scripts/fix_auth_schema.js",
-    "db:harden-auth": "node ./scripts/run_sql.js ./scripts/hardening_auth_schema.sql"
+    "lint:fix": "eslint . --fix"
   },
   "keywords": [
     "nodejs",
     "express",
     "mysql",
+    "redis",
     "socketio",
     "pizzaria",
     "api"
@@ -37,12 +39,16 @@
     "multer": "^1.4.5-lts.1",
     "mysql2": "^3.6.0",
     "nodemailer": "^6.9.4",
+    "redis": "^4.6.7",
     "socket.io": "^4.7.2",
     "winston": "^3.10.0",
     "xss-clean": "^0.1.4"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "@types/jest": "^29.5.3",
+    "jest": "^29.6.2",
+    "nodemon": "^3.0.1",
+    "supertest": "^6.3.3"
   },
   "engines": {
     "node": ">=16.0.0",

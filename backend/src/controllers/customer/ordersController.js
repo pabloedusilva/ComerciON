@@ -104,11 +104,36 @@ module.exports = {
 
         await conn.commit();
 
-        // Emitir evento de novo pedido para admin em tempo real
+        // Emitir evento de novo pedido para admin em tempo real (payload enriquecido)
         try {
           const io = req.app?.get('io');
           if (io && typeof io.emitOrderCreated === 'function') {
-            io.emitOrderCreated({ id: orderId });
+            // Montar payload seguro para o painel admin
+            const formatAddr = (a) => {
+              if (!a || typeof a !== 'object') return '';
+              const p1 = [];
+              if (a.endereco) p1.push(a.endereco);
+              if (a.numero) p1.push(`, ${a.numero}`);
+              if (a.bairro) p1.push(` - ${a.bairro}`);
+              const l1 = p1.join('');
+              const p2 = [];
+              if (a.cidade) p2.push(a.cidade);
+              if (a.estado) p2.push(a.estado);
+              const l2 = p2.length ? p2.join('/') : '';
+              const cep = a.cep ? (l2 ? `, CEP: ${a.cep}` : `CEP: ${a.cep}`) : '';
+              const comp = a.complemento ? `, ${a.complemento}` : '';
+              return [l1, (l1 && l2) ? ' - ' : '', l2, cep, comp].join('').trim();
+            };
+            io.emitOrderCreated({
+              id: orderId,
+              total: Number(totals.total) || 0,
+              created_at: new Date().toISOString(),
+              customer: {
+                name: String(user?.nome || 'Cliente'),
+                phone: String(user?.telefone || ''),
+                address: formatAddr(addr)
+              }
+            });
           }
         } catch (_) { /* noop */ }
 

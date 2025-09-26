@@ -243,108 +243,6 @@ let orders = [];
 let clients = [];
 let charts = {};
 
-// Dados mockados para demonstração
-const mockData = {
-    orders: [
-        {
-            id: '001',
-            cliente: 'João Silva',
-            data: '2025-09-18T10:30:00',
-            items: [
-                { nome: 'Pizza Calabresa (Grande)', quantidade: 1, preco: 27.99 }
-            ],
-            total: 32.99,
-            status: 'pendente',
-            endereco: 'Rua das Flores, 123',
-            telefone: '(11) 99999-1111'
-        },
-        {
-            id: '002',
-            cliente: 'Maria Santos',
-            data: '2025-09-18T10:18:00',
-            items: [
-                { nome: 'Pizza 4 Queijos (Grande)', quantidade: 1, preco: 47.99 },
-                { nome: 'Coca-cola (2L)', quantidade: 1, preco: 8.90 }
-            ],
-            total: 61.89,
-            status: 'entregue',
-            endereco: 'Av. Paulista, 456',
-            telefone: '(11) 99999-2222'
-        },
-        {
-            id: '003',
-            cliente: 'Pedro Costa',
-            data: '2025-09-18T10:12:00',
-            items: [
-                { nome: 'Pizza Portuguesa (Grande)', quantidade: 2, preco: 35.99 }
-            ],
-            total: 76.98,
-            status: 'preparando',
-            endereco: 'Rua do Comércio, 789',
-            telefone: '(11) 99999-3333'
-        }
-    ],
-    clients: [
-        {
-            id: 1,
-            nome: 'João Silva',
-            email: 'joao@email.com',
-            telefone: '(11) 99999-1111',
-            pedidos: 15,
-            totalGasto: 567.80,
-            ultimoPedido: '2025-09-18',
-            endereco: {
-                rua: 'Rua das Pizzas',
-                numero: '123',
-                bairro: 'Centro',
-                cidade: 'São Paulo',
-                estado: 'SP',
-                cep: '01000-000',
-                complemento: 'Apto 12'
-            },
-            preferenciaSabores: ['Calabresa', '4 Queijos']
-        },
-        {
-            id: 2,
-            nome: 'Maria Santos',
-            email: 'maria@email.com',
-            telefone: '(11) 99999-2222',
-            pedidos: 22,
-            totalGasto: 890.50,
-            ultimoPedido: '2025-09-18',
-            endereco: {
-                rua: 'Av. Paulista',
-                numero: '1000',
-                bairro: 'Bela Vista',
-                cidade: 'São Paulo',
-                estado: 'SP',
-                cep: '01310-100',
-                complemento: ''
-            },
-            preferenciaSabores: ['Portuguesa', 'Margherita']
-        },
-        {
-            id: 3,
-            nome: 'Pedro Costa',
-            email: 'pedro@email.com',
-            telefone: '(11) 99999-3333',
-            pedidos: 8,
-            totalGasto: 345.20,
-            ultimoPedido: '2025-09-17',
-            endereco: {
-                rua: 'Rua do Comércio',
-                numero: '789',
-                bairro: 'Centro',
-                cidade: 'São Paulo',
-                estado: 'SP',
-                cep: '01020-020',
-                complemento: 'Casa'
-            },
-            preferenciaSabores: ['Portuguesa']
-        }
-    ]
-};
-
 // Inicialização
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
@@ -354,7 +252,7 @@ function initializeApp() {
     loadProductsFromAPI();
     setupEventListeners();
     setupCharts();
-    loadMockData();
+    loadDataFromAPI();
     showSection('dashboard');
     setupModernSidebar(); // Adicionar configuração da sidebar moderna
     
@@ -506,11 +404,16 @@ function initAdminSocket() {
             // console.log('WS desconectado');
         });
 
-        // Quando um pedido é criado, atualizar badge e dashboard
-        __socket.on('order:created', () => {
+        // Quando um pedido é criado, atualizar badge e dashboard e notificar
+        __socket.on('order:created', async (payload) => {
             refreshOrdersBadgeFromAPI();
             refreshDashboardFromAPI();
             updateReportsCharts();
+            try {
+                if (window.notifications && payload && typeof payload === 'object') {
+                    window.notifications.handleOrderCreated(payload);
+                }
+            } catch(_) {}
         });
         // Quando um pedido é atualizado, atualizar badge e dashboard
         __socket.on('order:updated', () => {
@@ -752,6 +655,8 @@ function startOrdersBadgePolling() {
 // Inicializar WebSocket após DOM pronto
 document.addEventListener('DOMContentLoaded', () => {
     initAdminSocket();
+    // Inicializa o novo módulo de notificações (separado e organizado)
+    try { if (window.notifications && typeof window.notifications.init === 'function') { window.notifications.init(); } } catch(_) {}
     // Ensure Dashboard "Ver todos os pedidos" navigates within SPA
     const viewAllBtn = document.querySelector('#dashboard-section .view-all-btn');
     if (viewAllBtn) {
@@ -920,8 +825,8 @@ async function loadProductsFromAPI() {
     }
 }
 
-// Carregar dados da API
-async function loadMockData() {
+// Carregar dados reais da API (pedidos e clientes)
+async function loadDataFromAPI() {
     // Pedidos: carregar do backend
     try {
         const token = localStorage.getItem('admin_token');
@@ -1061,7 +966,7 @@ function setupEventListeners() {
 
     // Botões de ação
     document.getElementById('addProductBtn')?.addEventListener('click', () => openProductModal());
-    document.getElementById('refreshOrdersBtn')?.addEventListener('click', () => loadMockData());
+    document.getElementById('refreshOrdersBtn')?.addEventListener('click', () => loadDataFromAPI());
     
     // Fullscreen toggle for orders
     setupOrdersFullscreen();
@@ -1637,7 +1542,7 @@ async function showSection(sectionName) {
                 await loadProductsFromAPI();
                 setTimeout(() => resizeCharts(), 50);
             } else if (sectionName === 'pedidos') {
-                await loadMockData(); // inclui pedidos e clientes
+                await loadDataFromAPI(); // inclui pedidos e clientes
             } else if (sectionName === 'clientes') {
                 await loadCustomersFromAPI();
             } else if (sectionName === 'layout') {
@@ -2912,15 +2817,13 @@ async function setOrderStatus(orderId, newStatus) {
 
 // Função para aceitar pedido da notificação
 function acceptOrder(orderId) {
-    const order = orders.find(o => o.id === orderId);
-    
-    if (!order) {
-        showNotification('Pedido não encontrado!', 'error');
-        return;
-    }
-
+    // Permitir aceitar mesmo que o pedido ainda não esteja carregado localmente
     setOrderStatus(orderId, 'preparando').then(ok => {
-        if (ok) showNotification(`Pedido #${orderId} aceito e movido para preparação!`, 'success');
+        if (ok) {
+            showNotification(`Pedido #${orderId} aceito e movido para preparação!`, 'success');
+            // Sincronizar lista de pedidos para garantir que apareça imediatamente
+            try { loadDataFromAPI(); } catch (_) {}
+        }
     });
 }
 
@@ -4906,381 +4809,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// ============================================
-// ORDER NOTIFICATIONS SYSTEM
-// ============================================
-
-class OrderNotificationSystem {
-    constructor() {
-        this.container = document.getElementById('orderNotificationContainer');
-        this.notificationSound = null; // Will be initialized in setupSoundSettings
-        this.notifications = [];
-        this.isPermissionGranted = false;
-        this.soundEnabled = true;
-        this.init();
-    }
-
-    async init() {
-        await this.requestNotificationPermission();
-        this.setupSoundSettings();
-        this.startOrderSimulation();
-    }
-
-    async requestNotificationPermission() {
-        if ('Notification' in window) {
-            try {
-                const permission = await Notification.requestPermission();
-                this.isPermissionGranted = permission === 'granted';
-            } catch (error) {
-                console.log('Notification permission error:', error);
-            }
-        }
-    }
-
-    setupSoundSettings() {
-        // Check if sound is enabled in settings
-        const settings = JSON.parse(localStorage.getItem('pizzariaConfig')) || {};
-        this.soundEnabled = settings.soundNotifications !== false;
-        
-        // Load saved sound from localStorage
-        try {
-            const soundSettings = localStorage.getItem('soundSettings');
-            if (soundSettings) {
-                const parsed = JSON.parse(soundSettings);
-                if (parsed.sound) {
-                    this.notificationSound = new Audio(parsed.sound);
-                    this.notificationSound.volume = 0.8;
-                    console.log('Loaded saved notification sound:', parsed.sound);
-                    return;
-                }
-            }
-        } catch (error) {
-            console.log('Error loading saved sound settings:', error);
-        }
-        
-        // Fallback to default sound
-        this.notificationSound = new Audio('../../assets/sounds/notificações1.mp3');
-        this.notificationSound.volume = 0.8;
-        console.log('Using default notification sound: ../../assets/sounds/notificações1.mp3');
-    }
-
-    generateMockOrder() {
-        const customers = [
-            { name: 'Maria Silva', address: 'Rua das Flores, 123 - Centro' },
-            { name: 'João Santos', address: 'Av. Paulista, 456 - Bela Vista' },
-            { name: 'Ana Costa', address: 'Rua Augusta, 789 - Consolação' },
-            { name: 'Pedro Oliveira', address: 'Rua da Liberdade, 321 - Liberdade' },
-            { name: 'Carmen Rodriguez', address: 'Av. Ipiranga, 654 - República' },
-            { name: 'Lucas Ferreira', address: 'Rua Teodoro Sampaio, 987 - Pinheiros' }
-        ];
-
-        const pizzas = [
-            'Pizza Margherita', 'Pizza Calabresa', 'Pizza Portuguesa',
-            'Pizza 4 Queijos', 'Pizza Pepperoni', 'Pizza Frango Catupiry'
-        ];
-
-        const customer = customers[Math.floor(Math.random() * customers.length)];
-        const pizza = pizzas[Math.floor(Math.random() * pizzas.length)];
-        const value = (Math.random() * 40 + 25).toFixed(2);
-        const orderId = '#' + (Math.floor(Math.random() * 9000) + 1000);
-
-        return {
-            id: orderId,
-            customer: customer,
-            items: [pizza],
-            value: parseFloat(value),
-            time: new Date(),
-            status: 'novo'
-        };
-    }
-
-    async showNotification(order) {
-        // Play sound
-        await this.playNotificationSound();
-
-        // Show in-app notification
-        this.createInAppNotification(order);
-
-        // Show browser notification if permission granted and tab is not visible
-        if (this.isPermissionGranted && document.hidden) {
-            this.createBrowserNotification(order);
-        }
-    }
-
-    async playNotificationSound() {
-        if (!this.soundEnabled || !this.notificationSound) {
-            console.log('Sound disabled or no notification sound configured');
-            return;
-        }
-
-        try {
-            console.log('Playing notification sound:', this.notificationSound.src);
-            
-            // Reset audio to start
-            this.notificationSound.currentTime = 0;
-            
-            // Play sound
-            await this.notificationSound.play();
-            console.log('Notification sound played successfully');
-        } catch (error) {
-            console.error('Error playing notification sound:', error);
-            
-            // Try fallback sound
-            if (this.notificationSound.src !== '../../assets/sounds/notificações1.mp3') {
-                console.log('Attempting fallback to notificações1.mp3');
-                try {
-                    const fallbackAudio = new Audio('../../assets/sounds/notificações1.mp3');
-                    fallbackAudio.currentTime = 0;
-                    await fallbackAudio.play();
-                    console.log('Fallback sound played successfully');
-                } catch (fallbackError) {
-                    console.error('Fallback sound also failed:', fallbackError);
-                }
-            }
-        }
-    }
-
-    createInAppNotification(order) {
-        const notification = document.createElement('div');
-        notification.className = 'order-notification';
-        notification.id = `notification-${Date.now()}`;
-
-        const customerInitial = order.customer.name.charAt(0).toUpperCase();
-        const timeString = order.time.toLocaleTimeString('pt-BR', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-        });
-
-        notification.innerHTML = `
-            <div class="notification-header">
-                <div class="notification-logo">
-                    <img src="../../assets/images/default-images/logo_pizza.png" alt="Logo">
-                </div>
-                <div class="notification-title">
-                    <h4>Novo Pedido Recebido!</h4>
-                    <span>Acabou de chegar</span>
-                </div>
-                <button class="notification-close" data-notification-id="${notification.id}">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="notification-body">
-                <div class="notification-order-info">
-                    <span class="order-id">${order.id}</span>
-                    <span class="order-value">R$ ${order.value.toFixed(2)}</span>
-                    <span class="order-time">${timeString}</span>
-                </div>
-                <div class="notification-customer">
-                    <div class="customer-avatar">${customerInitial}</div>
-                    <div class="customer-info">
-                        <div class="customer-name">${order.customer.name}</div>
-                        <div class="customer-address">${order.customer.address}</div>
-                    </div>
-                </div>
-                <div class="notification-actions">
-                    <button class="notification-btn secondary" onclick="orderNotificationSystem.viewOrder('${order.id}')">
-                        <i class="fas fa-eye"></i> Ver
-                    </button>
-                    <button class="notification-btn primary" onclick="orderNotificationSystem.acceptOrder('${order.id}')">
-                        <i class="fas fa-check"></i> Aceitar
-                    </button>
-                </div>
-                <div class="notification-progress">
-                    <div class="notification-progress-bar"></div>
-                </div>
-            </div>
-        `;
-
-        this.container.appendChild(notification);
-        
-        // Add event listener for close button with better error handling
-        const closeButton = notification.querySelector('.notification-close');
-        if (closeButton) {
-            closeButton.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this.removeNotification(notification.id);
-            });
-        }
-        
-        this.notifications.push({
-            id: notification.id,
-            element: notification,
-            order: order,
-            timestamp: Date.now()
-        });
-
-        // Show notification with animation
-        setTimeout(() => {
-            notification.classList.add('show');
-            
-            // Start progress bar animation and remove when it completes
-            const progressBar = notification.querySelector('.notification-progress-bar');
-            progressBar.addEventListener('animationend', () => {
-                if (document.getElementById(notification.id)) {
-                    this.removeNotification(notification.id);
-                }
-            });
-        }, 100);
-
-        // Limit to 3 notifications
-        if (this.notifications.length > 3) {
-            const oldest = this.notifications[0];
-            this.removeNotification(oldest.id);
-        }
-    }
-
-    createBrowserNotification(order) {
-        if (!this.isPermissionGranted) return;
-
-        const notification = new Notification('Novo Pedido - Pizzaria', {
-            body: `${order.customer.name} - R$ ${order.value.toFixed(2)}`,
-            icon: '../../assets/images/default-images/logo_pizza.png',
-            badge: '../../assets/images/default-images/logo_pizza.png',
-            tag: 'new-order',
-            requireInteraction: true,
-            actions: [
-                { action: 'view', title: 'Ver Pedido' },
-                { action: 'accept', title: 'Aceitar' }
-            ]
-        });
-
-        notification.onclick = () => {
-            window.focus();
-            this.viewOrder(order.id);
-            notification.close();
-        };
-
-        // Auto close after 20 seconds
-        setTimeout(() => notification.close(), 20000);
-    }
-
-    removeNotification(notificationId) {
-        console.log('Trying to remove notification:', notificationId);
-        
-        const notification = document.getElementById(notificationId);
-        if (notification) {
-            console.log('Notification found, removing...');
-            
-            // Add hide class for animation
-            notification.classList.add('hide');
-            
-            // Remove from DOM and array after animation
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-                this.notifications = this.notifications.filter(n => n.id !== notificationId);
-                console.log('Notification removed successfully');
-            }, 400);
-        } else {
-            console.log('Notification not found:', notificationId);
-        }
-    }
-
-    viewOrder(orderId) {
-        // Navigate to orders section
-        showSection('pedidos');
-        showNotification(`Visualizando pedido ${orderId}`, 'info');
-    }
-
-    acceptOrder(orderId) {
-        // Accept the order and remove notification
-        const notification = this.notifications.find(n => n.order.id === orderId);
-        if (notification) {
-            this.removeNotification(notification.id);
-            
-            // Use the global acceptOrder function to handle status progression
-            acceptOrder(orderId);
-        }
-    }
-
-    startOrderSimulation() {
-        // Simulate new orders every 15-30 seconds for demonstration
-        const simulateOrder = () => {
-            const order = this.generateMockOrder();
-            this.showNotification(order);
-            
-            // Schedule next order
-            const nextOrderDelay = Math.random() * 15000 + 15000; // 15-30 seconds
-            setTimeout(simulateOrder, nextOrderDelay);
-        };
-
-        // Start simulation after 5 seconds
-        setTimeout(simulateOrder, 5000);
-    }
-
-    toggleSound() {
-        this.soundEnabled = !this.soundEnabled;
-        
-        // Update settings
-        const settings = JSON.parse(localStorage.getItem('pizzariaConfig')) || {};
-        settings.soundNotifications = this.soundEnabled;
-        localStorage.setItem('pizzariaConfig', JSON.stringify(settings));
-        
-        showNotification(
-            `Som das notificações ${this.soundEnabled ? 'ativado' : 'desativado'}`,
-            this.soundEnabled ? 'success' : 'info'
-        );
-    }
-
-    setSoundEnabled(enabled) {
-        this.soundEnabled = enabled;
-        console.log('Notification sound', enabled ? 'enabled' : 'disabled');
-    }
-
-    updateSound(soundPath) {
-        console.log('Updating sound to:', soundPath);
-        
-        // Update the notification sound
-        if (this.notificationSound) {
-            this.notificationSound.src = soundPath;
-        } else {
-            this.notificationSound = new Audio(soundPath);
-        }
-        
-        // Add error handling to the audio object
-        this.notificationSound.addEventListener('error', (e) => {
-            console.error('Error loading notification sound:', soundPath, e);
-        });
-        
-        this.notificationSound.addEventListener('canplay', () => {
-            console.log('Notification sound loaded successfully:', soundPath);
-        });
-        
-        console.log('Notification sound updated to:', soundPath);
-    }
-}
-
-// Initialize notification system
-let orderNotificationSystem;
+// Sistema de Notificações legado removido. Agora usamos frontend/assets/js/admin/notifications.js
+// O módulo window.notifications é responsável por renderizar, aceitar e fechar notificações.
+// A configuração de som é tratada por frontend/assets/js/admin/notification-sound.js
 let soundSettings;
-
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize notification system first
-    orderNotificationSystem = new OrderNotificationSystem();
-    window.orderNotificationSystem = orderNotificationSystem; // Make it globally accessible
-    
-    // Initialize sound settings after notification system
-    setTimeout(() => {
-        soundSettings = new SoundSettings();
-    }, 100);
-    
-    // Add global event listener for notification close buttons
-    document.addEventListener('click', (e) => {
-        if (e.target.closest('.notification-close')) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const closeBtn = e.target.closest('.notification-close');
-            const notificationId = closeBtn.getAttribute('data-notification-id');
-            
-            if (notificationId && orderNotificationSystem) {
-                console.log('Global close button clicked for:', notificationId);
-                orderNotificationSystem.removeNotification(notificationId);
-            }
-        }
-    });
+    // Inicializar configurações de som após o módulo de som estar disponível
+    setTimeout(() => { try { soundSettings = new SoundSettings(); } catch(_) {} }, 100);
 });
 
 /* ============================================
@@ -5310,10 +4845,8 @@ class SoundSettings {
                 this.saveSettings();
                 this.updateUIState();
                 
-                // Update notification system
-                if (window.orderNotificationSystem) {
-                    window.orderNotificationSystem.setSoundEnabled(this.soundEnabled);
-                }
+                // Atualizar módulo de som
+                try { window.notificationSound?.setEnabled(this.soundEnabled); } catch(_) {}
                 
                 console.log('Sound notifications:', this.soundEnabled ? 'enabled' : 'disabled');
             });
@@ -5385,11 +4918,9 @@ class SoundSettings {
                 this.currentSound = option.dataset.sound;
                 this.saveSettings();
                 
-                // Update notification system sound
-                if (window.orderNotificationSystem) {
-                    window.orderNotificationSystem.updateSound(this.currentSound);
-                    console.log('Updated notification system sound to:', this.currentSound);
-                }
+                // Atualizar som do módulo
+                try { window.notificationSound?.update(this.currentSound); } catch(_) {}
+                console.log('Updated notification sound to:', this.currentSound);
             });
         });
 
@@ -5522,10 +5053,10 @@ class SoundSettings {
                                     soundOption.classList.add('active');
                                 }
                             }
-                            if (window.orderNotificationSystem) {
-                                window.orderNotificationSystem.updateSound(this.currentSound);
-                                window.orderNotificationSystem.setSoundEnabled(this.soundEnabled);
-                            }
+                            try {
+                                window.notificationSound?.update(this.currentSound);
+                                window.notificationSound?.setEnabled(this.soundEnabled);
+                            } catch(_) {}
                             appliedFromBackend = true;
                         }
                     }
@@ -5548,10 +5079,10 @@ class SoundSettings {
                                 document.querySelectorAll('.sound-option').forEach(opt => opt.classList.remove('active'));
                                 soundOption.classList.add('active');
                             }
-                            if (window.orderNotificationSystem) {
-                                window.orderNotificationSystem.updateSound(this.currentSound);
-                                window.orderNotificationSystem.setSoundEnabled(this.soundEnabled);
-                            }
+                            try {
+                                window.notificationSound?.update(this.currentSound);
+                                window.notificationSound?.setEnabled(this.soundEnabled);
+                            } catch(_) {}
                         }
                     } else {
                         this.saveSettings();
@@ -5591,36 +5122,7 @@ function openMaps(address) {
     window.open(mapsUrl, '_blank');
 }
 
-// Função para testar novo pedido (desenvolvimento)
-function addTestOrder() {
-    const newOrder = {
-        id: String(Date.now()).slice(-3),
-        cliente: 'Cliente Teste',
-        data: new Date().toISOString(),
-        items: [
-            { nome: 'Pizza Margherita (Grande)', quantidade: 1, preco: 35.99 }
-        ],
-        total: 40.99,
-        status: 'pendente',
-        endereco: 'Rua Teste, 123',
-        telefone: '(11) 99999-0000'
-    };
-    
-    orders.unshift(newOrder);
-    renderOrdersTable();
-    renderOrdersCards();
-    updateOrdersBadgeFromLocal();
-    
-    // Simular notificação
-    if (window.orderNotificationSystem) {
-        window.orderNotificationSystem.showNotification(newOrder);
-    }
-    
-    showNotification('Novo pedido adicionado para teste!', 'success');
-}
-
-// Expor função globalmente para teste
-window.addTestOrder = addTestOrder;
+// Removidos utilitários de teste de pedido em produção
 
 // Proteção adicional: Verificação periódica de autenticação
 (function() {
