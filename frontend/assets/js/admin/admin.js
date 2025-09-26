@@ -591,19 +591,24 @@ function updateRecentOrders(list) {
         entregue: 'Entregue',
         cancelado: 'Cancelado'
     };
-    (list||[]).forEach(o => {
+    const items = Array.isArray(list) ? list.slice(0, 4) : [];
+    items.forEach(o => {
         const wrap = document.createElement('div');
         wrap.className = 'order-item';
+        const cliente = (o.cliente || '\u2014').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        const totalTxt = 'R$ ' + (Number(o.total)||0).toFixed(2);
         wrap.innerHTML = `
-            <div class="order-info">
-                <strong>#${o.id}</strong>
-                <span>${o.cliente || '—'}</span>
-                <span class="order-time">${formatRelativeTime(o.data)}</span>
+            <div class="order-left">
+                <div class="order-row">
+                    <strong class="order-id">#${o.id}</strong>
+                    <span class="order-customer" title="${cliente}">${cliente}</span>
+                </div>
+                <div class="order-meta"><span class="order-time">${formatRelativeTime(o.data)}</span></div>
             </div>
-            <div class="order-status ${o.status}">
-                <span>${statusText[o.status] || '—'}</span>
+            <div class="order-right">
+                <span class="order-status ${o.status}">${statusText[o.status] || '\u2014'}</span>
+                <span class="order-value">${totalTxt}</span>
             </div>
-            <div class="order-value">R$ ${(Number(o.total)||0).toFixed(2)}</div>
         `;
         cont.appendChild(wrap);
     });
@@ -712,6 +717,18 @@ function startOrdersBadgePolling() {
 // Inicializar WebSocket após DOM pronto
 document.addEventListener('DOMContentLoaded', () => {
     initAdminSocket();
+    // Ensure Dashboard "Ver todos os pedidos" navigates within SPA
+    const viewAllBtn = document.querySelector('#dashboard-section .view-all-btn');
+    if (viewAllBtn) {
+        viewAllBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            try { showSection('pedidos'); } catch (_) {}
+            const el = document.getElementById('pedidos-section');
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    }
 });
 
 // Sistema de Data e Hora em Tempo Real
@@ -1505,6 +1522,13 @@ function showSection(sectionName) {
     if (targetSection) {
         targetSection.classList.add('active');
         currentSection = sectionName;
+        // If switching to dashboard, force charts to resize to new container sizes
+        if (sectionName === 'dashboard' && window.charts) {
+            try { charts.sales?.resize(); } catch (_) {}
+            try { charts.salesReport?.resize(); } catch (_) {}
+            try { charts.products?.resize(); } catch (_) {}
+            try { charts.peakHours?.resize(); } catch (_) {}
+        }
         
         // Atualizar sidebar - adicionar classe active ao link correto
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));

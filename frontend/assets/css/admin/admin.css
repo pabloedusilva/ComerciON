@@ -865,7 +865,7 @@ body.sidebar-collapsed .main-content {
 /* Dashboard Grid */
 .dashboard-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: 3fr 2fr; /* give the chart more horizontal space */
     gap: 2rem;
     margin-bottom: 2rem;
 }
@@ -899,7 +899,7 @@ body.sidebar-collapsed .main-content {
 }
 
 .chart-content {
-    height: 300px;
+    height: 360px; /* was 300px: give more breathing room to the chart */
 }
 
 /* Recent Orders */
@@ -909,15 +909,32 @@ body.sidebar-collapsed .main-content {
     font-weight: 600;
 }
 
-.orders-list {
+.recent-orders {
+    display: flex;
+    flex-direction: column;
+}
+
+#dashboard-section .recent-orders .orders-list {
+    /* Force single column list in dashboard, overriding shared grid */
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px;
     margin-bottom: 1rem;
+    /* no internal scrollbar */
+    max-height: none;
+    overflow: visible;
+}
+
+#dashboard-section .recent-orders .view-all-btn {
+    margin-top: auto;
 }
 
 .order-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1rem 0;
+    gap: 12px;
+    padding: 0.75rem 0;
     border-bottom: 1px solid var(--border-color);
 }
 
@@ -925,24 +942,17 @@ body.sidebar-collapsed .main-content {
     border-bottom: none;
 }
 
-.order-info strong {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-}
+.order-left { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
+.order-row { display: flex; align-items: baseline; gap: 10px; min-width: 0; flex-wrap: nowrap; }
+.order-id { font-weight: 700; letter-spacing: 0.1px; display: inline-block; flex: none; }
+.order-customer { color: var(--text-secondary); font-size: 0.95rem; display: inline-block; flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.order-meta { margin-top: 4px; }
+.order-time { font-size: 0.8rem; color: var(--text-secondary); }
 
-.order-info span:not(.order-time) {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-}
-
-.order-time {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-}
+.order-right { display: flex; align-items: center; gap: 12px; flex: none; }
 
 .order-status {
-    padding: 0.25rem 0.75rem;
+    padding: 0.25rem 0.6rem;
     border-radius: 20px;
     font-size: 0.8rem;
     font-weight: 600;
@@ -966,6 +976,12 @@ body.sidebar-collapsed .main-content {
 .order-value {
     font-weight: 600;
     color: var(--success-color);
+}
+
+@media (max-width: 480px) {
+    .order-item { flex-direction: column; align-items: flex-start; gap: 6px; }
+    .order-right { width: 100%; display: flex; justify-content: space-between; }
+    .order-customer { max-width: 22ch; }
 }
 
 .view-all-btn {
@@ -2514,7 +2530,7 @@ tbody tr:hover {
 
 @media (max-width: 1200px) {
     .dashboard-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr; /* stack chart and recent orders */
         gap: 1.5rem;
     }
     
@@ -2532,8 +2548,10 @@ tbody tr:hover {
     }
     
     .chart-content {
-        height: 250px;
+        height: 300px; /* maintain readability when stacked */
     }
+    /* no height cap for recent orders on tablet */
+    #dashboard-section .recent-orders .orders-list { max-height: none; overflow: visible; }
 }
 
 /* Tablets */
@@ -3926,15 +3944,15 @@ tbody tr:hover {
 /* Melhorias para gráficos responsivos */
 .chart-content {
     position: relative;
-    height: 300px;
-    min-height: 200px;
+    height: 360px; /* align with dashboard layout for more space */
+    min-height: 240px;
     width: 100%;
     overflow: hidden;
 }
 
 .chart-content canvas {
     max-width: 100% !important;
-    height: auto !important;
+    height: 100% !important; /* fill container height */
     display: block !important;
 }
 
@@ -3953,24 +3971,28 @@ tbody tr:hover {
 /* Ajustes responsivos para gráficos */
 @media (max-width: 768px) {
     .chart-content {
-        height: 250px;
-        min-height: 180px;
+        height: 280px;
+        min-height: 200px;
     }
     
     .chart-box canvas {
         height: 220px !important;
     }
+    /* no height cap for recent orders on mobile */
+    #dashboard-section .recent-orders .orders-list { max-height: none; overflow: visible; }
 }
 
 @media (max-width: 480px) {
     .chart-content {
-        height: 200px;
+        height: 220px;
         min-height: 160px;
     }
     
     .chart-box canvas {
         height: 180px !important;
     }
+    /* no height cap for recent orders on small mobile */
+    #dashboard-section .recent-orders .orders-list { max-height: none; overflow: visible; }
 }
 
 /* Estados de carregamento melhorados */
