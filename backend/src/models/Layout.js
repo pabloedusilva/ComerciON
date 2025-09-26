@@ -14,9 +14,10 @@ const DEFAULTS = {
 		{ image_url: '/assets/images/default-images/banner1.jpg', caption: 'Clássicas irresistíveis' },
 		{ image_url: '/assets/images/default-images/banner2.jpg', caption: 'Promoções da semana' }
 	],
-	instagram_enabled: 1,
-	instagram_text: 'Siga-nos no Instagram',
-	instagram_handle: 'pizzaria_deliciosa',
+	// Não definir valores de exemplo para Instagram por padrão
+	instagram_enabled: 0,
+	instagram_text: null,
+	instagram_handle: null,
 };
 
 const Layout = {

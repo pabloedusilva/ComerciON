@@ -193,13 +193,19 @@
   const sec = document.querySelector('.instagram-section');
   if (!sec) return;
   const enabled = !!layout?.instagram?.enabled;
-  sec.style.display = enabled ? '' : 'none';
+  const hasHandle = !!layout?.instagram?.handle;
+  const show = enabled && hasHandle;
+  sec.style.display = show ? '' : 'none';
+    // Ensure the section is visible when data is applied
+    if (show) { try { sec.classList.remove('hidden-until-data'); } catch(_) {} }
     const follow = sec.querySelector('.instagram-follow');
     const handle = sec.querySelector('.instagram-handle');
     const link = sec.querySelector('.instagram-link');
     if (follow && layout?.instagram?.text) { follow.textContent = layout.instagram.text; reveal(follow); }
-    if (handle && layout?.instagram?.handle) { handle.textContent = `@${layout.instagram.handle}`; reveal(handle); }
-    if (link && layout?.instagram?.handle) { link.href = `https://www.instagram.com/${layout.instagram.handle}/`; reveal(link); }
+    if (handle && hasHandle) { handle.textContent = `@${layout.instagram.handle}`; reveal(handle); }
+    if (link && hasHandle) { link.href = `https://www.instagram.com/${layout.instagram.handle}/`; reveal(link); }
+    // Mark that layout controls Instagram to avoid overrides from localStorage logic
+    try { window.__layoutControlsInstagram = true; } catch(_) {}
   }
 
   function formatWhatsLink(phone) {

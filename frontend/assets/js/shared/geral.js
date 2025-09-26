@@ -323,6 +323,8 @@ document.querySelector(".menu-closer").addEventListener("click", () => {
 // Aplicar configurações do Instagram salvas no admin
 function applyInstagramSettings() {
   try {
+    // If layout script already applied Instagram from DB, skip local overrides
+    if (window.__layoutControlsInstagram) return;
     const instagramSettings = localStorage.getItem('pizzaria_instagram');
     if (!instagramSettings) return;
     

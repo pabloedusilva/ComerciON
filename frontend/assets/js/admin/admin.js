@@ -638,9 +638,34 @@ function updateSalesChart(series) {
     const salesCtx = document.getElementById('salesChart');
     if (!salesCtx) return;
     if (!window.charts) window.charts = {};
+    // Helper to abbreviate date labels (e.g., 24/09)
+    const abbreviateDateLabel = (label) => {
+        try {
+            if (!label) return '';
+            // ISO date (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)
+            let d = null;
+            if (/^\d{4}-\d{2}-\d{2}/.test(label)) {
+                d = new Date(label.substring(0, 10));
+            } else if (/^\d{2}\/\d{2}(\/\d{4})?$/.test(label)) {
+                // DD/MM or DD/MM/YYYY
+                const parts = label.split('/');
+                const dd = parseInt(parts[0], 10);
+                const mm = parseInt(parts[1], 10) - 1;
+                const yyyy = parts[2] ? parseInt(parts[2], 10) : (new Date()).getFullYear();
+                d = new Date(yyyy, mm, dd);
+            } else {
+                const t = new Date(label);
+                if (!isNaN(t.getTime())) d = t;
+            }
+            if (!d || isNaN(d.getTime())) return String(label);
+            return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        } catch (_) {
+            return String(label);
+        }
+    };
     // Atualiza chart existente sem recriar (mais suave)
     if (charts.sales) {
-        charts.sales.data.labels = series.labels;
+        charts.sales.data.labels = (Array.isArray(series.labels) ? series.labels : []).map(abbreviateDateLabel);
         charts.sales.data.datasets[0].data = series.data;
         charts.sales.update('none');
     }
@@ -1626,7 +1651,17 @@ function setupCharts() {
                     }
                 },
                 scales: {
-                    x: { display: true, grid: { display: false }, ticks: { font: { size: window.innerWidth <= 768 ? 10 : 12 } } },
+                    x: { 
+                        display: true, 
+                        grid: { display: false }, 
+                        ticks: { 
+                            autoSkip: true,
+                            maxRotation: 0,
+                            minRotation: 0,
+                            padding: 6,
+                            font: { size: window.innerWidth <= 768 ? 10 : 12 }
+                        }
+                    },
                     y: { display: true, beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: window.innerWidth <= 768 ? 10 : 12 }, callback: (v)=> 'R$ ' + Number(v).toLocaleString('pt-BR') } }
                 },
                 elements: { point: { hoverBackgroundColor: '#fab427' } }
@@ -3925,9 +3960,9 @@ function initFuncionamentoSection() {
 // Instagram Section Management
 const instagramManager = {
     state: {
-        enabled: true,
-        handle: 'pizzaria_deliciosa',
-        text: 'Siga-nos no Instagram'
+        enabled: false,
+        handle: '',
+        text: ''
     },
 
     init() {
@@ -3980,6 +4015,11 @@ const instagramManager = {
         // Botão salvar
         saveBtn?.addEventListener('click', async () => {
             try {
+                // Simple validation: if enabling, require handle
+                if (this.state.enabled && !this.state.handle) {
+                    showNotification('Para ativar a seção, informe o usuário do Instagram.', 'warning');
+                    return;
+                }
                 const token = localStorage.getItem('admin_token');
                 const res = await fetch('/api/admin/layout/instagram', {
                     method: 'PUT',
@@ -4013,11 +4053,8 @@ const instagramManager = {
             );
             
             if (confirmed) {
-                this.state = {
-                    enabled: true,
-                    handle: 'pizzaria_deliciosa',
-                    text: 'Siga-nos no Instagram'
-                };
+                // Padrão agora é desativado e sem textos/handle até ser configurado
+                this.state = { enabled: false, handle: '', text: '' };
                 try {
                     const token = localStorage.getItem('admin_token');
                     const res = await fetch('/api/admin/layout/instagram', {
@@ -4026,7 +4063,7 @@ const instagramManager = {
                             'Content-Type': 'application/json',
                             'Authorization': token ? `Bearer ${token}` : ''
                         },
-                        body: JSON.stringify({ enabled: true, handle: this.state.handle, text: this.state.text })
+                        body: JSON.stringify({ enabled: this.state.enabled, handle: this.state.handle, text: this.state.text })
                     });
                     const data = await res.json();
                     if (!res.ok || data.sucesso === false) throw new Error(data.mensagem || 'Falha ao restaurar');
@@ -4066,8 +4103,8 @@ const instagramManager = {
         previewSection.classList.toggle('enabled', !!this.state.enabled);
 
         // Atualizar textos do preview
-        if (previewFollowText) previewFollowText.textContent = this.state.text || 'Siga-nos no Instagram';
-        if (previewHandle) previewHandle.textContent = `@${this.state.handle || 'pizzaria_deliciosa'}`;
+        if (previewFollowText) previewFollowText.textContent = this.state.text || '';
+        if (previewHandle) previewHandle.textContent = this.state.handle ? `@${this.state.handle}` : '';
     },
 
     updateInstagramSection() {
@@ -4087,21 +4124,23 @@ const instagramManager = {
             if (res.ok && data.sucesso !== false) {
                 const set = data.data || {};
                 this.state.enabled = !!set.instagram_enabled;
-                this.state.handle = set.instagram_handle || this.state.handle;
-                this.state.text = set.instagram_text || this.state.text;
-                this.save(); // sincronizar cache local
+                this.state.handle = set.instagram_handle || '';
+                this.state.text = set.instagram_text || '';
+                // sincroniza cache local apenas como espelho do DB, não fonte de verdade
+                try { localStorage.setItem('pizzaria_instagram', JSON.stringify(this.state)); } catch(_) {}
                 return;
             }
             // fallback localStorage
             const raw = localStorage.getItem('pizzaria_instagram');
-            if (raw) this.state = { ...this.state, ...JSON.parse(raw) };
+            if (raw) this.state = { enabled: false, handle: '', text: '', ...JSON.parse(raw) };
         } catch (e) {
             console.warn('Falha ao carregar configurações do Instagram:', e);
         }
     },
 
     save() {
-        localStorage.setItem('pizzaria_instagram', JSON.stringify(this.state));
+        // Sempre persiste no DB via API; localStorage é apenas cache não autoritativo
+        try { localStorage.setItem('pizzaria_instagram', JSON.stringify(this.state)); } catch(_) {}
     }
 };
 
