@@ -13,10 +13,10 @@ class ProfileController {
 		}
 	}
 
-	// Atualiza campos básicos do perfil
+	// Atualiza campos básicos do perfil (inclui campos completos de endereço)
 	static async atualizarPerfil(req, res) {
 		try {
-			const permitido = (({ nome, telefone, endereco, cidade, estado, cep }) => ({ nome, telefone, endereco, cidade, estado, cep }))(req.body || {});
+			const permitido = (({ nome, telefone, endereco, numero, bairro, complemento, cidade, estado, cep }) => ({ nome, telefone, endereco, numero, bairro, complemento, cidade, estado, cep }))(req.body || {});
 			const usuarioAtualizado = await req.usuario.atualizar(permitido);
 			return res.json({ sucesso: true, mensagem: 'Perfil atualizado', usuario: usuarioAtualizado.toJSON() });
 		} catch (error) {

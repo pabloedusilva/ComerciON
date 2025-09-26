@@ -50,14 +50,34 @@ module.exports = {
 
       const totals = computeTotals(preparedItems);
 
-      // Address snapshot from user profile
-      const addr = {
-        nome: user.nome,
-        telefone: user.telefone || null,
-        endereco: user.endereco || null,
-        cidade: user.cidade || null,
-        estado: user.estado || null,
-        cep: user.cep || null
+      // Prefer address from checkout payload; fallback to user profile snapshot
+      const sanitizeStr = (v, max = 120) => {
+        if (v == null) return null;
+        const s = String(v).trim();
+        if (!s) return null;
+        return s.length > max ? s.slice(0, max) : s;
+      };
+      const rawAddr = body.address && typeof body.address === 'object' ? body.address : null;
+      const addr = rawAddr ? {
+        nome: sanitizeStr(rawAddr.nome) || sanitizeStr(user.nome),
+        telefone: sanitizeStr(rawAddr.telefone) || sanitizeStr(user.telefone),
+        endereco: sanitizeStr(rawAddr.endereco),
+        numero: sanitizeStr(rawAddr.numero, 20),
+        complemento: sanitizeStr(rawAddr.complemento),
+        bairro: sanitizeStr(rawAddr.bairro),
+        cidade: sanitizeStr(rawAddr.cidade),
+        estado: sanitizeStr(rawAddr.estado, 2)?.toUpperCase() || null,
+        cep: sanitizeStr(rawAddr.cep, 12)
+      } : {
+        nome: sanitizeStr(user.nome),
+        telefone: sanitizeStr(user.telefone),
+        endereco: sanitizeStr(user.endereco),
+        numero: sanitizeStr(user.numero, 20),
+        complemento: sanitizeStr(user.complemento),
+        bairro: sanitizeStr(user.bairro),
+        cidade: sanitizeStr(user.cidade),
+        estado: sanitizeStr(user.estado, 2)?.toUpperCase() || null,
+        cep: sanitizeStr(user.cep, 12)
       };
 
       const conn = await pool.getConnection();
@@ -125,7 +145,37 @@ module.exports = {
           (itemsByOrder[it.order_id] = itemsByOrder[it.order_id] || []).push(it);
         }
       }
-      const data = orders.map(o => ({ ...o, items: itemsByOrder[o.id] || [] }));
+      const formatAddr = (a) => {
+        if (!a || typeof a !== 'object') return '';
+        const p1 = [];
+        if (a.endereco) p1.push(a.endereco);
+        if (a.numero) p1.push(`, ${a.numero}`);
+        if (a.bairro) p1.push(` - ${a.bairro}`);
+        const l1 = p1.join('');
+        const p2 = [];
+        if (a.cidade) p2.push(a.cidade);
+        if (a.estado) p2.push(a.estado);
+        const l2 = p2.length ? p2.join('/') : '';
+        const cep = a.cep ? (l2 ? `, CEP: ${a.cep}` : `CEP: ${a.cep}`) : '';
+        const comp = a.complemento ? `, ${a.complemento}` : '';
+        return [l1, (l1 && l2) ? ' - ' : '', l2, cep, comp].join('').trim();
+      };
+      const data = orders.map(o => {
+        let addrObj = null;
+        try { addrObj = JSON.parse(o.address_json || 'null'); } catch(_) { addrObj = null; }
+        return {
+          id: o.id,
+          status: o.status,
+          subtotal: Number(o.subtotal),
+          delivery_fee: Number(o.delivery_fee),
+          discount: Number(o.discount),
+          total: Number(o.total),
+          created_at: o.created_at,
+          address: addrObj,
+          formattedAddress: formatAddr(addrObj),
+          items: itemsByOrder[o.id] || []
+        };
+      });
       return res.json({ sucesso: true, data });
     } catch (error) {
       console.error('Erro ao listar pedidos:', error);
@@ -149,7 +199,35 @@ module.exports = {
         `SELECT order_id, product_id, category, size, quantity, unit_price, removed_ingredients
          FROM pedido_itens WHERE order_id = ?`, [id]
       );
-      return res.json({ sucesso: true, data: { ...order, items } });
+      const formatAddr = (a) => {
+        if (!a || typeof a !== 'object') return '';
+        const p1 = [];
+        if (a.endereco) p1.push(a.endereco);
+        if (a.numero) p1.push(`, ${a.numero}`);
+        if (a.bairro) p1.push(` - ${a.bairro}`);
+        const l1 = p1.join('');
+        const p2 = [];
+        if (a.cidade) p2.push(a.cidade);
+        if (a.estado) p2.push(a.estado);
+        const l2 = p2.length ? p2.join('/') : '';
+        const cep = a.cep ? (l2 ? `, CEP: ${a.cep}` : `CEP: ${a.cep}`) : '';
+        const comp = a.complemento ? `, ${a.complemento}` : '';
+        return [l1, (l1 && l2) ? ' - ' : '', l2, cep, comp].join('').trim();
+      };
+      let addrObj = null;
+      try { addrObj = JSON.parse(order.address_json || 'null'); } catch(_) { addrObj = null; }
+      return res.json({ sucesso: true, data: {
+        id: order.id,
+        status: order.status,
+        subtotal: Number(order.subtotal),
+        delivery_fee: Number(order.delivery_fee),
+        discount: Number(order.discount),
+        total: Number(order.total),
+        created_at: order.created_at,
+        address: addrObj,
+        formattedAddress: formatAddr(addrObj),
+        items
+      } });
     } catch (error) {
       console.error('Erro ao obter pedido:', error);
       return res.status(500).json({ sucesso: false, mensagem: 'Erro ao obter pedido' });

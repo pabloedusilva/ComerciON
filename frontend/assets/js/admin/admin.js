@@ -883,7 +883,7 @@ async function loadMockData() {
             data: o.data,
             cliente: o.cliente || '—',
             telefone: o.telefone || '—',
-            endereco: o.endereco || '—',
+            endereco: (o.endereco && o.endereco.trim()) ? o.endereco : '—',
             total: Number(o.total) || 0,
             items: Array.isArray(o.items) ? o.items.map(it => ({ nome: it.nome, quantidade: it.quantidade, preco: Number(it.preco) })) : []
         }));
@@ -2031,11 +2031,19 @@ function renderOrdersTable() {
             cancelado: 'Cancelado'
         };
 
+        const addrText = String(order.endereco || '—');
+        const addrHtml = addrText
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+        const addrTitle = addrText.replace(/"/g, '&quot;');
+
         row.innerHTML = `
             <td><strong>#${order.id}</strong></td>
             <td>${order.cliente}</td>
             <td>${formatDateTime(order.data)}</td>
             <td>${order.items.length} item(s)</td>
+            <td class="addr-cell"><span class="addr-ellipsis" title="${addrTitle}">${addrHtml}</span></td>
             <td>R$ ${order.total.toFixed(2)}</td>
             <td>
                 <span class="status-badge ${order.status}">
@@ -2584,7 +2592,22 @@ async function viewOrder(orderId) {
                 data: d.data,
                 cliente: d.cliente,
                 telefone: d.telefone,
-                endereco: d.address?.endereco || order?.endereco || '—',
+                endereco: (d.formattedAddress && d.formattedAddress.trim()) || (function(a){
+                    if (!a) return order?.endereco || '—';
+                    const p1 = [];
+                    if (a.endereco) p1.push(a.endereco);
+                    if (a.numero) p1.push(', ' + a.numero);
+                    if (a.bairro) p1.push(' - ' + a.bairro);
+                    const l1 = p1.join('');
+                    const p2 = [];
+                    if (a.cidade) p2.push(a.cidade);
+                    if (a.estado) p2.push(a.estado);
+                    const l2 = p2.length ? p2.join('/') : '';
+                    const cep = a.cep ? (l2 ? ', CEP: ' + a.cep : 'CEP: ' + a.cep) : '';
+                    const comp = a.complemento ? ', ' + a.complemento : '';
+                    const str = [l1, (l1 && l2) ? ' - ' : '', l2, cep, comp].join('');
+                    return str || order?.endereco || '—';
+                })(d.address),
                 total: d.totals?.total ?? order?.total ?? 0,
                 items: Array.isArray(d.items) ? d.items.map(it=>({ nome: it.nome, quantidade: it.quantidade, preco: Number(it.preco) })) : (order?.items||[])
             };

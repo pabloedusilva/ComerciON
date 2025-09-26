@@ -30,6 +30,9 @@
 		telefone: document.getElementById('telefone'),
 		email: document.getElementById('email'),
 		endereco: document.getElementById('endereco'),
+		numero: document.getElementById('numero'),
+		complemento: document.getElementById('complemento'),
+		bairro: document.getElementById('bairro'),
 		cidade: document.getElementById('cidade'),
 		estado: document.getElementById('estado'),
 		cep: document.getElementById('cep'),
@@ -52,6 +55,9 @@
 			els.telefone.value = u.telefone || '';
 			els.email.value = u.email || '';
 			els.endereco.value = u.endereco || '';
+			if (els.numero) els.numero.value = u.numero || '';
+			if (els.complemento) els.complemento.value = u.complemento || '';
+			if (els.bairro) els.bairro.value = u.bairro || '';
 			els.cidade.value = u.cidade || '';
 			els.estado.value = u.estado || '';
 			els.cep.value = u.cep || '';
@@ -69,6 +75,9 @@
 				nome: els.nome.value.trim(),
 				telefone: els.telefone.value.trim(),
 				endereco: els.endereco.value.trim(),
+				numero: (els.numero?.value || '').trim(),
+				bairro: (els.bairro?.value || '').trim(),
+				complemento: (els.complemento?.value || '').trim(),
 				cidade: els.cidade.value.trim(),
 				estado: els.estado.value.trim().toUpperCase(),
 				cep: els.cep.value.trim()

@@ -30,7 +30,10 @@ module.exports = {
 	list: async (req, res) => {
 		try {
 			const [orders] = await pool.query(`
-				SELECT p.id, p.status, p.total, p.created_at, p.address_json, u.nome, u.telefone
+				SELECT p.id, p.status, p.total, p.created_at, p.address_json,
+					   u.nome, u.telefone,
+					   u.endereco AS u_endereco, u.numero AS u_numero, u.bairro AS u_bairro,
+					   u.cidade AS u_cidade, u.estado AS u_estado, u.cep AS u_cep
 				FROM pedido p
 				JOIN usuarios u ON u.id = p.user_id
 				ORDER BY p.created_at DESC
@@ -49,16 +52,45 @@ module.exports = {
 					(itemsByOrder[it.order_id] = itemsByOrder[it.order_id] || []).push(it);
 				}
 			}
-			const data = orders.map(o => ({
-				id: o.id,
-				status: normalizeToPt(o.status),
-				total: Number(o.total),
-				data: o.created_at,
-				cliente: o.nome,
-				telefone: o.telefone || '',
-				endereco: (()=>{ try { const a = JSON.parse(o.address_json||'null'); return a?.endereco || ''; } catch(_) { return ''; } })(),
-				items: (itemsByOrder[o.id]||[]).map(it=>({ nome: it.name, quantidade: it.quantity, preco: Number(it.unit_price) }))
-			}));
+			const formatAddr = (a) => {
+				if (!a || typeof a !== 'object') return '';
+				const parts = [];
+				if (a.endereco) parts.push(a.endereco);
+				if (a.numero) parts.push(`, ${a.numero}`);
+				if (a.bairro) parts.push(` - ${a.bairro}`);
+				const line1 = parts.join('');
+				const parts2 = [];
+				if (a.cidade) parts2.push(a.cidade);
+				if (a.estado) parts2.push(a.estado);
+				const line2 = parts2.length ? `${parts2.join('/')} ` : '';
+				const cep = a.cep ? `CEP: ${a.cep}` : '';
+				const comp = a.complemento ? `, ${a.complemento}` : '';
+				return [line1, (line1 && (line2 || cep)) ? ' - ' : '', line2, cep, comp].join('').trim();
+			};
+			const data = orders.map(o => {
+				let addrObj = null;
+				try { addrObj = JSON.parse(o.address_json || 'null'); } catch(_) { addrObj = null; }
+				// Fallback para dados do perfil do usuário quando não houver snapshot
+				const fallbackAddr = (!addrObj || Object.keys(addrObj||{}).length === 0) ? {
+					endereco: o.u_endereco || null,
+					numero: o.u_numero || null,
+					bairro: o.u_bairro || null,
+					cidade: o.u_cidade || null,
+					estado: (o.u_estado || null),
+					cep: o.u_cep || null
+				} : null;
+				const enderecoFormatado = addrObj ? (formatAddr(addrObj) || addrObj.endereco || '') : formatAddr(fallbackAddr);
+				return {
+					id: o.id,
+					status: normalizeToPt(o.status),
+					total: Number(o.total),
+					data: o.created_at,
+					cliente: o.nome,
+					telefone: o.telefone || '',
+					endereco: enderecoFormatado || '',
+					items: (itemsByOrder[o.id]||[]).map(it=>({ nome: it.name, quantidade: it.quantity, preco: Number(it.unit_price) }))
+				};
+			});
 			return res.json({ sucesso: true, data });
 		} catch (e) {
 			console.error('Erro list orders:', e);
@@ -84,6 +116,21 @@ module.exports = {
 				WHERE i.order_id = ?
 			`, [id]);
 			const addr = (()=>{ try { return JSON.parse(order.address_json||'null'); } catch(_) { return null; } })();
+			const formatAddr = (a) => {
+				if (!a || typeof a !== 'object') return '';
+				const parts = [];
+				if (a.endereco) parts.push(a.endereco);
+				if (a.numero) parts.push(`, ${a.numero}`);
+				if (a.bairro) parts.push(` - ${a.bairro}`);
+				const line1 = parts.join('');
+				const parts2 = [];
+				if (a.cidade) parts2.push(a.cidade);
+				if (a.estado) parts2.push(a.estado);
+				const line2 = parts2.length ? `${parts2.join('/')}` : '';
+				const cep = a.cep ? `, CEP: ${a.cep}` : '';
+				const comp = a.complemento ? `, ${a.complemento}` : '';
+				return [line1, (line1 && line2) ? ' - ' : '', line2, cep, comp].join('').trim();
+			};
 			return res.json({ sucesso: true, data: {
 				id: order.id,
 				status: normalizeToPt(order.status),
@@ -92,6 +139,7 @@ module.exports = {
 				cliente: order.nome,
 				telefone: order.telefone || '',
 				address: addr,
+				formattedAddress: formatAddr(addr),
 				items: items.map(it=>({ nome: it.name, quantidade: it.quantity, preco: Number(it.unit_price), size: it.size, category: it.category }))
 			}});
 		} catch (e) {

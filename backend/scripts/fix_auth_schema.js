@@ -41,6 +41,9 @@ async function ensureUsuarios() {
         senha VARCHAR(255) NOT NULL,
         telefone VARCHAR(30) NULL,
         endereco VARCHAR(255) NULL,
+        numero VARCHAR(20) NULL,
+        bairro VARCHAR(100) NULL,
+        complemento VARCHAR(120) NULL,
         cidade VARCHAR(100) NULL,
         estado VARCHAR(10) NULL,
         cep VARCHAR(20) NULL,
@@ -69,6 +72,23 @@ async function ensureUsuarios() {
       try {
         await pool.query('CREATE UNIQUE INDEX uk_usuarios_email ON usuarios(email)');
       } catch (_) {}
+    }
+
+    // Garantir campos de endereço adicionais
+    const addressCols = [
+      ['endereco', "ALTER TABLE usuarios ADD COLUMN endereco VARCHAR(255) NULL"],
+      ['numero', "ALTER TABLE usuarios ADD COLUMN numero VARCHAR(20) NULL"],
+      ['bairro', "ALTER TABLE usuarios ADD COLUMN bairro VARCHAR(100) NULL"],
+      ['complemento', "ALTER TABLE usuarios ADD COLUMN complemento VARCHAR(120) NULL"],
+      ['cidade', "ALTER TABLE usuarios ADD COLUMN cidade VARCHAR(100) NULL"],
+      ['estado', "ALTER TABLE usuarios ADD COLUMN estado VARCHAR(10) NULL"],
+      ['cep', "ALTER TABLE usuarios ADD COLUMN cep VARCHAR(20) NULL"],
+    ];
+    for (const [col, sql] of addressCols) {
+      if (!(await columnExists('usuarios', col))) {
+        console.log(`• Adicionando coluna usuarios.${col}`);
+        await pool.query(sql);
+      }
     }
   }
 }

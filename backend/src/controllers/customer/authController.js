@@ -44,7 +44,7 @@ class AuthController {
     // Registro de novo cliente
     static async registrar(req, res) {
         try {
-            const { nome, email, senha, telefone, endereco, cidade, estado, cep } = req.body;
+            const { nome, email, senha, telefone, endereco, numero, bairro, complemento, cidade, estado, cep } = req.body;
 
             // Criar usuário
             const novoUsuario = await User.criar({
@@ -53,6 +53,9 @@ class AuthController {
                 senha,
                 telefone,
                 endereco,
+                numero,
+                bairro,
+                complemento,
                 cidade,
                 estado,
                 cep
@@ -206,12 +209,15 @@ class AuthController {
     // Atualizar perfil
     static async atualizarPerfil(req, res) {
         try {
-            const { nome, telefone, endereco, cidade, estado, cep } = req.body;
+            const { nome, telefone, endereco, numero, bairro, complemento, cidade, estado, cep } = req.body;
 
             const usuarioAtualizado = await req.usuario.atualizar({
                 nome,
                 telefone,
                 endereco,
+                numero,
+                bairro,
+                complemento,
                 cidade,
                 estado,
                 cep

@@ -56,6 +56,9 @@
         const addrMap = {
           cep: usuario.cep,
           endereco: usuario.endereco,
+          numero: usuario.numero,
+          complemento: usuario.complemento,
+          bairro: usuario.bairro,
           cidade: usuario.cidade,
           estado: usuario.estado
         };
@@ -199,12 +202,30 @@
       const payload = {
         nome: document.getElementById('nome').value.trim(),
         telefone: document.getElementById('telefone').value.trim(),
-        endereco: document.getElementById('endereco').value.trim() + (document.getElementById('numero').value ? `, ${document.getElementById('numero').value.trim()}` : ''),
+        endereco: document.getElementById('endereco').value.trim(),
+        numero: (document.getElementById('numero')?.value || '').trim(),
+        complemento: (document.getElementById('complemento')?.value || '').trim(),
+        bairro: (document.getElementById('bairro')?.value || '').trim(),
         cidade: document.getElementById('cidade').value.trim(),
         estado: document.getElementById('estado').value.trim().toUpperCase(),
         cep: document.getElementById('cep').value.trim()
       };
       await api('/api/customer/profile', { method: 'PUT', body: JSON.stringify(payload) });
+    } catch(_) {}
+    // Salvar endereço completo do checkout para usar na criação do pedido
+    try {
+      const addr = {
+        nome: document.getElementById('nome').value.trim(),
+        telefone: document.getElementById('telefone').value.trim(),
+        endereco: document.getElementById('endereco').value.trim(),
+        numero: document.getElementById('numero').value.trim(),
+        complemento: document.getElementById('complemento').value.trim(),
+        bairro: document.getElementById('bairro').value.trim(),
+        cidade: document.getElementById('cidade').value.trim(),
+        estado: document.getElementById('estado').value.trim().toUpperCase(),
+        cep: sanitizeCEP(document.getElementById('cep').value.trim())
+      };
+      localStorage.setItem('checkout_address', JSON.stringify(addr));
     } catch(_) {}
     setActiveStep(3);
     buildOrderSummary();

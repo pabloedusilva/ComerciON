@@ -57,6 +57,8 @@ body:not(.data-ready) #orders-page { visibility: hidden !important; }
 .order-items { color: #374151; }
 .order-total { color: #111827; }
 .order-date { color: #6b7280; font-size: .95rem; }
+.order-address { color: #374151; font-size: .95rem; display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.order-address i { color: #ef4444; }
 
 /* Empty state */
 .orders-empty { display: flex; align-items: center; justify-content: center; }

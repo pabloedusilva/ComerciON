@@ -11,6 +11,9 @@ class User {
         this.senha = data.senha;
         this.telefone = data.telefone;
         this.endereco = data.endereco;
+    this.numero = data.numero;
+    this.bairro = data.bairro;
+    this.complemento = data.complemento;
         this.cidade = data.cidade;
         this.estado = data.estado;
         this.cep = data.cep;
@@ -26,6 +29,9 @@ class User {
             const norm = (v) => (v == null || (typeof v === 'string' && v.trim() === '') ? null : v);
             const telefone = norm(dados.telefone);
             const endereco = norm(dados.endereco);
+            const numero = norm(dados.numero);
+            const bairro = norm(dados.bairro);
+            const complemento = norm(dados.complemento);
             const cidade = norm(dados.cidade);
             const estado = norm(dados.estado);
             const cep = norm(dados.cep);
@@ -40,12 +46,12 @@ class User {
             const senhaHash = await bcrypt.hash(senha, bcryptRounds);
 
             const query = `
-                INSERT INTO usuarios (nome, email, senha, telefone, endereco, cidade, estado, cep, data_cadastro, ativo)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), TRUE)
+                INSERT INTO usuarios (nome, email, senha, telefone, endereco, numero, bairro, complemento, cidade, estado, cep, data_cadastro, ativo)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), TRUE)
             `;
 
             const [resultado] = await pool.execute(query, [
-                nome, email, senhaHash, telefone, endereco, cidade, estado, cep
+                nome, email, senhaHash, telefone, endereco, numero, bairro, complemento, cidade, estado, cep
             ]);
 
             return await User.buscarPorId(resultado.insertId);
@@ -109,6 +115,18 @@ class User {
             if (dados.endereco) {
                 campos.push('endereco = ?');
                 valores.push(dados.endereco);
+            }
+            if (dados.numero) {
+                campos.push('numero = ?');
+                valores.push(dados.numero);
+            }
+            if (dados.bairro) {
+                campos.push('bairro = ?');
+                valores.push(dados.bairro);
+            }
+            if (dados.complemento) {
+                campos.push('complemento = ?');
+                valores.push(dados.complemento);
             }
             if (dados.cidade) {
                 campos.push('cidade = ?');

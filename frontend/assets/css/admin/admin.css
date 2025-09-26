@@ -1883,6 +1883,28 @@ tbody tr:hover {
     background-color: rgba(250, 180, 39, 0.05);
 }
 
+/* Abreviar endereço somente na tabela responsiva de Gestão de Pedidos */
+.table-responsive td.addr-cell {
+    max-width: 180px; /* mais curto para melhor alinhamento */
+    width: 1%;        /* força a célula a encolher ao mínimo possível */
+}
+.table-responsive td.addr-cell .addr-ellipsis {
+    display: block;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+@media (min-width: 992px) {
+    .table-responsive td.addr-cell { max-width: 200px; }
+}
+@media (min-width: 1200px) {
+    .table-responsive td.addr-cell { max-width: 220px; }
+}
+@media (min-width: 1400px) {
+    .table-responsive td.addr-cell { max-width: 240px; }
+}
+
 .product-img {
     width: 50px;
     height: 50px;

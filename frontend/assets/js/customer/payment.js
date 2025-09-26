@@ -20,6 +20,7 @@
 
   function clearCart(){
     localStorage.removeItem('pizza_cart');
+    try { localStorage.removeItem('checkout_address'); } catch(_) {}
   }
 
   const successModal = document.getElementById('successModal');
@@ -28,10 +29,18 @@
   async function createOrderFromCart(){
     const cart = JSON.parse(localStorage.getItem('pizza_cart') || '[]');
     if (!Array.isArray(cart) || cart.length === 0) throw new Error('Carrinho vazio');
+    // Tentar recuperar endereço do checkout armazenado temporariamente
+    let address = null;
+    try {
+      const raw = localStorage.getItem('checkout_address');
+      if (raw) address = JSON.parse(raw);
+    } catch (_) { address = null; }
     const token = Auth.token || localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
-    const res = await fetch('/api/customer/orders', { method: 'POST', headers, body: JSON.stringify({ items: cart }) });
+    const body = { items: cart };
+    if (address && typeof address === 'object') body.address = address;
+    const res = await fetch('/api/customer/orders', { method: 'POST', headers, body: JSON.stringify(body) });
     const json = await res.json().catch(()=>({}));
     if (!res.ok || !json.sucesso) throw new Error(json.mensagem || 'Falha ao criar pedido');
     return json.data;
