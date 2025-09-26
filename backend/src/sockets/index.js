@@ -65,14 +65,22 @@ function setupSockets(server) {
 
   const admin = setupAdminNamespace(io);
 
+  // Namespace cliente simples (sem autenticação forte ainda — pode evoluir para validar token JWT)
+  const cliente = io.of('/cliente');
+  cliente.on('connection', (socket) => {
+    // Futuro: validar token JWT do cliente se necessário
+  });
+
   // Expor métodos prontos para emitir
   io.emitOrderCreated = (payload) => {
     admin.emit('order:created', payload);
     admin.emit('dashboard:update');
+    cliente.emit('order:created', payload);
   };
   io.emitOrderUpdated = (payload) => {
     admin.emit('order:updated', payload);
     admin.emit('dashboard:update');
+    cliente.emit('order:updated', payload);
   };
 
   return io;

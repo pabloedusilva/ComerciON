@@ -1,13 +1,15 @@
-// Rotas de reviews do cliente (placeholder)
+// Rotas de reviews do cliente
 const express = require('express');
 const router = express.Router();
 const { sanitizarEntrada } = require('../../middleware/validation');
+const { autenticarCliente } = require('../../middleware/auth');
+const reviewsController = require('../../controllers/customer/reviewsController');
 
-router.use(sanitizarEntrada);
+router.use(autenticarCliente, sanitizarEntrada);
 
-// GET /api/customer/reviews/health
-router.get('/health', (req, res) => {
-	res.json({ sucesso: true, mensagem: 'reviews ok' });
-});
+// Criar avaliação
+router.post('/', reviewsController.create);
+// Listar avaliações do usuário
+router.get('/', reviewsController.list);
 
 module.exports = router;

@@ -4196,228 +4196,171 @@ const instagramManager = {
 
 // ========== AVALIAÇÕES MANAGER ==========
 const reviewsManager = {
-    reviews: [
-        {
-            id: 1,
-            customerName: 'Maria Silva',
-            date: '15/09/2025',
-            rating: 5,
-            text: 'Excelente pizza! Massa fininha, ingredientes frescos e chegou bem quentinha. O atendimento também foi muito bom, entregaram no tempo prometido.',
-            fullText: 'Excelente pizza! Massa fininha, ingredientes frescos e chegou bem quentinha. O atendimento também foi muito bom, entregaram no tempo prometido. Já é a terceira vez que peço e sempre mantém a qualidade. A pizza de calabresa é a minha favorita, mas também já experimentei a margherita e estava deliciosa. O delivery é rápido e os entregadores são educados. Recomendo muito!',
-            productOrdered: 'Pizza Calabresa (Grande)',
-            verified: true
-        },
-        {
-            id: 2,
-            customerName: 'João Santos',
-            date: '14/09/2025',
-            rating: 4,
-            text: 'Muito boa! Só achei que poderia ter um pouco mais de recheio na margherita, mas no geral foi uma experiência positiva.',
-            fullText: 'Muito boa! Só achei que poderia ter um pouco mais de recheio na margherita, mas no geral foi uma experiência positiva. A massa estava no ponto certo, nem muito fina nem grossa. O molho estava saboroso e o queijo de boa qualidade. Talvez apenas uma sugestão para caprichar mais no recheio. O tempo de entrega foi ok, cerca de 35 minutos.',
-            productOrdered: 'Pizza Margherita (Média)',
-            verified: true
-        },
-        {
-            id: 3,
-            customerName: 'Ana Costa',
-            date: '13/09/2025',
-            rating: 5,
-            text: 'Simplesmente perfeita! A pizza 4 queijos estava divina e o atendimento foi excepcional. Já virou minha pizzaria favorita!',
-            fullText: 'Simplesmente perfeita! A pizza 4 queijos estava divina e o atendimento foi excepcional. Já virou minha pizzaria favorita! Os queijos estavam bem balanceados, sem ficar muito salgado. A massa estava crocante por fora e macia por dentro. O atendimento pelo WhatsApp foi super rápido e atencioso. Chegou em 25 minutos, ainda quentinha. Preço justo pela qualidade. Com certeza vou pedir novamente!',
-            productOrdered: 'Pizza 4 Queijos (Grande)',
-            verified: true
-        },
-        {
-            id: 4,
-            customerName: 'Carlos Oliveira',
-            date: '12/09/2025',
-            rating: 3,
-            text: 'Boa pizza, mas demorou um pouco mais que o esperado para chegar. O sabor compensou a espera.',
-            fullText: 'Boa pizza, mas demorou um pouco mais que o esperado para chegar. O sabor compensou a espera. Pedi para entrega às 19h e chegou às 19h45. A pizza estava boa, ingredientes frescos e bem temperada. Talvez seja interessante melhorar a estimativa de tempo de entrega ou avisar quando há atraso. No mais, a qualidade da pizza está boa.',
-            productOrdered: 'Pizza Portuguesa (Grande)',
-            verified: true
-        },
-        {
-            id: 5,
-            customerName: 'Fernanda Lima',
-            date: '11/09/2025',
-            rating: 5,
-            text: 'Incrível! A melhor pizza de calabresa que já comi. Ingredientes de qualidade e entrega super rápida. Recomendo muito!',
-            fullText: 'Incrível! A melhor pizza de calabresa que já comi. Ingredientes de qualidade e entrega super rápida. Recomendo muito! A calabresa estava fresquinha, o queijo derretido na medida certa e a massa perfeita. Chegou em apenas 20 minutos, ainda fumegando. O preço é justo e a qualidade é superior. Já virei cliente fiel. Parabéns pela excelência!',
-            productOrdered: 'Pizza Calabresa (Grande)',
-            verified: true
-        }
-    ],
-
+    reviews: [],
+    average: 0,
     currentFilter: '',
     currentRatingFilter: '',
+    isLoading: false,
 
-    init() {
+    async init() {
         this.bindEvents();
-        this.renderReviews();
+        await this.loadFromAPI();
+    },
+
+    getToken() { return localStorage.getItem('admin_token'); },
+
+    async apiFetch(path, options = {}) {
+        const headers = options.headers || {};
+        const token = this.getToken();
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        headers['Content-Type'] = 'application/json';
+        const res = await fetch(path, { ...options, headers });
+        const data = await res.json().catch(()=>({}));
+        if (!res.ok || data.sucesso === false) {
+            throw new Error(data.mensagem || 'Falha ao buscar avaliações');
+        }
+        return data;
+    },
+
+    async loadFromAPI() {
+        if (this.isLoading) return;
+        this.isLoading = true;
+        try {
+            const params = new URLSearchParams();
+            if (this.currentFilter) params.set('q', this.currentFilter);
+            if (this.currentRatingFilter) params.set('rating', this.currentRatingFilter);
+            const data = await this.apiFetch(`/api/admin/reviews?${params.toString()}`);
+            const list = Array.isArray(data.data?.reviews) ? data.data.reviews : [];
+            this.reviews = list.map(r => ({
+                id: r.id,
+                customerName: r.user_name || `Usuário #${r.user_id}`,
+                date: this.formatDate(r.created_at),
+                rating: r.rating,
+                text: (r.comment || '').length > 180 ? r.comment.slice(0,180) + '…' : (r.comment || ''),
+                fullText: r.comment || '',
+                productOrdered: 'Pedido #' + r.order_id,
+                verified: r.verified
+            }));
+            this.average = Number(data.data?.average || 0).toFixed(1);
+            this.renderReviews();
+            this.updateSummary();
+        } catch (e) {
+            console.error('Erro ao carregar avaliações:', e);
+            const container = document.querySelector('.reviews-container');
+            if (container) container.innerHTML = '<div class="no-results">Falha ao carregar avaliações</div>';
+        } finally {
+            this.isLoading = false;
+        }
     },
 
     bindEvents() {
-        // Search functionality
         const searchInput = document.getElementById('reviewSearch');
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
-                this.currentFilter = e.target.value.toLowerCase();
-                this.renderReviews();
+                this.currentFilter = e.target.value.trim();
+                this.debouncedReload();
             });
         }
-
-        // Rating filter
         const ratingFilter = document.getElementById('ratingFilter');
         if (ratingFilter) {
             ratingFilter.addEventListener('change', (e) => {
                 this.currentRatingFilter = e.target.value;
-                this.renderReviews();
+                this.loadFromAPI();
             });
         }
-
-        // View full review buttons
         document.addEventListener('click', (e) => {
             if (e.target.closest('.view-full-review')) {
-                const reviewId = parseInt(e.target.closest('.view-full-review').dataset.reviewId);
+                const reviewId = parseInt(e.target.closest('.view-full-review').dataset.reviewId,10);
                 this.showFullReview(reviewId);
             }
         });
     },
 
+    debouncedReload: (() => {
+        let t; return function() { clearTimeout(t); t = setTimeout(()=> this.loadFromAPI(), 400); };
+    })(),
+
+    formatDate(dt) {
+        if (!dt) return '';
+        try {
+            const d = new Date(dt);
+            if (Number.isNaN(d.getTime())) return dt;
+            return d.toLocaleDateString('pt-BR');
+        } catch(_) { return dt; }
+    },
+
     renderReviews() {
         const container = document.querySelector('.reviews-container');
         if (!container) return;
-
-        let filteredReviews = this.reviews;
-
-        // Apply search filter
-        if (this.currentFilter) {
-            filteredReviews = filteredReviews.filter(review => 
-                review.customerName.toLowerCase().includes(this.currentFilter) ||
-                review.text.toLowerCase().includes(this.currentFilter) ||
-                review.productOrdered.toLowerCase().includes(this.currentFilter)
-            );
+        if (!this.reviews.length) {
+            container.innerHTML = '<div class="no-results">Nenhuma avaliação encontrada.</div>';
+            return;
         }
-
-        // Apply rating filter
-        if (this.currentRatingFilter) {
-            filteredReviews = filteredReviews.filter(review => 
-                review.rating === parseInt(this.currentRatingFilter)
-            );
-        }
-
-        // Generate HTML
-        const html = filteredReviews.map(review => `
+        const html = this.reviews.map(review => `
             <div class="review-card">
                 <div class="review-header">
                     <div class="customer-info">
-                        <div class="customer-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
+                        <div class="customer-avatar"><i class="fas fa-user"></i></div>
                         <div class="customer-details">
                             <h4>${review.customerName}</h4>
                             <span class="review-date">${review.date}</span>
                         </div>
                     </div>
-                    <div class="rating-stars">
-                        ${this.generateStars(review.rating)}
-                    </div>
+                    <div class="rating-stars">${this.generateStars(review.rating)}</div>
                 </div>
                 <div class="review-content">
-                    <p class="review-text">${review.text}</p>
+                    <p class="review-text">${review.text || '(sem comentário)'}</p>
                 </div>
                 <div class="review-actions">
                     <button class="view-full-review" data-review-id="${review.id}">
-                        <i class="fas fa-eye"></i>
-                        Ver completa
+                        <i class="fas fa-eye"></i> Ver completa
                     </button>
                 </div>
-            </div>
-        `).join('');
-
-        container.innerHTML = html || '<div class="no-results">Nenhuma avaliação encontrada.</div>';
+            </div>`).join('');
+        container.innerHTML = html;
     },
 
     generateStars(rating) {
         let stars = '';
-        for (let i = 1; i <= 5; i++) {
-            stars += `<i class="fas fa-star ${i <= rating ? 'active' : ''}"></i>`;
-        }
+        for (let i = 1; i <= 5; i++) stars += `<i class="fas fa-star ${i <= rating ? 'active' : ''}"></i>`;
         return stars;
     },
 
     showFullReview(reviewId) {
         const review = this.reviews.find(r => r.id === reviewId);
         if (!review) return;
-
-        // Create modal
         const modal = document.createElement('div');
         modal.className = 'review-modal';
         modal.innerHTML = `
             <div class="review-modal-content">
                 <div class="review-modal-header">
                     <h3>Avaliação Completa</h3>
-                    <button class="close-modal">
-                        <i class="fas fa-times"></i>
-                    </button>
+                    <button class="close-modal"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="review-modal-body">
                     <div class="customer-info-modal">
-                        <div class="customer-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
+                        <div class="customer-avatar"><i class="fas fa-user"></i></div>
                         <div class="customer-details">
                             <h4>${review.customerName}</h4>
                             <span class="review-date">${review.date}</span>
-                            <span class="product-ordered">Produto: ${review.productOrdered}</span>
+                            <span class="product-ordered">${review.productOrdered}</span>
                         </div>
-                        <div class="rating-stars">
-                            ${this.generateStars(review.rating)}
-                        </div>
+                        <div class="rating-stars">${this.generateStars(review.rating)}</div>
                     </div>
-                    <div class="full-review-text">
-                        <p>${review.fullText}</p>
-                    </div>
+                    <div class="full-review-text"><p>${review.fullText || '(sem comentário)'}</p></div>
                 </div>
-            </div>
-        `;
-
-        // Add to page
+            </div>`;
         document.body.appendChild(modal);
-
-        // Bind close events
-        modal.querySelector('.close-modal').addEventListener('click', () => {
-            document.body.removeChild(modal);
-        });
-
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                document.body.removeChild(modal);
-            }
-        });
-
-        // Add animation
-        setTimeout(() => modal.classList.add('show'), 10);
-    },
-
-    calculateAverageRating() {
-        if (this.reviews.length === 0) return 0;
-        const sum = this.reviews.reduce((acc, review) => acc + review.rating, 0);
-        return (sum / this.reviews.length).toFixed(1);
+        modal.querySelector('.close-modal').addEventListener('click', () => document.body.removeChild(modal));
+        modal.addEventListener('click', (e) => { if (e.target === modal) document.body.removeChild(modal); });
+        setTimeout(()=> modal.classList.add('show'), 10);
     },
 
     updateSummary() {
         const averageElement = document.querySelector('.average-rating');
         const totalElement = document.querySelector('.total-reviews');
-        
-        if (averageElement) {
-            averageElement.textContent = this.calculateAverageRating();
-        }
-        
-        if (totalElement) {
-            totalElement.textContent = `(${this.reviews.length} avaliações)`;
-        }
+        if (averageElement) averageElement.textContent = this.average || '0.0';
+        if (totalElement) totalElement.textContent = `(${this.reviews.length} avaliações)`;
     }
 };
 
