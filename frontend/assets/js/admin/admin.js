@@ -244,7 +244,7 @@ const mockData = {
                 { nome: 'Pizza Calabresa (Grande)', quantidade: 1, preco: 27.99 }
             ],
             total: 32.99,
-            status: 'pending',
+            status: 'pendente',
             endereco: 'Rua das Flores, 123',
             telefone: '(11) 99999-1111'
         },
@@ -257,7 +257,7 @@ const mockData = {
                 { nome: 'Coca-cola (2L)', quantidade: 1, preco: 8.90 }
             ],
             total: 61.89,
-            status: 'delivered',
+            status: 'entregue',
             endereco: 'Av. Paulista, 456',
             telefone: '(11) 99999-2222'
         },
@@ -269,7 +269,7 @@ const mockData = {
                 { nome: 'Pizza Portuguesa (Grande)', quantidade: 2, preco: 35.99 }
             ],
             total: 76.98,
-            status: 'preparing',
+            status: 'preparando',
             endereco: 'Rua do Comércio, 789',
             telefone: '(11) 99999-3333'
         }
@@ -374,6 +374,12 @@ function initializeApp() {
     } catch (e) {
         console.warn('Erro ao carregar statusManager:', e);
     }
+
+    // Iniciar atualização do badge de pedidos em tempo real
+    startOrdersBadgePolling();
+
+    // Iniciar atualização da dashboard em tempo real
+    startDashboardPolling();
 }
 
 // Configuração da sidebar moderna
@@ -459,6 +465,254 @@ function initSidebarStatusPill() {
     // Não mais interceptar o statusManager.save aqui
     // A sidebar será atualizada pelos botões específicos no statusManager
 }
+
+// ===== Badge de Pedidos (tempo real) =====
+const ACTIVE_ORDER_STATUSES = new Set(['pendente', 'preparando', 'a_caminho']);
+let __ordersBadgeInterval = null;
+let __ordersBadgeRefreshing = false;
+
+function getOrdersBadgeElement() {
+    return document.querySelector('a.nav-link[data-section="pedidos"] .badge');
+}
+
+// ===== Dashboard em tempo real =====
+let __dashboardInterval = null;
+let __dashboardLoading = false;
+
+// ===== WebSocket (Socket.IO) =====
+let __socket = null;
+function initAdminSocket() {
+    try {
+        // Evitar múltiplas conexões
+        if (__socket?.connected) return;
+        const token = localStorage.getItem('admin_token');
+        if (!token || typeof io !== 'function') return;
+        __socket = io('/admin', { auth: { token } });
+
+        __socket.on('connect', () => {
+            // console.log('WS conectado (admin)');
+        });
+        __socket.on('disconnect', () => {
+            // console.log('WS desconectado');
+        });
+
+        // Quando um pedido é criado, atualizar badge e dashboard
+        __socket.on('order:created', () => {
+            refreshOrdersBadgeFromAPI();
+            refreshDashboardFromAPI();
+            updateReportsCharts();
+        });
+        // Quando um pedido é atualizado, atualizar badge e dashboard
+        __socket.on('order:updated', () => {
+            refreshOrdersBadgeFromAPI();
+            refreshDashboardFromAPI();
+            updateReportsCharts();
+        });
+
+        // Pedido para atualizar tudo (dashboard:update)
+        __socket.on('dashboard:update', () => {
+            refreshDashboardFromAPI();
+            updateReportsCharts();
+        });
+    } catch (e) {
+        // silencioso
+    }
+}
+
+function startDashboardPolling() {
+    // Atualiza imediatamente
+    refreshDashboardFromAPI();
+    // Polling a cada 15s
+    if (__dashboardInterval) return;
+    __dashboardInterval = setInterval(refreshDashboardFromAPI, 15000);
+}
+
+async function refreshDashboardFromAPI() {
+    if (__dashboardLoading) return;
+    __dashboardLoading = true;
+    try {
+        const token = localStorage.getItem('admin_token');
+        if (!token) return;
+        const resp = await fetch('/api/admin/dashboard', { headers: { 'Authorization': `Bearer ${token}` } });
+        const json = await resp.json();
+        if (!resp.ok || !json?.sucesso) throw new Error(json?.mensagem || 'Falha ao carregar dashboard');
+        applyDashboardData(json.data);
+    } catch (e) {
+        console.warn('Dashboard refresh falhou:', e.message);
+    } finally {
+        __dashboardLoading = false;
+    }
+}
+
+function applyDashboardData(data) {
+    if (!data) return;
+    const { stats, recentOrders, popularProducts, series } = data;
+    try { updateStatCards(stats); } catch (_) {}
+    try { updateRecentOrders(recentOrders); } catch (_) {}
+    try { updatePopularProducts(popularProducts); } catch (_) {}
+    try { updateSalesChart(series?.vendas_7d); } catch (_) {}
+}
+
+function updateStatCards(stats) {
+    if (!stats) return;
+    const cards = document.querySelectorAll('#dashboard-section .stat-card');
+    // Esperado: 0 receita, 1 pedidos, 2 novos clientes, 3 produtos ativos
+    const formatCurrency = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(v||0));
+    const setCard = (idx, value, trend, label) => {
+        const card = cards[idx];
+        if (!card) return;
+        const h3 = card.querySelector('.stat-info h3');
+        const p = card.querySelector('.stat-info p');
+        const span = card.querySelector('.stat-trend');
+        if (idx === 0) h3.textContent = formatCurrency(value);
+        else h3.textContent = String(value || 0);
+        if (label) p.textContent = label;
+        if (span) {
+            const t = Number(trend || 0);
+            span.textContent = `${t >= 0 ? '+' : ''}${t.toFixed(1)}%`;
+            span.classList.remove('positive','negative','neutral');
+            span.classList.add(t > 0 ? 'positive' : t < 0 ? 'negative' : 'neutral');
+        }
+    };
+    setCard(0, stats.receita_mes, stats.tendencia?.receita, 'Receita do Mês');
+    setCard(1, stats.pedidos_mes, stats.tendencia?.pedidos, 'Pedidos do Mês');
+    setCard(2, stats.novos_clientes_mes, stats.tendencia?.clientes, 'Novos Clientes');
+    setCard(3, stats.produtos_ativos, 0, 'Produtos Ativos');
+}
+
+function updateRecentOrders(list) {
+    const cont = document.querySelector('#dashboard-section .recent-orders .orders-list');
+    if (!cont) return;
+    cont.innerHTML = '';
+    const statusText = {
+        pendente: 'Pendente',
+        preparando: 'Preparando',
+        a_caminho: 'A caminho',
+        entregue: 'Entregue',
+        cancelado: 'Cancelado'
+    };
+    (list||[]).forEach(o => {
+        const wrap = document.createElement('div');
+        wrap.className = 'order-item';
+        wrap.innerHTML = `
+            <div class="order-info">
+                <strong>#${o.id}</strong>
+                <span>${o.cliente || '—'}</span>
+                <span class="order-time">${formatRelativeTime(o.data)}</span>
+            </div>
+            <div class="order-status ${o.status}">
+                <span>${statusText[o.status] || '—'}</span>
+            </div>
+            <div class="order-value">R$ ${(Number(o.total)||0).toFixed(2)}</div>
+        `;
+        cont.appendChild(wrap);
+    });
+}
+
+function updatePopularProducts(list) {
+    const grid = document.querySelector('#dashboard-section .popular-products .products-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    (list||[]).forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.innerHTML = `
+            <img src="../../assets/images/default-images/pizza-desenho.png" alt="${p.name}">
+            <div class="product-info">
+                <h4>${p.name}</h4>
+                <p>${p.vendas} vendas</p>
+                <span class="product-revenue">R$ ${(Number(p.receita)||0).toFixed(2)}</span>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+function updateSalesChart(series) {
+    if (!series) return;
+    const salesCtx = document.getElementById('salesChart');
+    if (!salesCtx) return;
+    if (!window.charts) window.charts = {};
+    // Atualiza chart existente sem recriar (mais suave)
+    if (charts.sales) {
+        charts.sales.data.labels = series.labels;
+        charts.sales.data.datasets[0].data = series.data;
+        charts.sales.update('none');
+    }
+}
+
+function formatRelativeTime(dateStr) {
+    try {
+        const date = new Date(dateStr);
+        const diffMs = Date.now() - date.getTime();
+        const mins = Math.floor(diffMs / 60000);
+        if (mins < 1) return 'agora';
+        if (mins < 60) return `há ${mins} min`;
+        const hours = Math.floor(mins / 60);
+        if (hours < 24) return `há ${hours} h`;
+        const days = Math.floor(hours / 24);
+        return `há ${days} d`;
+    } catch (_) {
+        return '';
+    }
+}
+
+function computeActiveOrdersCount(list) {
+    if (!Array.isArray(list)) return 0;
+    return list.reduce((acc, o) => acc + (ACTIVE_ORDER_STATUSES.has(o.status) ? 1 : 0), 0);
+}
+
+function updateOrdersBadge(count) {
+    const el = getOrdersBadgeElement();
+    if (!el) return;
+    const n = Number(count) || 0;
+    el.textContent = String(n);
+    if (n > 0) {
+        el.classList.add('pulse-badge');
+    } else {
+        el.classList.remove('pulse-badge');
+    }
+}
+
+function updateOrdersBadgeFromLocal() {
+    try {
+        updateOrdersBadge(computeActiveOrdersCount(orders));
+    } catch (_) {}
+}
+
+async function refreshOrdersBadgeFromAPI() {
+    if (__ordersBadgeRefreshing) return;
+    __ordersBadgeRefreshing = true;
+    try {
+        const token = localStorage.getItem('admin_token');
+        if (!token) return;
+        const resp = await fetch('/api/admin/orders', { headers: { 'Authorization': `Bearer ${token}` } });
+        const json = await resp.json().catch(() => null);
+        const rows = Array.isArray(json?.data) ? json.data : [];
+        // Não sobrescreve a UI inteira; apenas atualiza o badge com base na resposta
+        const count = rows.reduce((acc, o) => acc + (ACTIVE_ORDER_STATUSES.has(o.status) ? 1 : 0), 0);
+        updateOrdersBadge(count);
+    } catch (_) {
+        // silencioso
+    } finally {
+        __ordersBadgeRefreshing = false;
+    }
+}
+
+function startOrdersBadgePolling() {
+    // Atualiza imediatamente com dados locais já carregados
+    updateOrdersBadgeFromLocal();
+    // Uma primeira atualização vinda da API
+    refreshOrdersBadgeFromAPI();
+    // Inicia polling se ainda não estiver rodando
+    if (__ordersBadgeInterval) return;
+    __ordersBadgeInterval = setInterval(refreshOrdersBadgeFromAPI, 15000); // 15s
+}
+
+// Inicializar WebSocket após DOM pronto
+document.addEventListener('DOMContentLoaded', () => {
+    initAdminSocket();
+});
 
 // Sistema de Data e Hora em Tempo Real
 const dateTimeSystem = {
@@ -614,17 +868,66 @@ async function loadProductsFromAPI() {
     }
 }
 
-// Carregar dados mockados
-function loadMockData() {
-    orders = mockData.orders;
-    clients = mockData.clients;
+// Carregar dados da API
+async function loadMockData() {
+    // Pedidos: carregar do backend
+    try {
+        const token = localStorage.getItem('admin_token');
+        const resp = await fetch('/api/admin/orders', { headers: { 'Authorization': token ? `Bearer ${token}` : '' } });
+        const result = await resp.json();
+        if (!resp.ok || !result.sucesso) throw new Error(result.mensagem || 'Falha ao carregar pedidos');
+        const rows = Array.isArray(result.data) ? result.data : [];
+        orders = rows.map(o => ({
+            id: String(o.id),
+            status: o.status,
+            data: o.data,
+            cliente: o.cliente || '—',
+            telefone: o.telefone || '—',
+            endereco: o.endereco || '—',
+            total: Number(o.total) || 0,
+            items: Array.isArray(o.items) ? o.items.map(it => ({ nome: it.nome, quantidade: it.quantidade, preco: Number(it.preco) })) : []
+        }));
+    } catch (e) {
+        console.warn('Pedidos: usando fallback vazio. Motivo:', e.message);
+        orders = [];
+    }
     renderOrdersTable();
-    renderClientsTable();
-    
-    // Update cards if in fullscreen mode
     if (document.body.classList.contains('orders-fullscreen')) {
         renderOrdersCards();
     }
+    updateOrdersBadgeFromLocal();
+    // Clientes: buscar do backend real protegido
+    try {
+        const token = localStorage.getItem('admin_token');
+        const resp = await fetch('/api/admin/customers', { headers: { 'Authorization': token ? `Bearer ${token}` : '' } });
+        const result = await resp.json();
+        if (!resp.ok || !result.sucesso) throw new Error(result.mensagem || 'Falha ao carregar clientes');
+        const rows = Array.isArray(result.data) ? result.data : [];
+        // Map para o formato esperado com agregados vindos do backend
+        clients = rows.map(u => ({
+            id: u.id,
+            nome: u.nome,
+            email: u.email,
+            telefone: u.telefone || '—',
+            pedidos: Number(u.pedidos ?? 0),
+            totalGasto: Number(u.total_gasto ?? 0),
+            ultimoPedido: u.ultimo_pedido || null,
+            endereco: {
+                rua: u.endereco || '',
+                numero: '',
+                bairro: '',
+                cidade: u.cidade || '',
+                estado: u.estado || '',
+                cep: u.cep || '',
+                complemento: ''
+            },
+            preferenciaSabores: []
+        }));
+    } catch (e) {
+        console.warn('Clientes: usando fallback vazio. Motivo:', e.message);
+        clients = [];
+    }
+    renderClientsTable();
 }
 
 // Configuração de event listeners - Melhorada para responsividade
@@ -1263,36 +1566,28 @@ function setupCharts() {
     Chart.defaults.responsive = true;
     Chart.defaults.maintainAspectRatio = false;
     
-    // Gráfico de vendas do dashboard
+    // Gráfico de vendas do dashboard (inicial vazio; API preenche)
     const salesCtx = document.getElementById('salesChart');
     if (salesCtx) {
         charts.sales = new Chart(salesCtx, {
             type: 'line',
-            data: {
-                labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab', 'Dom'],
-                datasets: [{
-                    label: 'Vendas (R$)',
-                    data: [1200, 1900, 800, 1500, 2000, 3000, 2500],
-                    borderColor: '#fab427',
-                    backgroundColor: 'rgba(250, 180, 39, 0.1)',
-                    tension: 0.4,
-                    fill: true,
-                    pointRadius: window.innerWidth <= 768 ? 2 : 4,
-                    pointHoverRadius: window.innerWidth <= 768 ? 4 : 6,
-                    borderWidth: window.innerWidth <= 768 ? 2 : 3
-                }]
-            },
+            data: { labels: [], datasets: [{
+                label: 'Receita (R$)',
+                data: [],
+                borderColor: '#fab427',
+                backgroundColor: 'rgba(250, 180, 39, 0.1)',
+                tension: 0.4,
+                fill: true,
+                pointRadius: window.innerWidth <= 768 ? 2 : 4,
+                pointHoverRadius: window.innerWidth <= 768 ? 4 : 6,
+                borderWidth: window.innerWidth <= 768 ? 2 : 3
+            }]},
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
-                },
+                interaction: { intersect: false, mode: 'index' },
                 plugins: {
-                    legend: {
-                        display: false
-                    },
+                    legend: { display: false },
                     tooltip: {
                         backgroundColor: 'rgba(33, 37, 41, 0.9)',
                         titleColor: '#fff',
@@ -1302,45 +1597,15 @@ function setupCharts() {
                         cornerRadius: 8,
                         displayColors: false,
                         callbacks: {
-                            label: function(context) {
-                                return 'R$ ' + context.parsed.y.toLocaleString('pt-BR');
-                            }
+                            label: (ctx) => 'R$ ' + Number(ctx.parsed.y||0).toLocaleString('pt-BR')
                         }
                     }
                 },
                 scales: {
-                    x: {
-                        display: true,
-                        grid: {
-                            display: false
-                        },
-                        ticks: {
-                            font: {
-                                size: window.innerWidth <= 768 ? 10 : 12
-                            }
-                        }
-                    },
-                    y: {
-                        display: true,
-                        beginAtZero: true,
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
-                        },
-                        ticks: {
-                            font: {
-                                size: window.innerWidth <= 768 ? 10 : 12
-                            },
-                            callback: function(value) {
-                                return 'R$ ' + value.toLocaleString('pt-BR');
-                            }
-                        }
-                    }
+                    x: { display: true, grid: { display: false }, ticks: { font: { size: window.innerWidth <= 768 ? 10 : 12 } } },
+                    y: { display: true, beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: window.innerWidth <= 768 ? 10 : 12 }, callback: (v)=> 'R$ ' + Number(v).toLocaleString('pt-BR') } }
                 },
-                elements: {
-                    point: {
-                        hoverBackgroundColor: '#fab427'
-                    }
-                }
+                elements: { point: { hoverBackgroundColor: '#fab427' } }
             }
         });
     }
@@ -1358,10 +1623,10 @@ function setupReportsCharts() {
         charts.salesReport = new Chart(salesReportCtx, {
             type: 'bar',
             data: {
-                labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
+                labels: [],
                 datasets: [{
                     label: 'Vendas',
-                    data: [12000, 15000, 18000, 14000, 20000, 22000],
+                    data: [],
                     backgroundColor: '#fab427',
                     borderRadius: isMobile ? 4 : 6,
                     borderSkipped: false,
@@ -1452,9 +1717,9 @@ function setupReportsCharts() {
         charts.products = new Chart(productsCtx, {
             type: 'doughnut',
             data: {
-                labels: ['Calabresa', '4 Queijos', 'Portuguesa', 'Margherita'],
+                labels: [],
                 datasets: [{
-                    data: [30, 25, 20, 15],
+                    data: [],
                     backgroundColor: ['#fab427', '#28a745', '#17a2b8', '#6c757d'],
                     borderWidth: 2,
                     borderColor: '#ffffff',
@@ -1560,10 +1825,10 @@ function setupReportsCharts() {
         charts.peakHours = new Chart(peakHoursCtx, {
             type: 'line',
             data: {
-                labels: ['18h', '19h', '20h', '21h', '22h', '23h'],
+                labels: [],
                 datasets: [{
                     label: 'Pedidos',
-                    data: [5, 15, 25, 30, 20, 8],
+                    data: [],
                     borderColor: '#17a2b8',
                     backgroundColor: 'rgba(23, 162, 184, 0.1)',
                     tension: 0.4,
@@ -1628,159 +1893,85 @@ function setupReportsCharts() {
     }
 }
 
-function updateReportsCharts() {
-    const activePeriod = (document.querySelector('.period-btn.active')?.dataset.period || '7');
+async function updateReportsCharts() {
+    const period = (document.querySelector('.period-btn.active')?.dataset.period || '7');
+    const token = localStorage.getItem('admin_token');
+    if (!token) return;
+    try {
+        const resp = await fetch(`/api/admin/reports?period=${encodeURIComponent(period)}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const json = await resp.json();
+        if (!resp.ok || !json?.sucesso) throw new Error(json?.mensagem || 'Falha ao carregar relatórios');
 
-    const genArray = (len, base = 1000, variance = 0.4) =>
-        Array.from({ length: len }, (_, i) => Math.round(base * (1 + (Math.sin(i / 2) * variance)) + (Math.random() - 0.5) * base * variance));
+    const { sales, products, peakHours, metrics } = json.data || {};
 
-    const getSalesDataset = (period) => {
-        if (period === '7') {
-            const labels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
-            const data = genArray(7, 1800);
-            // Garantir que todos os valores sejam válidos
-            return { 
-                labels, 
-                data: data.map(value => Math.max(100, Math.round(value)))
-            };
-        }
-        if (period === '30') {
-            const labels = Array.from({ length: 30 }, (_, i) => `${i + 1}`);
-            return { labels, data: genArray(30, 1400) };
-        }
-        if (period === '90') {
-            const labels = Array.from({ length: 12 }, (_, i) => `Sem ${i + 1}`);
-            return { labels, data: genArray(12, 800) };
-        }
-        const labels = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-        return { labels, data: genArray(12, 12000) };
-    };
-
-    if (charts.salesReport) {
-        const { labels, data } = getSalesDataset(activePeriod);
-        
-        // Destruir e recriar o gráfico para garantir animações consistentes
-        charts.salesReport.destroy();
-        
-        const salesReportCtx = document.getElementById('salesReportChart');
-        const isMobile = window.innerWidth <= 768;
-        
-        charts.salesReport = new Chart(salesReportCtx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
+        // Atualizar vendas por período (bar)
+        if (charts.salesReport && sales) {
+            // Recriar para animações consistentes em trocas de período
+            charts.salesReport.destroy();
+            const salesReportCtx = document.getElementById('salesReportChart');
+            const isMobile = window.innerWidth <= 768;
+            charts.salesReport = new Chart(salesReportCtx, {
+                type: 'bar',
+                data: { labels: sales.labels, datasets: [{
                     label: 'Vendas',
-                    data: data,
+                    data: sales.data,
                     backgroundColor: '#fab427',
                     borderRadius: isMobile ? 4 : 6,
                     borderSkipped: false,
                     maxBarThickness: isMobile ? 30 : 50,
                     categoryPercentage: 0.8,
                     barPercentage: 0.9
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: {
-                    duration: 1000,
-                    easing: 'easeInOutQuart',
-                    delay: (context) => {
-                        return context.dataIndex * 100;
-                    }
-                },
-                animations: {
-                    y: {
-                        from: 0,
-                        duration: 1000,
-                        easing: 'easeInOutQuart'
-                    }
-                },
-                layout: {
-                    padding: {
-                        left: 10,
-                        right: 10,
-                        top: 10,
-                        bottom: 10
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(33, 37, 41, 0.9)',
-                        titleColor: '#fff',
-                        bodyColor: '#fff',
-                        borderColor: '#fab427',
-                        borderWidth: 1,
-                        cornerRadius: 8,
-                        displayColors: false,
-                        callbacks: {
-                            label: function(context) {
-                                return 'R$ ' + context.parsed.y.toLocaleString('pt-BR');
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        grid: {
-                            display: false
-                        },
-                        ticks: {
-                            font: {
-                                size: isMobile ? 10 : 12
-                            },
-                            maxRotation: 0,
-                            minRotation: 0
-                        }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
-                        },
-                        ticks: {
-                            font: {
-                                size: isMobile ? 10 : 12
-                            },
-                            callback: function(value) {
-                                return 'R$ ' + (value / 1000) + 'k';
-                            }
-                        }
+                }]},
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 1000, easing: 'easeInOutQuart', delay: ctx => ctx.dataIndex * 100 },
+                    animations: { y: { from: 0, duration: 1000, easing: 'easeInOutQuart' } },
+                    layout: { padding: { left: 10, right: 10, top: 10, bottom: 10 } },
+                    plugins: { legend: { display: false }, tooltip: {
+                        backgroundColor: 'rgba(33, 37, 41, 0.9)', titleColor: '#fff', bodyColor: '#fff',
+                        borderColor: '#fab427', borderWidth: 1, cornerRadius: 8, displayColors: false,
+                        callbacks: { label: (c) => 'R$ ' + c.parsed.y.toLocaleString('pt-BR') }
+                    }},
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { size: isMobile ? 10 : 12 }, maxRotation: 0, minRotation: 0 } },
+                        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: isMobile ? 10 : 12 }, callback: v => 'R$ ' + (v/1000) + 'k' } }
                     }
                 }
-            }
-        });
-    }
+            });
+        }
 
-    if (charts.products) {
-        const base = activePeriod === '7' ? [32, 26, 22, 20] :
-                     activePeriod === '30' ? [31, 25, 23, 21] :
-                     activePeriod === '90' ? [29, 24, 23, 22] :
-                     [28, 23, 22, 21];
-        const total = base.reduce((a,b)=>a+b,0);
-        const normalized = base.map(v => Math.round(v * (100/total)));
-        charts.products.data.labels = ['Calabresa', '4 Queijos', 'Portuguesa', 'Margherita'];
-        charts.products.data.datasets[0].data = normalized;
-        
-        // Manter as configurações de hover ao atualizar
-        charts.products.data.datasets[0].hoverBackgroundColor = ['#e0a225', '#218838', '#138496', '#545b62'];
-        charts.products.data.datasets[0].hoverBorderWidth = 3;
-        charts.products.data.datasets[0].hoverBorderColor = '#ffffff';
-        charts.products.data.datasets[0].hoverOffset = 8;
-        
-        charts.products.update('active');
-    }
+        // Produtos mais vendidos (doughnut)
+        if (charts.products && products) {
+            charts.products.data.labels = products.labels;
+            charts.products.data.datasets[0].data = products.percentages;
+            charts.products.update('active');
+        }
 
-    if (charts.peakHours) {
-        const scale = activePeriod === '7' ? 1.0 : activePeriod === '30' ? 1.2 : activePeriod === '90' ? 1.35 : 1.5;
-        const base = [5, 15, 25, 30, 20, 8].map(v => Math.round(v * scale));
-        charts.peakHours.data.labels = ['18h', '19h', '20h', '21h', '22h', '23h'];
-        charts.peakHours.data.datasets[0].data = base;
-        charts.peakHours.update('none');
+        // Horários de pico (line)
+        if (charts.peakHours && peakHours) {
+            charts.peakHours.data.labels = peakHours.labels;
+            charts.peakHours.data.datasets[0].data = peakHours.data;
+            charts.peakHours.update('none');
+        }
+
+        // Métricas
+        if (metrics) {
+            const fmtBRL = (n) => (new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })).format(Number(n||0));
+            const ticket = fmtBRL(metrics.ticket_medio || 0);
+            const entrega = `${Math.max(0, Number(metrics.tempo_medio_entrega_min||0))} min`;
+            const cancel = `${Math.max(0, Number(metrics.taxa_cancelamento||0)).toFixed(1)}%`;
+            const rating = `${Number(metrics.avaliacao_media||0).toFixed(1)} `;
+            const setText = (id, text) => { const el = document.getElementById(id); if (el) el.innerHTML = text + (id==='metricAvaliacao' ? '<i class="fas fa-star metric-star" aria-hidden="true"></i>' : ''); };
+            setText('metricTicketMedio', ticket);
+            setText('metricTempoEntrega', entrega);
+            setText('metricCancelamento', cancel);
+            setText('metricAvaliacao', rating);
+        }
+    } catch (e) {
+        console.warn('Falha ao atualizar relatórios:', e.message);
     }
 }
 
@@ -1833,11 +2024,11 @@ function renderOrdersTable() {
     orders.forEach(order => {
         const row = document.createElement('tr');
         const statusTexts = {
-            pending: 'Pendente',
-            preparing: 'Preparando',
-            delivery: 'A caminho',
-            delivered: 'Entregue',
-            cancelled: 'Cancelado'
+            pendente: 'Pendente',
+            preparando: 'Preparando',
+            a_caminho: 'A caminho',
+            entregue: 'Entregue',
+            cancelado: 'Cancelado'
         };
 
         row.innerHTML = `
@@ -1848,7 +2039,7 @@ function renderOrdersTable() {
             <td>R$ ${order.total.toFixed(2)}</td>
             <td>
                 <span class="status-badge ${order.status}">
-                    ${statusTexts[order.status]}
+                    ${statusTexts[order.status] || '—'}
                 </span>
             </td>
             <td>
@@ -1861,6 +2052,8 @@ function renderOrdersTable() {
         `;
         tbody.appendChild(row);
     });
+    // Atualizar badge após render
+    updateOrdersBadgeFromLocal();
 }
 
 // Renderizar pedidos em cards para modo fullscreen
@@ -1871,11 +2064,11 @@ function renderOrdersCards() {
     ordersGrid.innerHTML = '';
 
     const statusTexts = {
-        pending: 'Pendente',
-        preparing: 'Preparando',
-        delivery: 'A caminho',
-        delivered: 'Entregue',
-        cancelled: 'Cancelado'
+        pendente: 'Pendente',
+        preparando: 'Preparando',
+        a_caminho: 'A caminho',
+        entregue: 'Entregue',
+        cancelado: 'Cancelado'
     };
 
     orders.forEach(order => {
@@ -1964,7 +2157,7 @@ function renderOrdersCards() {
                     ${statusInfo.text}
                 </button>
                 `}
-                ${(order.status === 'pending' || order.status === 'preparing') ? `
+                ${(order.status === 'pendente' || order.status === 'preparando') ? `
                 <button class="cancel-btn-icon" onclick="cancelOrder('${order.id}')" title="Cancelar pedido">
                     <i class="fas fa-times"></i>
                 </button>
@@ -1974,6 +2167,8 @@ function renderOrdersCards() {
 
         ordersGrid.appendChild(orderCard);
     });
+    // Atualizar badge após render
+    updateOrdersBadgeFromLocal();
 }
 
 // Renderizar tabela de clientes
@@ -1982,16 +2177,17 @@ function renderClientsTable() {
     if (!tbody) return;
 
     tbody.innerHTML = '';
+    const fmtBRL = (n) => (new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })).format(Number(n||0));
 
     clients.forEach(client => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${client.nome}</td>
             <td>${client.email}</td>
-            <td>${client.telefone}</td>
-            <td>${client.pedidos}</td>
-            <td>R$ ${client.totalGasto.toFixed(2)}</td>
-            <td>${formatDate(client.ultimoPedido)}</td>
+            <td>${client.telefone || '—'}</td>
+            <td>${client.pedidos ?? 0}</td>
+            <td>${fmtBRL(client.totalGasto ?? 0)}</td>
+            <td>${client.ultimoPedido ? formatDate(client.ultimoPedido) : '—'}</td>
             <td>
                 <div class="action-buttons">
                     <button class="action-btn edit" onclick="viewClient(${client.id})" title="Ver detalhes">
@@ -2082,11 +2278,11 @@ function renderFilteredOrders(filteredOrders) {
     tbody.innerHTML = '';
 
     const statusTexts = {
-        pending: 'Pendente',
-        preparing: 'Preparando',
-        delivery: 'A caminho',
-        delivered: 'Entregue',
-        cancelled: 'Cancelado'
+        pendente: 'Pendente',
+        preparando: 'Preparando',
+        a_caminho: 'A caminho',
+        entregue: 'Entregue',
+        cancelado: 'Cancelado'
     };
 
     filteredOrders.forEach(order => {
@@ -2131,16 +2327,17 @@ function renderFilteredClients(filteredClients) {
     if (!tbody) return;
 
     tbody.innerHTML = '';
+    const fmtBRL = (n) => (new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })).format(Number(n||0));
 
     filteredClients.forEach(client => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${client.nome}</td>
             <td>${client.email}</td>
-            <td>${client.telefone}</td>
-            <td>${client.pedidos}</td>
-            <td>R$ ${client.totalGasto.toFixed(2)}</td>
-            <td>${formatDate(client.ultimoPedido)}</td>
+            <td>${client.telefone || '—'}</td>
+            <td>${client.pedidos ?? 0}</td>
+            <td>${fmtBRL(client.totalGasto ?? 0)}</td>
+            <td>${client.ultimoPedido ? formatDate(client.ultimoPedido) : '—'}</td>
             <td>
                 <div class="action-buttons">
                     <button class="action-btn edit" onclick="viewClient(${client.id})" title="Ver detalhes">
@@ -2373,8 +2570,26 @@ async function deleteProduct(id) {
 }
 
 // Funções de pedido
-function viewOrder(orderId) {
-    const order = orders.find(o => o.id === orderId);
+async function viewOrder(orderId) {
+    let order = orders.find(o => o.id === orderId);
+    try {
+        const token = localStorage.getItem('admin_token');
+        const resp = await fetch(`/api/admin/orders/${orderId}`, { headers: { 'Authorization': token ? `Bearer ${token}` : '' } });
+        const result = await resp.json();
+        if (resp.ok && result.sucesso) {
+            const d = result.data;
+            order = {
+                id: String(d.id),
+                status: d.status,
+                data: d.data,
+                cliente: d.cliente,
+                telefone: d.telefone,
+                endereco: d.address?.endereco || order?.endereco || '—',
+                total: d.totals?.total ?? order?.total ?? 0,
+                items: Array.isArray(d.items) ? d.items.map(it=>({ nome: it.nome, quantidade: it.quantidade, preco: Number(it.preco) })) : (order?.items||[])
+            };
+        }
+    } catch(_) {}
     if (!order) return;
 
     const modal = document.getElementById('orderModal');
@@ -2423,11 +2638,11 @@ function viewOrder(orderId) {
             
             <div class="order-actions">
                 <select id="newStatus">
-                    <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pendente</option>
-                    <option value="preparing" ${order.status === 'preparing' ? 'selected' : ''}>Preparando</option>
-                    <option value="delivery" ${order.status === 'delivery' ? 'selected' : ''}>A caminho</option>
-                    <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Entregue</option>
-                    <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Cancelado</option>
+                    <option value="pendente" ${order.status === 'pendente' ? 'selected' : ''}>Pendente</option>
+                    <option value="preparando" ${order.status === 'preparando' ? 'selected' : ''}>Preparando</option>
+                    <option value="a_caminho" ${order.status === 'a_caminho' ? 'selected' : ''}>A caminho</option>
+                    <option value="entregue" ${order.status === 'entregue' ? 'selected' : ''}>Entregue</option>
+                    <option value="cancelado" ${order.status === 'cancelado' ? 'selected' : ''}>Cancelado</option>
                 </select>
                 <button class="btn-primary" onclick="updateOrderStatusFromModal('${orderId}')">
                     Atualizar Status
@@ -2439,54 +2654,64 @@ function viewOrder(orderId) {
     modal.classList.add('show');
 }
 
-function updateOrderStatusFromModal(orderId) {
+async function updateOrderStatusFromModal(orderId) {
     const newStatus = document.getElementById('newStatus').value;
-    const order = orders.find(o => o.id === orderId);
-    
-    if (order) {
-        order.status = newStatus;
+    try {
+        const token = localStorage.getItem('admin_token');
+        const resp = await fetch(`/api/admin/orders/${orderId}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': token ? `Bearer ${token}` : '' },
+            body: JSON.stringify({ status: newStatus })
+        });
+        const result = await resp.json();
+        if (!resp.ok || !result.sucesso) throw new Error(result.mensagem || 'Falha ao atualizar status');
+        const order = orders.find(o => o.id === orderId);
+        if (order) order.status = newStatus;
         renderOrdersTable();
-        renderOrdersCards(); // Atualizar cards também
+        renderOrdersCards();
         closeModal('orderModal');
         showNotification('Status do pedido atualizado!', 'success');
+        updateOrdersBadgeFromLocal();
+    } catch (e) {
+        showNotification(e.message || 'Erro ao atualizar status', 'error');
     }
 }
 
 // Sistema de progressão dinâmica de status
 const STATUS_PROGRESSION = {
-    pending: 'preparing',
-    preparing: 'delivery',
-    delivery: 'delivered',
-    delivered: null, // Status final
-    cancelled: null  // Status final
+    pendente: 'preparando',
+    preparando: 'a_caminho',
+    a_caminho: 'entregue',
+    entregue: null, // Status final
+    cancelado: null  // Status final
 };
 
 const STATUS_INFO = {
-    pending: {
+    pendente: {
         text: 'Pendente',
         nextAction: 'Aceitar Pedido',
         icon: 'fas fa-clock',
         color: '#92400e'
     },
-    preparing: {
+    preparando: {
         text: 'Preparando',
         nextAction: 'Enviar para Entrega',
         icon: 'fas fa-utensils',
         color: '#1e40af'
     },
-    delivery: {
+    a_caminho: {
         text: 'A caminho',
         nextAction: 'Marcar como Entregue',
         icon: 'fas fa-truck',
         color: '#3730a3'
     },
-    delivered: {
+    entregue: {
         text: 'Entregue',
         nextAction: null,
         icon: 'fas fa-check-circle',
         color: '#065f46'
     },
-    cancelled: {
+    cancelado: {
         text: 'Cancelado',
         nextAction: null,
         icon: 'fas fa-times-circle',
@@ -2495,7 +2720,7 @@ const STATUS_INFO = {
 };
 
 // Função para avançar status do pedido
-function advanceOrderStatus(orderId) {
+async function advanceOrderStatus(orderId) {
     const order = orders.find(o => o.id === orderId);
     
     if (!order) {
@@ -2511,16 +2736,46 @@ function advanceOrderStatus(orderId) {
         return;
     }
 
-    // Atualizar status
-    order.status = nextStatus;
-    
-    // Atualizar interfaces
-    renderOrdersTable();
-    renderOrdersCards();
-    
-    // Mostrar notificação
-    const statusInfo = STATUS_INFO[nextStatus];
-    showNotification(`Pedido #${orderId} atualizado para: ${statusInfo.text}`, 'success');
+    try {
+        const token = localStorage.getItem('admin_token');
+        const resp = await fetch(`/api/admin/orders/${orderId}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': token ? `Bearer ${token}` : '' },
+            body: JSON.stringify({ status: nextStatus })
+        });
+        const result = await resp.json();
+        if (!resp.ok || !result.sucesso) throw new Error(result.mensagem || 'Falha ao avançar status');
+        order.status = nextStatus;
+        renderOrdersTable();
+        renderOrdersCards();
+    updateOrdersBadgeFromLocal();
+        const statusInfo = STATUS_INFO[nextStatus];
+        showNotification(`Pedido #${orderId} atualizado para: ${statusInfo.text}`, 'success');
+    } catch (e) {
+        showNotification(e.message || 'Erro ao avançar status', 'error');
+    }
+}
+
+// Atualiza status via API e sincroniza local
+async function setOrderStatus(orderId, newStatus) {
+    try {
+        const token = localStorage.getItem('admin_token');
+        const resp = await fetch(`/api/admin/orders/${orderId}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': token ? `Bearer ${token}` : '' },
+            body: JSON.stringify({ status: newStatus })
+        });
+        const result = await resp.json();
+        if (!resp.ok || !result.sucesso) throw new Error(result.mensagem || 'Falha ao atualizar status');
+        const order = orders.find(o => o.id === orderId);
+        if (order) order.status = newStatus;
+        renderOrdersTable();
+        renderOrdersCards();
+        return true;
+    } catch (e) {
+        showNotification(e.message || 'Erro ao atualizar status', 'error');
+        return false;
+    }
 }
 
 // Função para aceitar pedido da notificação
@@ -2532,14 +2787,9 @@ function acceptOrder(orderId) {
         return;
     }
 
-    // Mudar status para preparing
-    order.status = 'preparing';
-    
-    // Atualizar interfaces
-    renderOrdersTable();
-    renderOrdersCards();
-    
-    showNotification(`Pedido #${orderId} aceito e movido para preparação!`, 'success');
+    setOrderStatus(orderId, 'preparando').then(ok => {
+        if (ok) showNotification(`Pedido #${orderId} aceito e movido para preparação!`, 'success');
+    });
 }
 
 // Função para cancelar pedido
@@ -2558,14 +2808,7 @@ function cancelOrder(orderId) {
                 return;
             }
 
-            // Mudar status para cancelled
-            order.status = 'cancelled';
-            
-            // Atualizar interfaces
-            renderOrdersTable();
-            renderOrdersCards();
-            
-            showNotification(`Pedido #${orderId} foi cancelado.`, 'success');
+            setOrderStatus(orderId, 'cancelado');
         }
     }).catch(() => {
         // User cancelled the action
@@ -2592,7 +2835,7 @@ function viewClient(id) {
             <div class="cd-header">
                 <div>
                     <h4>${client.nome}</h4>
-                    <div class="cd-sub">Cliente desde ${new Date().getFullYear()}</div>
+                    <div class="cd-sub">Cliente desde ${client.ultimoPedido ? formatDate(client.ultimoPedido) : '—'}</div>
                 </div>
                 <span class="status-badge active">${client.pedidos} pedidos</span>
             </div>
@@ -2600,7 +2843,7 @@ function viewClient(id) {
                 <div class="cd-card">
                     <h5>Contato</h5>
                     <div class="cd-row"><label>Email:</label><span>${client.email}</span></div>
-                    <div class="cd-row"><label>Telefone:</label><span>${client.telefone}</span></div>
+                    <div class="cd-row"><label>Telefone:</label><span>${client.telefone || '—'}</span></div>
                 </div>
                 <div class="cd-card">
                     <h5>Endereço</h5>
@@ -2608,8 +2851,8 @@ function viewClient(id) {
                 </div>
                 <div class="cd-card">
                     <h5>Resumo</h5>
-                    <div class="cd-row"><label>Total gasto:</label><span>R$ ${client.totalGasto.toFixed(2)}</span></div>
-                    <div class="cd-row"><label>Último pedido:</label><span>${formatDate(client.ultimoPedido)}</span></div>
+                    <div class="cd-row"><label>Total gasto:</label><span>R$ ${(client.totalGasto ?? 0).toFixed(2)}</span></div>
+                    <div class="cd-row"><label>Último pedido:</label><span>${client.ultimoPedido ? formatDate(client.ultimoPedido) : '—'}</span></div>
                 </div>
                 <div class="cd-card">
                     <h5>Preferências</h5>
@@ -5279,7 +5522,7 @@ function addTestOrder() {
             { nome: 'Pizza Margherita (Grande)', quantidade: 1, preco: 35.99 }
         ],
         total: 40.99,
-        status: 'pending',
+        status: 'pendente',
         endereco: 'Rua Teste, 123',
         telefone: '(11) 99999-0000'
     };
@@ -5287,6 +5530,7 @@ function addTestOrder() {
     orders.unshift(newOrder);
     renderOrdersTable();
     renderOrdersCards();
+    updateOrdersBadgeFromLocal();
     
     // Simular notificação
     if (window.orderNotificationSystem) {

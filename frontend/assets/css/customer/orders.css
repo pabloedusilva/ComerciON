@@ -1,0 +1,75 @@
+/* Orders page - minimal, consistent with profile */
+
+/* Avoid FOUC on this page */
+body:not(.data-ready) #orders-page { visibility: hidden !important; }
+
+.orders-container {
+  max-width: 980px;
+  margin: 100px auto 56px;
+  padding: 0 24px;
+}
+
+.orders-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.orders-header .icon {
+  font-size: 28px;
+  color: #fab427;
+}
+
+.orders-header h1 {
+  font-size: 1.6rem;
+  margin: 0;
+}
+
+/* Orders list */
+.orders-list { display: flex; flex-direction: column; gap: 12px; }
+
+.order-card {
+  background: #fff;
+  border: 1px solid rgba(0,0,0,.08);
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.06);
+  padding: 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.order-header { display: flex; align-items: center; justify-content: space-between; }
+.order-id { font-weight: 700; color: #2c3e50; }
+.order-status {
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: .85rem;
+  font-weight: 700;
+}
+.order-status.pendente { background: rgba(255, 193, 7, 0.12); color: #856404; }
+.order-status.preparando { background: rgba(23, 162, 184, 0.12); color: #0c5460; }
+.order-status.a_caminho { background: rgba(99, 102, 241, 0.12); color: #3730a3; }
+.order-status.entregue { background: rgba(16, 185, 129, 0.12); color: #065f46; }
+.order-status.cancelado { background: rgba(220, 53, 69, 0.12); color: #9c1c2a; }
+
+.order-body { display: grid; grid-template-columns: 2fr 1fr auto; gap: 10px; align-items: center; }
+.order-items { color: #374151; }
+.order-total { color: #111827; }
+.order-date { color: #6b7280; font-size: .95rem; }
+
+/* Empty state */
+.orders-empty { display: flex; align-items: center; justify-content: center; }
+.empty-card { text-align: center; background: #fff; border: 1px solid rgba(0,0,0,.08); border-radius: 14px; box-shadow: 0 6px 18px rgba(0,0,0,.06); padding: 28px 20px; max-width: 560px; }
+.empty-card i { font-size: 36px; color: #fab427; }
+.empty-card h3 { margin: 10px 0 6px; }
+.empty-card p { margin: 0 0 14px; color: #6b7280; }
+
+/* Utilities */
+.hidden { display: none !important; }
+
+/* Responsive */
+@media (max-width: 680px) {
+  .orders-container { margin: 90px auto 40px; padding: 0 16px; }
+  .order-body { grid-template-columns: 1fr; gap: 6px; }
+}

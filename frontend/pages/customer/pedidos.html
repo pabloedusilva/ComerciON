@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="shortcut icon" href="../../assets/images/default-images/favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="../../assets/css/shared/style.css" />
+  <link rel="stylesheet" href="../../assets/css/customer/orders.css" />
+  <title>Meus Pedidos</title>
+</head>
+<body>
+  <div class="loader-content">
+    <div class="loader-circle"></div>
+  </div>
+
+  <header class="header"></header>
+  <main>
+    <div class="orders-container" id="orders-page" data-auth-required="true">
+      <div class="orders-header">
+        <i class="fa-solid fa-receipt icon" aria-hidden="true"></i>
+        <h1>Meus Pedidos</h1>
+      </div>
+
+      <section aria-label="Lista de pedidos">
+        <div id="ordersList" class="orders-list" role="list"></div>
+        <div id="ordersEmpty" class="orders-empty hidden" aria-live="polite">
+          <div class="empty-card">
+            <i class="fas fa-receipt" aria-hidden="true"></i>
+            <h3>Você ainda não tem pedidos</h3>
+            <p>Que tal começar pelo nosso cardápio?</p>
+            <a href="/menu#pizzas" class="btn btn-primary">Ver Cardápio</a>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="modern-footer">
+    <div class="footer-container">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <img src="../../assets/images/default-images/logo_pizza.png" alt="Pizzaria Logo" class="footer-logo">
+          <p>Sabor que conquista</p>
+        </div>
+        <div class="footer-links">
+          <div class="footer-section">
+            <h4>Menu</h4>
+            <ul>
+              <li><a href="/menu#pizzas">Pizzas</a></li>
+              <li><a href="/menu#bebidas">Bebidas</a></li>
+              <li><a href="/">Home</a></li>
+            </ul>
+          </div>
+          <div class="footer-section">
+            <h4>Contato</h4>
+            <ul>
+              <li>
+                <a class="contact-link" href="tel:+5511999999999" aria-label="Ligar para (11) 99999-9999">
+                  <i class="fas fa-phone" aria-hidden="true"></i>
+                  <span>(11) 99999-9999</span>
+                </a>
+              </li>
+              <li>
+                <a class="contact-link" href="mailto:contato@pizzaria.com" aria-label="Enviar e-mail para contato@pizzaria.com">
+                  <i class="fas fa-envelope" aria-hidden="true"></i>
+                  <span>contato@pizzaria.com</span>
+                </a>
+              </li>
+              <li>
+                <a class="contact-link" href="https://www.google.com/maps/search/?api=1&query=S%C3%A3o%20Paulo%2C%20SP" target="_blank" rel="noopener noreferrer" aria-label="Abrir endereço no Google Maps">
+                  <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
+                  <span>São Paulo, SP</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div class="footer-section">
+            <h4>Siga-nos</h4>
+            <div class="social-links">
+              <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+              <a href="#" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div class="footer-credits">
+          <p>&copy; 2025 Pizzaria. Todos os direitos reservados.</p>
+          <p class="dev-credit">
+            <a href="https://github.com/pabloedusilva" target="_blank" rel="noopener noreferrer">
+              Desenvolvido por Pablo Silva
+            </a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </footer>
+  <script src="../../assets/js/shared/nav.js"></script>
+  <script src="../../assets/js/shared/layout.js"></script>
+  <script src="../../assets/js/shared/auth.js"></script>
+  <script src="../../assets/js/customer/pedidos.js"></script>
+</body>
+</html>

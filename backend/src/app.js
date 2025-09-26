@@ -38,7 +38,8 @@ app.use(helmet({
             // Permitir atributos inline como onclick, sem liberar blocos <script> inline
             scriptSrcAttr: ["'unsafe-inline'"],
             imgSrc: ["'self'", "data:", "https:"],
-            connectSrc: ["'self'", "https:"]
+            // Permitir conexões WebSocket para atualizações em tempo real
+            connectSrc: ["'self'", "https:", "wss:", "ws:"]
         },
     },
 }));
@@ -105,14 +106,13 @@ app.get('/checkout', (req, res) => {
 app.get('/payment', (req, res) => {
     res.sendFile(path.join(__dirname, '../../frontend/pages/customer/payment.html'));
 });
+  
+    app.get('/pedidos', (req, res) => {
+        res.sendFile(path.join(__dirname, '../../frontend/pages/customer/pedidos.html'));
+    });
 
 // Páginas do cliente (URLs sem .html)
 app.get('/perfil', (req, res) => {
-    res.sendFile(path.join(__dirname, '../../frontend/pages/customer/perfil.html'));
-});
-
-app.get('/pedidos', (req, res) => {
-    // Placeholder: crie a página de pedidos se necessário
     res.sendFile(path.join(__dirname, '../../frontend/pages/customer/perfil.html'));
 });
 

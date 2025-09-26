@@ -1,14 +1,25 @@
 // Entry point - Servidor principal
 const app = require('./src/app');
 const environment = require('./src/config/environment');
+const http = require('http');
+const { setupSockets } = require('./src/sockets');
 
 const PORT = environment.port;
 
-const server = app.listen(PORT, () => {
+// Criar servidor HTTP e anexar Socket.IO
+const server = http.createServer(app);
+
+// Inicializar sockets
+const io = setupSockets(server);
+
+server.listen(PORT, () => {
     console.log(`🚀 Servidor rodando na porta ${PORT}`);
     console.log(`� URL: http://localhost:${PORT}`);
     console.log(`🌐 Ambiente: ${environment.nodeEnv}`);
 });
+
+// Tornar io acessível em toda a app quando necessário
+app.set('io', io);
 
 // Graceful shutdown
 process.on('SIGTERM', () => {

@@ -25,20 +25,32 @@
   const successModal = document.getElementById('successModal');
   const showModal = () => successModal && typeof successModal.showModal === 'function' ? successModal.showModal() : alert('Pedido realizado com sucesso!');
 
-  document.getElementById('simulatePay').addEventListener('click', ()=>{
-    // Simular processamento (sem validação de cartão)
+  async function createOrderFromCart(){
+    const cart = JSON.parse(localStorage.getItem('pizza_cart') || '[]');
+    if (!Array.isArray(cart) || cart.length === 0) throw new Error('Carrinho vazio');
+    const token = Auth.token || localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await fetch('/api/customer/orders', { method: 'POST', headers, body: JSON.stringify({ items: cart }) });
+    const json = await res.json().catch(()=>({}));
+    if (!res.ok || !json.sucesso) throw new Error(json.mensagem || 'Falha ao criar pedido');
+    return json.data;
+  }
+
+  document.getElementById('simulatePay').addEventListener('click', async ()=>{
     const btn = document.getElementById('simulatePay');
     btn.disabled = true; btn.textContent = 'Processando...';
-    setTimeout(()=>{
+    try {
+      // Primeiro cria o pedido no backend
+      await createOrderFromCart();
+      // Limpa o carrinho só após persistir
       clearCart();
-      btn.disabled = false; btn.textContent = 'Pagar';
-      try {
-        // Sinalizar para a página de menu abrir o fluxo de sucesso e avaliação
-        localStorage.setItem('pizzaria_show_post_payment_success', '1');
-      } catch(_) {}
-      // Redirecionar para o menu para mostrar o modal "sendo preparado" e, em seguida, avaliação
+      try { localStorage.setItem('pizzaria_show_post_payment_success', '1'); } catch(_) {}
       window.location.href = '/menu';
-    }, 1200);
+    } catch (e) {
+      btn.disabled = false; btn.textContent = 'Pagar';
+      alert(e.message || 'Não foi possível concluir o pagamento.');
+    }
   });
 
   document.getElementById('backToCheckout').addEventListener('click', ()=>{
