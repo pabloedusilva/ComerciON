@@ -3655,17 +3655,18 @@ const statusManager = {
         reopenAt: '', // ISO string
         notifyWhatsApp: false,
         notifyEmail: false,
+        isManualMode: false, // false = automático (baseado nos horários), true = manual (controlado pelo switch)
         schedules: [] // [{ start: ISO, end: ISO, reason }]
     },
 
-    init() {
+    async init() {
         // Mostrar estado de carregamento primeiro
         this.showLoadingState();
         
-        this.load();
+        await this.load();
         this.bindUI();
         this.render();
-        console.log('StatusManager iniciado com estado do localStorage:', this.state);
+        console.log('StatusManager iniciado com dados do banco:', this.state);
     },
 
     showLoadingState() {
@@ -3685,53 +3686,111 @@ const statusManager = {
         const notifyEmail = document.getElementById('notifyEmail');
         const saveBtn = document.getElementById('saveStatusBtn');
         const clearBtn = document.getElementById('clearStatusBtn');
-    const saveHoursBtn = document.getElementById('saveHoursBtn');
-    const resetHoursBtn = document.getElementById('resetHoursBtn');
-    const hoursGrid = document.getElementById('hoursGrid');
+        const saveHoursBtn = document.getElementById('saveHoursBtn');
+        const resetHoursBtn = document.getElementById('resetHoursBtn');
+        const hoursGrid = document.getElementById('hoursGrid');
 
-        closeNowToggle?.addEventListener('change', () => {
-            // Switch checked = loja fechada, Switch não checked = loja aberta
-            this.state.closedNow = closeNowToggle.checked;
-            console.log('Switch alterado:', { checked: closeNowToggle.checked, closedNow: this.state.closedNow });
-            this.renderPill(); // Atualiza pill imediatamente
+        closeNowToggle?.addEventListener('change', async () => {
+            // Nova lógica: Switch controla modo de funcionamento
+            // Checked (vermelho) = Modo Manual, Unchecked (azul) = Modo Automático
+            const wasManualMode = this.state.isManualMode;
+            this.state.isManualMode = closeNowToggle.checked;
+            
+            console.log('Switch alterado:', { 
+                checked: closeNowToggle.checked, 
+                newMode: this.state.isManualMode ? 'manual' : 'automático'
+            });
+            
+            // Se mudou para modo automático, verificar horários de funcionamento
+            if (!this.state.isManualMode) {
+                this.state.closedNow = this.isClosedBySchedule();
+            } else {
+                // Se entrou em modo manual, manter o estado anterior ou definir como fechado
+                if (!wasManualMode) {
+                    // Primeira vez em modo manual, deixar fechado por padrão
+                    this.state.closedNow = true;
+                }
+            }
+            
+            const success = await this.save();
+            if (success) {
+                this.render();
+                this.updateSidebarPill();
+                this.updateSwitchLabels();
+                
+                const mode = this.state.isManualMode ? 'manual' : 'automático';
+                showNotification(`Modo ${mode} ativado!`, 'info');
+            } else {
+                // Reverter switch em caso de erro
+                closeNowToggle.checked = !closeNowToggle.checked;
+                this.state.isManualMode = wasManualMode;
+                showNotification('Erro ao alterar modo de funcionamento', 'error');
+            }
         });
         
-        saveBtn?.addEventListener('click', () => {
+        saveBtn?.addEventListener('click', async () => {
+            // Só permite salvar se estivermos em modo manual
+            if (!this.state.isManualMode) {
+                showNotification('Para alterar o status, mude para modo manual primeiro', 'warning');
+                return;
+            }
+
+            this.state.closedNow = true; // Ao salvar, estamos fechando manualmente
             this.state.reason = closeReason?.value?.trim() || '';
             this.state.reopenAt = reopenAt?.value ? new Date(reopenAt.value).toISOString() : '';
             this.state.notifyWhatsApp = notifyWhatsApp?.checked || false;
             this.state.notifyEmail = notifyEmail?.checked || false;
-            this.save();
-            this.render();
-            this.updateSidebarPill(); // Atualiza sidebar pill apenas ao salvar
             
-            // Mostrar notificação com informações sobre as notificações
-            let message = 'Status de funcionamento atualizado!';
-            if (this.state.notifyWhatsApp || this.state.notifyEmail) {
-                const notifications = [];
-                if (this.state.notifyWhatsApp) notifications.push('WhatsApp');
-                if (this.state.notifyEmail) notifications.push('Email');
-                message += ` Notificações enviadas via: ${notifications.join(' e ')}.`;
+            const success = await this.save();
+            if (success) {
+                this.render();
+                this.updateSidebarPill();
+                
+                // Mostrar notificação com informações sobre as notificações
+                let message = 'Loja fechada manualmente!';
+                if (this.state.notifyWhatsApp || this.state.notifyEmail) {
+                    const notifications = [];
+                    if (this.state.notifyWhatsApp) notifications.push('WhatsApp');
+                    if (this.state.notifyEmail) notifications.push('Email');
+                    message += ` Notificações enviadas via: ${notifications.join(' e ')}.`;
+                }
+                showNotification(message, 'success');
+            } else {
+                showNotification('Erro ao salvar status', 'error');
             }
-            showNotification(message, 'success');
         });
-        clearBtn?.addEventListener('click', () => {
-            this.state.closedNow = false;
+        clearBtn?.addEventListener('click', async () => {
+            // Só permite limpar se estivermos em modo manual
+            if (!this.state.isManualMode) {
+                showNotification('Para alterar o status, mude para modo manual primeiro', 'warning');
+                return;
+            }
+
+            this.state.closedNow = false; // Ao limpar, estamos reabrindo manualmente
             this.state.reason = '';
             this.state.reopenAt = '';
             this.state.notifyWhatsApp = false;
             this.state.notifyEmail = false;
-            this.save();
-            this.render();
-            this.updateSidebarPill(); // Atualiza sidebar pill
-            showNotification('Loja reaberta. Status limpo!', 'info');
+            
+            const success = await this.save();
+            if (success) {
+                this.render();
+                this.updateSidebarPill();
+                showNotification('Loja reaberta manualmente!', 'info');
+            } else {
+                showNotification('Erro ao limpar status', 'error');
+            }
         });
 
         // Hours save/reset
-        saveHoursBtn?.addEventListener('click', () => {
+        saveHoursBtn?.addEventListener('click', async () => {
             this.collectHoursFromUI();
-            this.save();
-            showNotification('Horários de funcionamento salvos!', 'success');
+            const success = await this.saveHours();
+            if (success) {
+                showNotification('Horários de funcionamento salvos!', 'success');
+            } else {
+                showNotification('Erro ao salvar horários', 'error');
+            }
         });
         resetHoursBtn?.addEventListener('click', async () => {
             const confirmed = await customConfirm(
@@ -3742,10 +3801,14 @@ const statusManager = {
             );
             
             if (confirmed) {
-                this.state.hours = this.getDefaultHours();
-                this.save();
-                this.renderHours();
-                showNotification('Horários restaurados!', 'info');
+                const success = await this.resetHours();
+                if (success) {
+                    await this.load(); // Recarregar do banco
+                    this.renderHours();
+                    showNotification('Horários restaurados!', 'info');
+                } else {
+                    showNotification('Erro ao restaurar horários', 'error');
+                }
             }
         });
 
@@ -3789,10 +3852,10 @@ const statusManager = {
         const notifyWhatsApp = document.getElementById('notifyWhatsApp');
         const notifyEmail = document.getElementById('notifyEmail');
         
-        // Switch checked = loja fechada, unchecked = loja aberta
+        // Switch agora controla modo: checked = manual (vermelho), unchecked = automático (azul)
         if (closeNowToggle) {
-            closeNowToggle.checked = !!this.state.closedNow;
-            console.log('Render: closedNow =', this.state.closedNow, 'switch checked =', closeNowToggle.checked);
+            closeNowToggle.checked = !!this.state.isManualMode;
+            console.log('Render: isManualMode =', this.state.isManualMode, 'switch checked =', closeNowToggle.checked);
         }
         if (closeReason) closeReason.value = this.state.reason || '';
         if (reopenAt) reopenAt.value = this.state.reopenAt ? this.toLocalDatetime(this.state.reopenAt) : '';
@@ -3800,6 +3863,8 @@ const statusManager = {
         if (notifyEmail) notifyEmail.checked = !!this.state.notifyEmail;
         
         this.renderPill();
+        this.updateSwitchLabels();
+        this.toggleManualControls();
         this.renderHours();
     },
 
@@ -3810,21 +3875,58 @@ const statusManager = {
             return;
         }
         
-        // Para debug: vamos usar apenas o closedNow sem verificar horários
-        const effectiveClosed = this.state.closedNow;
-        
+        // StatusPill agora mostra modo de operação (Automático/Manual)
         console.log('Renderizando pill:', { 
-            closedNow: this.state.closedNow, 
-            effectiveClosed,
+            isManualMode: this.state.isManualMode,
             pillElement: pill
         });
         
-        // Remover estado de loading e aplicar o estado real
-        pill.classList.remove('loading', 'closed', 'open');
-        pill.classList.add(effectiveClosed ? 'closed' : 'open');
-        pill.innerHTML = effectiveClosed
-            ? '<i class="fas fa-circle"></i> Fechada'
-            : '<i class="fas fa-circle"></i> Aberta';
+        // Remover estados anteriores e aplicar o novo estado
+        pill.classList.remove('loading', 'automatic', 'manual');
+        pill.classList.add(this.state.isManualMode ? 'manual' : 'automatic');
+        pill.innerHTML = this.state.isManualMode
+            ? '<i class="fas fa-circle"></i> Manual'
+            : '<i class="fas fa-circle"></i> Automático';
+    },
+
+    updateSwitchLabels() {
+        const switchLabel = document.getElementById('switchLabel');
+        const switchDescription = document.getElementById('switchDescription');
+        
+        if (switchLabel && switchDescription) {
+            if (this.state.isManualMode) {
+                switchLabel.textContent = 'Modo Manual';
+                switchDescription.textContent = 'Controle direto da abertura/fechamento da loja';
+            } else {
+                switchLabel.textContent = 'Modo Automático';
+                switchDescription.textContent = 'Status baseado nos horários de funcionamento';
+            }
+        }
+    },
+
+    toggleManualControls() {
+        // Elementos de controle manual
+        const closeReason = document.getElementById('closeReason');
+        const reopenAt = document.getElementById('reopenAt');
+        const notifyWhatsApp = document.getElementById('notifyWhatsApp');
+        const notifyEmail = document.getElementById('notifyEmail');
+        const saveBtn = document.getElementById('saveStatusBtn');
+        const clearBtn = document.getElementById('clearStatusBtn');
+        
+        const isManual = this.state.isManualMode;
+        
+        // Desabilitar/habilitar controles baseado no modo
+        [closeReason, reopenAt, notifyWhatsApp, notifyEmail, saveBtn, clearBtn].forEach(element => {
+            if (element) {
+                element.disabled = !isManual;
+                // Adicionar classe visual para controles desabilitados
+                if (isManual) {
+                    element.classList.remove('disabled-control');
+                } else {
+                    element.classList.add('disabled-control');
+                }
+            }
+        });
     },
 
     updateSidebarPill() {
@@ -3834,11 +3936,20 @@ const statusManager = {
             return;
         }
         
-        // Usar apenas o closedNow para simplicidade
-        const effectiveClosed = this.state.closedNow;
+        // SidebarPill mostra o status real da loja baseado na lógica de negócio
+        let effectiveClosed;
+        
+        if (this.state.isManualMode) {
+            // Modo manual: usar o valor do switch diretamente
+            effectiveClosed = this.state.closedNow;
+        } else {
+            // Modo automático: verificar horários de funcionamento
+            effectiveClosed = this.isClosedBySchedule();
+        }
         
         console.log('Atualizando sidebar pill:', { 
-            closedNow: this.state.closedNow, 
+            isManualMode: this.state.isManualMode,
+            closedNow: this.state.closedNow,
             effectiveClosed 
         });
         
@@ -3923,34 +4034,185 @@ const statusManager = {
         return !openNow;
     },
 
-    load() {
+    isClosedBySchedule(date = new Date()) {
+        const hours = this.state.hours || this.getDefaultHours();
+        const d = new Date(date);
+        const day = d.getDay(); // 0 = domingo, 1 = segunda, ..., 6 = sábado
+        const cfg = hours[day];
+        
+        // Se o dia não atende (enabled=false), considerar FECHADA
+        if (!cfg || !cfg.enabled) return true;
+        
+        const [oH, oM] = (cfg.open || '00:00').split(':').map(n => parseInt(n, 10));
+        const [cH, cM] = (cfg.close || '23:59').split(':').map(n => parseInt(n, 10));
+        const currentMinutes = d.getHours() * 60 + d.getMinutes();
+        const openMinutes = oH * 60 + oM;
+        const closeMinutes = cH * 60 + cM;
+        
+        const openNow = currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
+        // Fechada quando está fora do horário
+        return !openNow;
+    },
+
+    async load() {
         try {
-            const raw = localStorage.getItem('pizzaria_status');
-            if (raw) {
-                const parsed = JSON.parse(raw);
-                // Manter o estado salvo, apenas completar com defaults se necessário
-                this.state = { 
-                    hours: this.getDefaultHours(), 
-                    ...this.state, 
-                    ...parsed 
+            const token = localStorage.getItem('admin_token');
+            if (!token) {
+                console.warn('Token não encontrado');
+                this.state = {
+                    closedNow: false,
+                    reason: '',
+                    reopenAt: '',
+                    notifyWhatsApp: false,
+                    notifyEmail: false,
+                    isManualMode: false,
+                    hours: this.getDefaultHours()
                 };
-            } else {
-                // Se não há dados salvos, usar estado padrão (loja aberta)
-                this.state.closedNow = false;
-                this.state.hours = this.getDefaultHours();
+                return;
             }
-            if (!this.state.hours) this.state.hours = this.getDefaultHours();
-            console.log('Estado carregado do localStorage:', this.state);
+
+            const response = await fetch('/api/admin/store/status', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Erro ao carregar status da loja');
+            }
+
+            const result = await response.json();
+            if (result.sucesso && result.data) {
+                const { status, hours } = result.data;
+                
+                // Converter formato do banco para formato usado no frontend
+                this.state = {
+                    closedNow: status.closed_now,
+                    reason: status.reason || '',
+                    reopenAt: status.reopen_at || '',
+                    notifyWhatsApp: status.notify_whatsapp,
+                    notifyEmail: status.notify_email,
+                    isManualMode: status.is_manual_mode || false,
+                    hours: hours.map(h => ({
+                        enabled: h.enabled,
+                        open: h.open,
+                        close: h.close
+                    }))
+                };
+                
+                console.log('Estado carregado do banco:', this.state);
+            } else {
+                throw new Error('Resposta inválida do servidor');
+            }
         } catch (e) {
-            console.warn('Falha ao carregar status:', e);
+            console.warn('Falha ao carregar status do banco:', e);
             // Em caso de erro, usar estado padrão
-            this.state.closedNow = false;
-            this.state.hours = this.getDefaultHours();
+            this.state = {
+                closedNow: false,
+                reason: '',
+                reopenAt: '',
+                notifyWhatsApp: false,
+                notifyEmail: false,
+                isManualMode: false,
+                hours: this.getDefaultHours()
+            };
         }
     },
 
-    save() {
-        localStorage.setItem('pizzaria_status', JSON.stringify(this.state));
+    async save() {
+        try {
+            const token = localStorage.getItem('admin_token');
+            if (!token) {
+                console.warn('Token não encontrado');
+                return false;
+            }
+
+            const response = await fetch('/api/admin/store/status', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    closedNow: this.state.closedNow,
+                    reason: this.state.reason,
+                    reopenAt: this.state.reopenAt,
+                    notifyWhatsApp: this.state.notifyWhatsApp,
+                    notifyEmail: this.state.notifyEmail,
+                    isManualMode: this.state.isManualMode
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Erro ao salvar status da loja');
+            }
+
+            const result = await response.json();
+            return result.sucesso;
+        } catch (e) {
+            console.error('Erro ao salvar status:', e);
+            return false;
+        }
+    },
+
+    async saveHours() {
+        try {
+            const token = localStorage.getItem('admin_token');
+            if (!token) {
+                console.warn('Token não encontrado');
+                return false;
+            }
+
+            const response = await fetch('/api/admin/store/hours', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    hours: this.state.hours
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Erro ao salvar horários');
+            }
+
+            const result = await response.json();
+            return result.sucesso;
+        } catch (e) {
+            console.error('Erro ao salvar horários:', e);
+            return false;
+        }
+    },
+
+    async resetHours() {
+        try {
+            const token = localStorage.getItem('admin_token');
+            if (!token) {
+                console.warn('Token não encontrado');
+                return false;
+            }
+
+            const response = await fetch('/api/admin/store/hours/reset', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Erro ao resetar horários');
+            }
+
+            const result = await response.json();
+            return result.sucesso;
+        } catch (e) {
+            console.error('Erro ao resetar horários:', e);
+            return false;
+        }
     },
 
     toLocalDatetime(iso) {
@@ -3966,9 +4228,9 @@ const statusManager = {
     }
 };
 
-function initFuncionamentoSection() {
+async function initFuncionamentoSection() {
     if (document.getElementById('funcionamento-section')) {
-        statusManager.init();
+        await statusManager.init();
     }
 }
 

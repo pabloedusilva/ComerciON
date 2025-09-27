@@ -23,8 +23,51 @@ class StoreStatusManager {
         });
     }
 
-    // Verificar status da loja no localStorage
-    checkStoreStatus() {
+    // Verificar status da loja no banco de dados
+    async checkStoreStatus() {
+        try {
+            // Tentar buscar do API público primeiro
+            const response = await fetch('/api/public/store');
+            
+            if (!response.ok) {
+                // Se falhar, tentar localStorage como fallback
+                this.checkStoreStatusFromStorage();
+                return;
+            }
+
+            const result = await response.json();
+            if (!result.sucesso || !result.data) {
+                this.checkStoreStatusFromStorage();
+                return;
+            }
+
+            const { closedNow, reopenAt, hours, isManualMode } = result.data;
+            const now = new Date();
+            
+            let effectiveClosed = false;
+            
+            if (isManualMode) {
+                // Modo manual: usar valor do closedNow diretamente
+                effectiveClosed = closedNow;
+                this.nextOpenTime = reopenAt ? new Date(reopenAt) : null;
+            } else {
+                // Modo automático: verificar horários de funcionamento
+                effectiveClosed = this.isClosedBySchedule(now, hours);
+                this.nextOpenTime = effectiveClosed ? this.getNextOpenTime(now, hours) : null;
+            }
+            
+            this.isStoreClosed = effectiveClosed;
+            this.updateStoreDisplay(effectiveClosed);
+
+        } catch (error) {
+            console.warn('Erro ao verificar status da loja na API:', error);
+            // Fallback para localStorage
+            this.checkStoreStatusFromStorage();
+        }
+    }
+
+    // Fallback para localStorage (compatibilidade)
+    checkStoreStatusFromStorage() {
         try {
             const statusData = localStorage.getItem(this.statusKey);
             
@@ -59,7 +102,7 @@ class StoreStatusManager {
             this.updateStoreDisplay(false);
 
         } catch (error) {
-            console.warn('Erro ao verificar status da loja:', error);
+            console.warn('Erro ao verificar status da loja no localStorage:', error);
             // Em caso de erro, assumir que está aberta
             this.updateStoreDisplay(false);
         }
@@ -224,7 +267,7 @@ class StoreStatusManager {
             this.checkStoreStatus();
         });
 
-        // Escutar mudanças no localStorage
+        // Escutar mudanças no localStorage (mantido para compatibilidade)
         window.addEventListener('storage', (e) => {
             if (e.key === this.statusKey) {
                 this.checkStoreStatus();

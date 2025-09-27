@@ -3182,10 +3182,10 @@ tbody tr:hover {
     position: absolute; 
     cursor: pointer; 
     inset: 0; 
-    background: linear-gradient(135deg, rgba(40, 167, 69, 0.15) 0%, rgba(40, 167, 69, 0.05) 100%);
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.15) 0%, rgba(13, 110, 253, 0.05) 100%);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
     border-radius: 999px; 
-    box-shadow: inset 0 0 0 2px rgba(40, 167, 69, 0.4), 0 2px 8px rgba(40, 167, 69, 0.2);
+    box-shadow: inset 0 0 0 2px rgba(13, 110, 253, 0.4), 0 2px 8px rgba(13, 110, 253, 0.2);
     border: none;
     display: flex;
     align-items: center;
@@ -3200,10 +3200,10 @@ tbody tr:hover {
     width: 32px; 
     left: 4px; 
     top: 4px; 
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
     border-radius: 50%; 
-    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3), 0 2px 4px rgba(40, 167, 69, 0.2);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3), 0 2px 4px rgba(13, 110, 253, 0.2);
     z-index: 1;
 }
 
@@ -3240,15 +3240,15 @@ tbody tr:hover {
     box-shadow: inset 0 0 0 2px var(--primary-color), 0 0 0 3px rgba(250, 180, 39, 0.2);
 }
 
-/* Estado padrão (não checked) - "Loja Aberta" - VERDE */
+/* Estado padrão (não checked) - "Modo Automático" - AZUL */
 .slider { 
     position: absolute; 
     cursor: pointer; 
     inset: 0; 
-    background: linear-gradient(135deg, rgba(40, 167, 69, 0.15) 0%, rgba(40, 167, 69, 0.05) 100%);
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.15) 0%, rgba(13, 110, 253, 0.05) 100%);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
     border-radius: 999px; 
-    box-shadow: inset 0 0 0 2px rgba(40, 167, 69, 0.4), 0 2px 8px rgba(40, 167, 69, 0.2);
+    box-shadow: inset 0 0 0 2px rgba(13, 110, 253, 0.4), 0 2px 8px rgba(13, 110, 253, 0.2);
     border: none;
     display: flex;
     align-items: center;
@@ -3263,10 +3263,10 @@ tbody tr:hover {
     width: 32px; 
     left: 4px; 
     top: 4px; 
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
     border-radius: 50%; 
-    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3), 0 2px 4px rgba(40, 167, 69, 0.2);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3), 0 2px 4px rgba(13, 110, 253, 0.2);
     z-index: 1;
 }
 
@@ -3347,6 +3347,26 @@ tbody tr:hover {
     color: #6c757d;
     animation: pulse-loading 3s ease-in-out infinite;
 }
+
+/* Novos estilos para modo automático (azul) e manual (vermelho) */
+.status-pill.automatic { 
+    background: rgba(13,110,253,.12); 
+    color: #0d6efd;
+}
+
+.status-pill.manual { 
+    background: rgba(220,53,69,.12); 
+    color: #c62828;
+}
+
+/* Controles desabilitados quando não está em modo manual */
+.disabled-control {
+    opacity: 0.5;
+    pointer-events: none;
+    cursor: not-allowed !important;
+}
+
+
 
 @keyframes pulse-loading {
     0%, 100% { opacity: 1; }

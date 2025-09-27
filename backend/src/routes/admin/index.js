@@ -13,6 +13,7 @@ const reviewsRoutes = require('./reviews');
 const customersRoutes = require('./customers');
 const ordersRoutes = require('./orders');
 const dashboardRoutes = require('./dashboard');
+const storeRoutes = require('./store');
 
 router.use('/auth', authRoutes);
 router.use('/products', productsRoutes);
@@ -25,5 +26,6 @@ router.use('/reviews', reviewsRoutes);
 router.use('/customers', customersRoutes);
 router.use('/orders', ordersRoutes);
 router.use('/dashboard', dashboardRoutes);
+router.use('/store', storeRoutes);
 
 module.exports = router;

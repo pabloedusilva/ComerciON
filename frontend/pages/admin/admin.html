@@ -967,7 +967,7 @@
                     <div class="status-card">
                         <div class="status-card-header">
                             <h3><i class="fas fa-door-closed"></i> Status Atual</h3>
-                            <span id="statusPill" class="status-pill open"><i class="fas fa-circle"></i> Aberta</span>
+                            <span id="statusPill" class="status-pill automatic"><i class="fas fa-circle"></i> Automático</span>
                         </div>
                         <div class="status-card-content">
                             <div class="status-row">
@@ -978,8 +978,8 @@
                                     </span>
                                 </label>
                                 <div class="switch-text">
-                                    <strong>Fechar agora</strong>
-                                    <small>Use para fechar a loja imediatamente</small>
+                                    <strong id="switchLabel">Modo Manual</strong>
+                                    <small id="switchDescription">Clique para alternar entre automático e manual</small>
                                 </div>
                             </div>
 
@@ -1028,10 +1028,10 @@
 
                             <div class="layout-controls">
                                 <button class="btn-primary" id="saveStatusBtn">
-                                    <i class="fas fa-save"></i> Salvar Status
+                                    <i class="fas fa-times-circle"></i> Fechar Loja
                                 </button>
                                 <button class="btn-outline" id="clearStatusBtn">
-                                    <i class="fas fa-undo"></i> Limpar / Reabrir
+                                    <i class="fas fa-check-circle"></i> Abrir Loja
                                 </button>
                             </div>
                         </div>
