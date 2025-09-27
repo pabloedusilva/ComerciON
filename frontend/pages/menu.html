@@ -281,6 +281,17 @@
   <script type="text/javascript" src="../assets/js/admin/storeStatus.js"></script>
   <script type="text/javascript" src="../assets/js/shared/geral.js"></script>
   <script type="text/javascript" src="../assets/js/customer/cart.js"></script>
+
+  <!-- Modal de loja fechada (reutiliza estilos) -->
+  <div class="pizzaWindowArea" id="storeClosedModal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="storeClosedTitle">
+    <div class="pizzaWindowBody modal" style="max-width:560px; width:96%; display:block; position:relative;">
+      <div class="rating-content">
+        <h3 id="storeClosedTitle" class="rating-title">Estamos fechados no momento</h3>
+        <p id="storeClosedMsg" class="rating-subtitle">Volte mais tarde para finalizar seu pedido.</p>
+        <button id="storeClosedOk" class="btn-primary" style="margin-top:10px;">Entendi</button>
+      </div>
+    </div>
+  </div>
 </body>
 
 </html>

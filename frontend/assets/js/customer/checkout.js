@@ -1,5 +1,23 @@
 // Checkout page logic with strong auth and profile integration
 (function(){
+  // Bloqueio de acesso: se a loja estiver fechada, redireciona imediatamente ao menu
+  (async ()=>{
+    try {
+      const res = await fetch('/api/public/store', { cache: 'no-store' });
+      const json = await res.json();
+      if (!res.ok || !json.sucesso) throw new Error();
+      if (json.data && json.data.closedNow === true) {
+        try { localStorage.setItem('pizzaria_trigger_closed_modal', '1'); } catch(_) {}
+        window.location.href = '/menu?closed=1';
+        return; // impede prosseguir
+      }
+    } catch(_) {
+      // Por segurança, se não conseguir verificar, evita acesso
+      try { localStorage.setItem('pizzaria_trigger_closed_modal', '1'); } catch(_) {}
+      window.location.href = '/menu?closed=1';
+      return;
+    }
+  })();
   const Auth = window.AuthSystem;
   // Early auth gate
   if (!Auth || !Auth.isAuthenticated()) {
@@ -299,4 +317,57 @@
       updateStepEnables();
     }
   });
+
+  // Proteção de finalização: bloquear quando loja fechada e exibir modal
+  async function fetchStoreStatus(){
+    try {
+      const res = await fetch('/api/public/store', { cache: 'no-store' });
+      const json = await res.json();
+      if (!res.ok || !json.sucesso) throw new Error(json.mensagem || 'Falha ao verificar status');
+      return json.data || {};
+    } catch (e) {
+      // Em caso de falha, considerar fechado (segurança em primeiro lugar)
+      return { closedNow: true };
+    }
+  }
+
+  function showClosedModal(msg, reopenAt){
+    const area = document.getElementById('storeClosedModal');
+    if (!area) { alert(msg || 'Estamos fechados no momento.'); return; }
+    const p = document.getElementById('storeClosedMsg');
+    const parts = [];
+    if (msg) parts.push(String(msg));
+    if (reopenAt) {
+      try {
+        const d = new Date(reopenAt);
+        if (!isNaN(d)) {
+          const f = d.toLocaleString('pt-BR');
+          parts.push(`Previsão de reabertura: ${f}`);
+        }
+      } catch(_) {}
+    }
+    p.textContent = parts.join(' — ') || 'Volte mais tarde para finalizar seu pedido.';
+    area.style.display = 'flex';
+    const close = ()=> { area.style.display = 'none'; };
+    document.getElementById('storeClosedOk')?.addEventListener('click', close, { once: true });
+    // Fechar clicando fora
+    area.addEventListener('click', (e)=>{ if (e.target === area) close(); }, { once: true });
+  }
+
+  const goPayment = document.getElementById('goPayment');
+  if (goPayment) {
+    goPayment.addEventListener('click', async (e)=>{
+      // Sempre intercepta para verificar status primeiro
+      e.preventDefault();
+      e.stopImmediatePropagation?.();
+      const status = await fetchStoreStatus();
+      if (status && (status.closedNow === true)) {
+        showClosedModal(status.reason, status.reopenAt);
+        return false;
+      }
+      // Aberto => permitir seguir para pagamento
+      window.location.href = '/payment';
+      return true;
+    }, { capture: true });
+  }
 })();

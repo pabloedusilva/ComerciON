@@ -139,7 +139,7 @@
           </div>
           <div class="step-actions">
             <button type="button" class="btn-ghost" id="backToStep2"><i class="fas fa-arrow-left"></i> Voltar</button>
-            <a href="/payment" class="btn-primary" id="goPayment">Prosseguir para o pagamento</a>
+            <a href="/payment" class="btn-primary" id="goPayment" data-checkout-finalize="1">Prosseguir para o pagamento</a>
           </div>
         </section>
       </div>
@@ -150,6 +150,17 @@
   <script src="../../assets/js/shared/layout.js"></script>
   <script src="../../assets/js/shared/auth.js"></script>
   <script src="../../assets/js/customer/checkout.js"></script>
+
+  <!-- Modal reutilizando estilos existentes (pizzaWindowBody.modal) -->
+  <div class="pizzaWindowArea" id="storeClosedModal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="storeClosedTitle">
+    <div class="pizzaWindowBody modal" style="max-width:560px; width:96%; display:block; position:relative;">
+      <div class="rating-content">
+        <h3 id="storeClosedTitle" class="rating-title">Estamos fechados no momento</h3>
+        <p id="storeClosedMsg" class="rating-subtitle">Volte mais tarde para finalizar seu pedido.</p>
+        <button id="storeClosedOk" class="btn-primary" style="margin-top:10px;">Entendi</button>
+      </div>
+    </div>
+  </div>
 
   <footer class="modern-footer">
     <div class="footer-container">

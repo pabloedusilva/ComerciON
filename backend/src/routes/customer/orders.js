@@ -5,6 +5,7 @@ const { autenticarCliente } = require('../../middleware/auth');
 const { sanitizarEntrada } = require('../../middleware/validation');
 const rateLimit = require('express-rate-limit');
 const ctrl = require('../../controllers/customer/ordersController');
+const checkStoreOpen = require('../../middleware/storeOpen');
 
 const limitePedidos = rateLimit({ windowMs: 60 * 1000, max: process.env.NODE_ENV==='production'? 60: 600 });
 
@@ -13,6 +14,6 @@ router.use(limitePedidos);
 
 router.get('/', autenticarCliente, ctrl.list);
 router.get('/:id', autenticarCliente, ctrl.getById);
-router.post('/', autenticarCliente, ctrl.create);
+router.post('/', autenticarCliente, checkStoreOpen, ctrl.create);
 
 module.exports = router;

@@ -298,11 +298,57 @@ document.querySelector(".pizzaInfo--addButton").addEventListener("click", () => 
 // Removida para evitar conflitos, usando apenas a versão do cart.js
 
 // FINALIZAR PEDIDO: não limpar o carrinho aqui; navegar para checkout
-document.querySelector('.cart--finalizar').addEventListener('click', (e) => {
+async function __fetchStoreStatus(){
+  try {
+    const res = await fetch('/api/public/store', { cache: 'no-store' });
+    const json = await res.json();
+    if (!res.ok || !json.sucesso) throw new Error('');
+    return json.data || {};
+  } catch(_) { return { closedNow: true }; }
+}
+
+function __showClosedModal(msg, reopenAt){
+  const area = document.getElementById('storeClosedModal');
+  if (!area) { alert(msg || 'Estamos fechados no momento.'); return; }
+  const p = document.getElementById('storeClosedMsg');
+  const parts = [];
+  if (msg) parts.push(String(msg));
+  if (reopenAt) {
+    try { const d = new Date(reopenAt); if (!isNaN(d)) parts.push(`Previsão de reabertura: ${d.toLocaleString('pt-BR')}`); } catch(_) {}
+  }
+  p.textContent = parts.join(' — ') || 'Volte mais tarde para finalizar seu pedido.';
+  area.style.display = 'flex';
+  const close = ()=> { area.style.display = 'none'; };
+  document.getElementById('storeClosedOk')?.addEventListener('click', close, { once: true });
+  area.addEventListener('click', (e)=>{ if (e.target === area) close(); }, { once: true });
+}
+
+document.querySelector('.cart--finalizar').addEventListener('click', async (e) => {
   e.preventDefault();
+  e.stopImmediatePropagation?.();
+  const status = await __fetchStoreStatus();
+  if (status && status.closedNow === true) {
+    __showClosedModal(status.reason, status.reopenAt);
+    return false;
+  }
   try { document.querySelector('aside')?.classList.remove('show'); } catch(_) {}
   // Auth guard é aplicado globalmente em auth.js/cart.js
   window.location.href = '/checkout';
+});
+
+// Se viemos redirecionados por fechamento da loja, abrir modal automaticamente
+document.addEventListener('DOMContentLoaded', async ()=>{
+  try {
+    const url = new URL(window.location.href);
+    const flagged = url.searchParams.get('closed') === '1' || localStorage.getItem('pizzaria_trigger_closed_modal') === '1';
+    if (!flagged) return;
+    // limpar flag para não reabrir em navegações subsequentes
+    try { localStorage.removeItem('pizzaria_trigger_closed_modal'); } catch(_) {}
+    const status = await __fetchStoreStatus();
+    if (status && status.closedNow === true) {
+      __showClosedModal(status.reason, status.reopenAt);
+    }
+  } catch(_) {}
 });
 
 //## MOBILE EVENTS

@@ -1,10 +1,45 @@
 (function(){
+  // Bloqueio de acesso: se a loja estiver fechada, redireciona imediatamente ao menu
+  (async ()=>{
+    try {
+      const res = await fetch('/api/public/store', { cache: 'no-store' });
+      const json = await res.json();
+      if (!res.ok || !json.sucesso) throw new Error();
+      if (json.data && json.data.closedNow === true) {
+        try { localStorage.setItem('pizzaria_trigger_closed_modal', '1'); } catch(_) {}
+        window.location.href = '/menu?closed=1';
+        return;
+      }
+    } catch(_) {
+      try { localStorage.setItem('pizzaria_trigger_closed_modal', '1'); } catch(_) {}
+      window.location.href = '/menu?closed=1';
+      return;
+    }
+  })();
   const Auth = window.AuthSystem;
   // Require auth for payment
   if (!Auth || !Auth.isAuthenticated()) {
     window.location.href = '/login?redirect=' + encodeURIComponent('/payment');
     return;
   }
+
+  // Bloquear acesso à página de pagamento quando loja estiver fechada
+  (async ()=>{
+    try {
+      const res = await fetch('/api/public/store', { cache: 'no-store' });
+      const json = await res.json();
+      if (!res.ok || !json.sucesso) throw new Error('');
+      if (json.data && json.data.closedNow === true) {
+        alert((json.data.reason ? `Estamos fechados: ${json.data.reason}` : 'Estamos fechados no momento.') + '\
+\nRetornando ao checkout.');
+        window.location.href = '/checkout';
+      }
+    } catch(_) {
+      // Em dúvida, não permitir prosseguir
+      alert('Não foi possível verificar o status da loja. Tente novamente mais tarde.');
+      window.location.href = '/checkout';
+    }
+  })();
 
   const money = (v) => Number(v||0).toLocaleString('pt-br', { style: 'currency', currency: 'BRL' });
   function computeTotal(){
@@ -42,7 +77,12 @@
     if (address && typeof address === 'object') body.address = address;
     const res = await fetch('/api/customer/orders', { method: 'POST', headers, body: JSON.stringify(body) });
     const json = await res.json().catch(()=>({}));
-    if (!res.ok || !json.sucesso) throw new Error(json.mensagem || 'Falha ao criar pedido');
+    if (!res.ok || !json.sucesso) {
+      if (json && json.codigo === 'STORE_CLOSED') {
+        throw new Error(json.mensagem || 'Estamos fechados no momento.');
+      }
+      throw new Error(json.mensagem || 'Falha ao criar pedido');
+    }
     return json.data;
   }
 

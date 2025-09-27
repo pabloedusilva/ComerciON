@@ -12,6 +12,61 @@ const routes = require('./routes');
 const { limiteGeral } = require('./middleware/rateLimit');
 
 const app = express();
+const StoreStatus = require('./models/StoreStatus');
+const StoreHours = require('./models/StoreHours');
+
+function parseTimeToMinutes(t) {
+    if (!t || typeof t !== 'string') return null;
+    const m = t.match(/^(\d{1,2}):(\d{2})$/);
+    if (!m) return null;
+    const hh = Math.max(0, Math.min(23, parseInt(m[1], 10)));
+    const mm = Math.max(0, Math.min(59, parseInt(m[2], 10)));
+    return hh * 60 + mm;
+}
+function isWithinWindow(nowMin, openMin, closeMin) {
+    if (openMin == null || closeMin == null) return false;
+    if (openMin === closeMin) return false;
+    if (closeMin > openMin) {
+        return nowMin >= openMin && nowMin < closeMin;
+    } else {
+        return nowMin >= openMin || nowMin < closeMin;
+    }
+}
+async function isStoreOpenNow() {
+    try {
+        const [status, hours] = await Promise.all([StoreStatus.get(), StoreHours.getAll()]);
+        if (status && status.closed_now) return false;
+        if (!status || status.is_manual_mode === false) {
+            const now = new Date();
+            const dow = now.getDay();
+            const nowMin = now.getHours() * 60 + now.getMinutes();
+            const today = (hours || []).find(h => Number(h.day) === dow);
+            if (!today || !today.enabled) return false;
+            const openMin = parseTimeToMinutes(today.open);
+            const closeMin = parseTimeToMinutes(today.close);
+            return isWithinWindow(nowMin, openMin, closeMin);
+        }
+        return true;
+    } catch (_) {
+        // Em dúvida, negar acesso às páginas protegidas
+        return false;
+    }
+}
+
+// Responder quando a loja estiver fechada (extremamente restritivo)
+function respondClosed(req, res) {
+    // Nunca permita cache dessas respostas
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    const accept = String(req.headers['accept'] || '');
+    // Para navegadores (HTML), redirecionar de forma amigável para o menu com sinalizador
+    if (accept.includes('text/html') || req.method === 'GET' || req.method === 'HEAD') {
+        return res.redirect(302, '/menu?closed=1');
+    }
+    // Para chamadas não-HTML, retornar 403 explícito
+    return res.status(403).json({ sucesso: false, codigo: 'STORE_CLOSED', mensagem: 'Estabelecimento fechado no momento.' });
+}
 
 // Middlewares de segurança
 app.use(helmet({
@@ -65,6 +120,26 @@ app.use(cookieParser());
 // Trust proxy (importante para Railway)
 app.set('trust proxy', 1);
 
+// Guardar acesso às páginas protegidas antes de servir estáticos (caminhos diretos ou alias)
+app.use(async (req, res, next) => {
+    try {
+        const p = (req.path || '').toLowerCase();
+        const isRestricted = (
+            p === '/checkout' ||
+            p === '/payment' ||
+            p.endsWith('/pages/customer/checkout.html') ||
+            p.endsWith('/pages/customer/payment.html')
+        );
+        if (!isRestricted) return next();
+        const open = await isStoreOpenNow();
+        if (!open) return respondClosed(req, res);
+        return next();
+    } catch (_) {
+        // Em caso de erro, negar acesso por segurança
+        return respondClosed(req, res);
+    }
+});
+
 // Servir arquivos estáticos do frontend
 app.use(express.static(path.join(__dirname, '../../frontend')));
 // Servir uploads públicos (mesma pasta usada pelo uploadService: backend/public/uploads)
@@ -99,11 +174,15 @@ app.get('/login', (req, res) => {
 });
 
 // Checkout & Payment pages (extensionless)
-app.get('/checkout', (req, res) => {
+app.get('/checkout', async (req, res) => {
+    const open = await isStoreOpenNow();
+    if (!open) return respondClosed(req, res);
     res.sendFile(path.join(__dirname, '../../frontend/pages/customer/checkout.html'));
 });
 
-app.get('/payment', (req, res) => {
+app.get('/payment', async (req, res) => {
+    const open = await isStoreOpenNow();
+    if (!open) return respondClosed(req, res);
     res.sendFile(path.join(__dirname, '../../frontend/pages/customer/payment.html'));
 });
   
