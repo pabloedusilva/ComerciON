@@ -20,14 +20,28 @@ function addDaysUTC(date, days) {
   return d;
 }
 
-async function getSalesSeries(period) {
-  const now = new Date();
+// Início do dia local (00:00) convertido para UTC, com base em um offset de minutos
+function startOfLocalDayUTC(now, tzOffsetMinutes) {
+  const offsetMs = (Number(tzOffsetMinutes) || 0) * 60000;
+  const shifted = new Date(now.getTime() + offsetMs);
+  const localDayStartMs = Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate(), 0,0,0);
+  return new Date(localDayStartMs - offsetMs);
+}
+
+async function getSalesSeries(period, baseNow, overrideTzOffsetMin) {
+  const { tzOffsetMinutes = -180 } = require('../../config/environment');
+  const tzMin = (overrideTzOffsetMin !== undefined && overrideTzOffsetMin !== null) ? Number(overrideTzOffsetMin) : Number(tzOffsetMinutes) || 0;
+  const now = baseNow instanceof Date && !isNaN(baseNow) ? baseNow : new Date();
+  const offsetMs = tzMin * 60000;
   if (period === 7 || period === '7') {
     const labels = [];
     const data = [];
     for (let i = 6; i >= 0; i--) {
-      const day = startOfDayUTC(addDaysUTC(now, -i));
-      const next = addDaysUTC(day, 1);
+      // Shift to local time, take start of day, then shift back
+  const shifted = new Date(now.getTime() + offsetMs);
+      const localDayStartMs = Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate(), 0,0,0);
+      const day = new Date(localDayStartMs - offsetMs - i * 24 * 60 * 60 * 1000);
+      const next = new Date(day.getTime() + 24 * 60 * 60 * 1000);
       const [[row]] = await pool.query(
         `SELECT COALESCE(SUM(total),0) as receita
          FROM pedido
@@ -43,8 +57,10 @@ async function getSalesSeries(period) {
     const labels = [];
     const data = [];
     for (let i = 29; i >= 0; i--) {
-      const day = startOfDayUTC(addDaysUTC(now, -i));
-      const next = addDaysUTC(day, 1);
+  const shifted = new Date(now.getTime() + offsetMs);
+      const localDayStartMs = Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate(), 0,0,0);
+      const day = new Date(localDayStartMs - offsetMs - i * 24 * 60 * 60 * 1000);
+      const next = new Date(day.getTime() + 24 * 60 * 60 * 1000);
       const [[row]] = await pool.query(
         `SELECT COALESCE(SUM(total),0) as receita
          FROM pedido
@@ -60,13 +76,16 @@ async function getSalesSeries(period) {
     // 12 semanas (aprox. 3 meses)
     const labels = [];
     const data = [];
-    // Encontrar início da semana atual (segunda-feira UTC)
-    const today = startOfDayUTC(now);
-    const dayOfWeek = today.getUTCDay(); // 0 = Dom
-    const startOfThisWeek = addDaysUTC(today, -(dayOfWeek === 0 ? 6 : (dayOfWeek - 1)));
+    // Encontrar início da semana atual baseado no horário local (offset)
+    const shifted = new Date(now.getTime() + offsetMs);
+    const localToday = startOfDayUTC(shifted);
+    const dayOfWeek = localToday.getUTCDay(); // 0 = Dom, queremos segunda como início
+    const startOfThisWeekLocal = addDaysUTC(localToday, -(dayOfWeek === 0 ? 6 : (dayOfWeek - 1)));
     for (let w = 11; w >= 0; w--) {
-      const start = addDaysUTC(startOfThisWeek, -7*w);
-      const end = addDaysUTC(start, 7);
+      // Converter início local para UTC real removendo o offset
+      const startLocal = addDaysUTC(startOfThisWeekLocal, -7*w);
+      const start = new Date(startLocal.getTime() - offsetMs);
+      const end = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000);
       const [[row]] = await pool.query(
         `SELECT COALESCE(SUM(total),0) as receita
          FROM pedido
@@ -100,15 +119,18 @@ async function getSalesSeries(period) {
   return { labels, data };
 }
 
-async function getProductShares(period) {
-  // Determinar intervalo
-  const now = new Date();
+async function getProductShares(period, baseNow, overrideTzOffsetMin) {
+  // Determinar intervalo baseado no horário local (API)
+  const { tzOffsetMinutes = -180 } = require('../../config/environment');
+  const tzMin = (overrideTzOffsetMin !== undefined && overrideTzOffsetMin !== null) ? Number(overrideTzOffsetMin) : Number(tzOffsetMinutes) || 0;
+  const now = baseNow instanceof Date && !isNaN(baseNow) ? baseNow : new Date();
+  const startOfToday = startOfLocalDayUTC(now, tzMin);
   let start;
-  if (period === 7 || period === '7') start = addDaysUTC(startOfDayUTC(now), -6);
-  else if (period === 30 || period === '30') start = addDaysUTC(startOfDayUTC(now), -29);
-  else if (period === 90 || period === '90') start = addDaysUTC(startOfDayUTC(now), -89);
-  else start = addDaysUTC(startOfDayUTC(now), -364);
-  const end = addDaysUTC(startOfDayUTC(now), 1);
+  if (period === 7 || period === '7') start = addDaysUTC(startOfToday, -6);
+  else if (period === 30 || period === '30') start = addDaysUTC(startOfToday, -29);
+  else if (period === 90 || period === '90') start = addDaysUTC(startOfToday, -89);
+  else start = addDaysUTC(startOfToday, -364);
+  const end = addDaysUTC(startOfToday, 1);
 
   const [rows] = await pool.query(
     `SELECT pr.name, COALESCE(SUM(i.quantity),0) as vendas,
@@ -131,14 +153,17 @@ async function getProductShares(period) {
   return { labels, percentages, counts, revenue };
 }
 
-async function getPeakHours(period) {
-  // Define start similar to product shares
-  const now = new Date();
+async function getPeakHours(period, baseNow, overrideTzOffsetMin) {
+  // Define start similar to product shares, mas com horário local
+  const { tzOffsetMinutes = -180 } = require('../../config/environment');
+  const tzMin = (overrideTzOffsetMin !== undefined && overrideTzOffsetMin !== null) ? Number(overrideTzOffsetMin) : Number(tzOffsetMinutes) || 0;
+  const now = baseNow instanceof Date && !isNaN(baseNow) ? baseNow : new Date();
+  const startOfToday = startOfLocalDayUTC(now, tzMin);
   let start;
-  if (period === 7 || period === '7') start = addDaysUTC(startOfDayUTC(now), -6);
-  else if (period === 30 || period === '30') start = addDaysUTC(startOfDayUTC(now), -29);
-  else if (period === 90 || period === '90') start = addDaysUTC(startOfDayUTC(now), -89);
-  else start = addDaysUTC(startOfDayUTC(now), -364);
+  if (period === 7 || period === '7') start = addDaysUTC(startOfToday, -6);
+  else if (period === 30 || period === '30') start = addDaysUTC(startOfToday, -29);
+  else if (period === 90 || period === '90') start = addDaysUTC(startOfToday, -89);
+  else start = addDaysUTC(startOfToday, -364);
   const [rows] = await pool.query(
     `SELECT HOUR(created_at) as h, COUNT(*) as pedidos
      FROM pedido
@@ -154,16 +179,19 @@ async function getPeakHours(period) {
   return { labels, data };
 }
 
-async function getMetrics(period) {
+async function getMetrics(period, baseNow, overrideTzOffsetMin) {
   try {
-    // Período base
-    const now = new Date();
+    // Período base (usar horário local baseado na API)
+    const { tzOffsetMinutes = -180 } = require('../../config/environment');
+    const tzMin = (overrideTzOffsetMin !== undefined && overrideTzOffsetMin !== null) ? Number(overrideTzOffsetMin) : Number(tzOffsetMinutes) || 0;
+    const now = baseNow instanceof Date && !isNaN(baseNow) ? baseNow : new Date();
+    const startOfToday = startOfLocalDayUTC(now, tzMin);
     let start;
-    if (period === '7') start = addDaysUTC(startOfDayUTC(now), -6);
-    else if (period === '30') start = addDaysUTC(startOfDayUTC(now), -29);
-    else if (period === '90') start = addDaysUTC(startOfDayUTC(now), -89);
-    else start = addDaysUTC(startOfDayUTC(now), -364);
-    const end = addDaysUTC(startOfDayUTC(now), 1);
+    if (period === '7') start = addDaysUTC(startOfToday, -6);
+    else if (period === '30') start = addDaysUTC(startOfToday, -29);
+    else if (period === '90') start = addDaysUTC(startOfToday, -89);
+    else start = addDaysUTC(startOfToday, -364);
+    const end = addDaysUTC(startOfToday, 1);
 
     // Ticket médio = receita / pedidos (exclui cancelados)
     const [[agg]] = await pool.query(
@@ -221,11 +249,16 @@ module.exports = {
       const p = String(req.query.period || '7');
       const allowed = new Set(['7','30','90','365']);
       const period = allowed.has(p) ? p : '7';
+      // Permitir que o cliente forneça o 'agora' e o offset (minutos) vindos da API de tempo
+      const nowParam = req.query.now;
+      const tzParam = req.query.tzOffsetMinutes;
+      const baseNow = nowParam ? new Date(nowParam) : new Date();
+      const overrideTzOffsetMin = (tzParam !== undefined && tzParam !== null) ? Number(tzParam) : undefined;
       const [sales, products, peakHours, metrics] = await Promise.all([
-        getSalesSeries(period),
-        getProductShares(period),
-        getPeakHours(period),
-        getMetrics(period)
+        getSalesSeries(period, baseNow, overrideTzOffsetMin),
+        getProductShares(period, baseNow, overrideTzOffsetMin),
+        getPeakHours(period, baseNow, overrideTzOffsetMin),
+        getMetrics(period, baseNow, overrideTzOffsetMin)
       ]);
       return res.json({ sucesso: true, data: { sales, products, peakHours, metrics } });
     } catch (e) {

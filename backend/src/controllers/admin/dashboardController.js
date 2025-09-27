@@ -117,25 +117,30 @@ async function getPopularProducts(days = 30, limit = 3) {
 }
 
 async function getSalesSeries(days = 7) {
+	const { tzOffsetMinutes = -180 } = require('../../config/environment');
 	const d = Number(days) || 7;
-	// Gera janelas diárias retroativas
 	const labels = [];
 	const data = [];
+	const offsetMs = (Number(tzOffsetMinutes) || 0) * 60000;
 	for (let i = d - 1; i >= 0; i--) {
-		const day = new Date();
-		day.setUTCHours(0,0,0,0);
-		day.setUTCDate(day.getUTCDate() - i);
-		const next = new Date(day);
-		next.setUTCDate(day.getUTCDate() + 1);
+		const now = new Date();
+		// Shift to local time, take start of day, then shift back to UTC
+		const shifted = new Date(now.getTime() + offsetMs);
+		const localDayStartMs = Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate(), 0,0,0);
+		const dayStart = new Date(localDayStartMs - offsetMs);
+		// Subtract i days in UTC respecting local boundary
+		const start = new Date(dayStart.getTime() - i * 24 * 60 * 60 * 1000);
+		const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
 
 		const [[row]] = await pool.query(
 			`SELECT COALESCE(SUM(total),0) as receita
 			 FROM pedido
 			 WHERE created_at >= ? AND created_at < ? AND status <> 'cancelado'`,
-			[formatDateUTC(day), formatDateUTC(next)]
+			[formatDateUTC(start), formatDateUTC(end)]
 		);
-		labels.push(day.toISOString().slice(0,10));
-		data.push(Number(row.receita || 0));
+		// Label as ISO date (YYYY-MM-DD) for frontend parsing
+		labels.push(start.toISOString().slice(0,10));
+		data.push(Number(row?.receita || 0));
 	}
 	return { labels, data };
 }

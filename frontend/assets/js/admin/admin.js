@@ -267,6 +267,26 @@ function initializeApp() {
     
     // Inicializar sistema de data e hora
     initDateTimeSystem();
+    // Quando a hora for sincronizada, refazer a consulta do gráfico com base na API
+    try {
+        window.addEventListener('timeSynced', () => {
+            const filter = document.querySelector('#dashboard-section .chart-header .chart-filter');
+            if (filter) {
+                const event = new Event('change');
+                filter.dispatchEvent(event);
+            }
+        });
+    } catch(_) {}
+    // Após pequena espera para permitir primeira sincronização, atualizar gráfico conforme filtro atual
+    setTimeout(() => {
+        try {
+            const filter = document.querySelector('#dashboard-section .chart-header .chart-filter');
+            if (filter) {
+                const event = new Event('change');
+                filter.dispatchEvent(event);
+            }
+        } catch(_) {}
+    }, 800);
     
     // Inicializar reviews manager
     reviewsManager.init();
@@ -463,7 +483,8 @@ function applyDashboardData(data) {
     try { updateStatCards(stats); } catch (_) {}
     try { updateRecentOrders(recentOrders); } catch (_) {}
     try { updatePopularProducts(popularProducts); } catch (_) {}
-    try { updateSalesChart(series?.vendas_7d); } catch (_) {}
+    // Não atualizar o gráfico aqui para não sobrescrever o período escolhido pelo usuário.
+    // O gráfico será atualizado apenas via filtro (reports API) usando a hora da API.
 }
 
 function updateStatCards(stats) {
@@ -551,34 +572,10 @@ function updateSalesChart(series) {
     const salesCtx = document.getElementById('salesChart');
     if (!salesCtx) return;
     if (!window.charts) window.charts = {};
-    // Helper to abbreviate date labels (e.g., 24/09)
-    const abbreviateDateLabel = (label) => {
-        try {
-            if (!label) return '';
-            // ISO date (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)
-            let d = null;
-            if (/^\d{4}-\d{2}-\d{2}/.test(label)) {
-                d = new Date(label.substring(0, 10));
-            } else if (/^\d{2}\/\d{2}(\/\d{4})?$/.test(label)) {
-                // DD/MM or DD/MM/YYYY
-                const parts = label.split('/');
-                const dd = parseInt(parts[0], 10);
-                const mm = parseInt(parts[1], 10) - 1;
-                const yyyy = parts[2] ? parseInt(parts[2], 10) : (new Date()).getFullYear();
-                d = new Date(yyyy, mm, dd);
-            } else {
-                const t = new Date(label);
-                if (!isNaN(t.getTime())) d = t;
-            }
-            if (!d || isNaN(d.getTime())) return String(label);
-            return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-        } catch (_) {
-            return String(label);
-        }
-    };
     // Atualiza chart existente sem recriar (mais suave)
     if (charts.sales) {
-        charts.sales.data.labels = (Array.isArray(series.labels) ? series.labels : []).map(abbreviateDateLabel);
+        // Confiar nos rótulos enviados pelo backend (já no formato correto baseado na hora da API)
+        charts.sales.data.labels = (Array.isArray(series.labels) ? series.labels : []);
         charts.sales.data.datasets[0].data = series.data;
         charts.sales.update('none');
     }
@@ -587,7 +584,8 @@ function updateSalesChart(series) {
 function formatRelativeTime(dateStr) {
     try {
         const date = new Date(dateStr);
-        const diffMs = Date.now() - date.getTime();
+        const now = (typeof dateTimeSystem?.getCurrentTime === 'function') ? dateTimeSystem.getCurrentTime() : new Date();
+        const diffMs = now.getTime() - date.getTime();
         const mins = Math.floor(diffMs / 60000);
         if (mins < 1) return 'agora';
         if (mins < 60) return `há ${mins} min`;
@@ -678,6 +676,7 @@ const dateTimeSystem = {
     syncInterval: 3600000, // Sincronizar com API a cada 1 hora
     offsetFromServer: 0,
     lastSync: null,
+    utcOffsetString: null, // e.g. -03:00
     
     init() {
         this.syncWithAPI();
@@ -696,16 +695,23 @@ const dateTimeSystem = {
             
             // Calcular diferença entre servidor e local
             this.offsetFromServer = serverTime.getTime() - localTime.getTime();
+            // Guardar utc_offset fornecido pela API (ex.: "-03:00")
+            this.utcOffsetString = data.utc_offset || null;
             this.lastSync = new Date();
             
             console.log('DateTime sincronizado com API:', {
                 serverTime: serverTime.toISOString(),
                 localTime: localTime.toISOString(),
-                offset: this.offsetFromServer
+                offset: this.offsetFromServer,
+                utcOffset: this.utcOffsetString
             });
             
             // Atualizar display imediatamente
             this.updateDisplay();
+            // Notificar listeners que o horário foi sincronizado
+            try {
+                window.dispatchEvent(new CustomEvent('timeSynced', { detail: { offsetMs: this.offsetFromServer, utcOffset: this.utcOffsetString } }));
+            } catch(_) {}
             
         } catch (error) {
             console.warn('Erro ao sincronizar com API de horário:', error);
@@ -718,6 +724,18 @@ const dateTimeSystem = {
     getCurrentTime() {
         const now = new Date();
         return new Date(now.getTime() + this.offsetFromServer);
+    },
+
+    // Retorna o offset em minutos relativo ao UTC conforme a API de tempo
+    getTzOffsetMinutes() {
+        if (typeof this.utcOffsetString === 'string' && /^[-+]\d{2}:\d{2}$/.test(this.utcOffsetString)) {
+            const sign = this.utcOffsetString.startsWith('-') ? -1 : 1;
+            const [hh, mm] = this.utcOffsetString.slice(1).split(':').map(n => parseInt(n, 10));
+            return sign * (hh * 60 + mm);
+        }
+        // Fallback: calcular pelo Date local ajustado
+        const now = this.getCurrentTime();
+        return -now.getTimezoneOffset();
     },
     
     updateDisplay() {
@@ -1904,6 +1922,47 @@ function setupReportsCharts() {
                 }
             }
         });
+
+        // Filtro de período do dashboard (7, 30, 3 meses)
+        try {
+            const filter = document.querySelector('#dashboard-section .chart-header .chart-filter');
+            const titleEl = document.querySelector('#dashboard-section .chart-header h3');
+            if (filter) {
+                const mapTextToPeriod = (txt) => {
+                    txt = String(txt || '').toLowerCase();
+                    if (txt.includes('30')) return '30';
+                    if (txt.includes('3') && txt.includes('mes')) return '90';
+                    return '7';
+                };
+                const refresh = async () => {
+                    const selected = filter.options[filter.selectedIndex]?.textContent || '7 dias';
+                    const period = mapTextToPeriod(selected);
+                    // Atualiza título do gráfico
+                    if (titleEl) {
+                        const map = { '7': 'Vendas dos Últimos 7 Dias', '30': 'Vendas dos Últimos 30 Dias', '90': 'Vendas dos Últimos 3 Meses' };
+                        titleEl.textContent = map[period] || 'Vendas';
+                    }
+                    const token = localStorage.getItem('admin_token');
+                    if (!token) return;
+                    // Usar o sistema de horário baseado na API
+                    const now = dateTimeSystem?.getCurrentTime?.() || new Date();
+                    const tzOffsetMin = (typeof dateTimeSystem?.getTzOffsetMinutes === 'function') ? dateTimeSystem.getTzOffsetMinutes() : Math.round((dateTimeSystem?.offsetFromServer || 0) / 60000);
+                    const qs = new URLSearchParams({ period: String(period), now: now.toISOString(), tzOffsetMinutes: String(tzOffsetMin) });
+                    const resp = await fetch(`/api/admin/reports?${qs.toString()}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const json = await resp.json().catch(()=>null);
+                    if (!resp.ok || !json?.sucesso) return;
+                    const sales = json.data?.sales;
+                    if (sales) {
+                        updateSalesChart(sales);
+                    }
+                };
+                filter.addEventListener('change', refresh);
+                // Atualizar inicialmente com o período atualmente selecionado
+                refresh();
+            }
+        } catch(_) {}
     }
 }
 
@@ -1912,7 +1971,10 @@ async function updateReportsCharts() {
     const token = localStorage.getItem('admin_token');
     if (!token) return;
     try {
-        const resp = await fetch(`/api/admin/reports?period=${encodeURIComponent(period)}`, {
+        const now = dateTimeSystem?.getCurrentTime?.() || new Date();
+        const tzOffsetMin = (typeof dateTimeSystem?.getTzOffsetMinutes === 'function') ? dateTimeSystem.getTzOffsetMinutes() : Math.round((dateTimeSystem?.offsetFromServer || 0) / 60000);
+        const qs = new URLSearchParams({ period: String(period), now: now.toISOString(), tzOffsetMinutes: String(tzOffsetMin) });
+        const resp = await fetch(`/api/admin/reports?${qs.toString()}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const json = await resp.json();

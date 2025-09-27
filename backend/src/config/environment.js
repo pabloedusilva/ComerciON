@@ -36,4 +36,7 @@ module.exports = {
     loginAttemptMax: parseInt(process.env.LOGIN_ATTEMPT_MAX) || 5,
     loginLockMinutes: parseInt(process.env.LOGIN_LOCK_MINUTES) || 15,
     maxActiveSessionsPerUser: parseInt(process.env.MAX_ACTIVE_SESSIONS_PER_USER) || 5,
+
+    // Reporting / Timezone handling (minutes offset from UTC, e.g., -180 for America/Sao_Paulo)
+    tzOffsetMinutes: parseInt(process.env.TZ_OFFSET_MINUTES || process.env.TZ_OFFSET || '-180')
 };
