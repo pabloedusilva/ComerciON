@@ -1,11 +1,11 @@
-// Model Settings - Informações da pizzaria e preferências
+// Model Settings - Informações do estabelecimento e preferências
 const { pool } = require('../config/database');
 
 const DEFAULTS = {
   id: 1,
-  name: 'Pizzaria',
+  name: 'Estabelecimento',
   phone: '(11) 99999-9999',
-  email: 'contato@pizzaria.com',
+  email: 'contato@estabelecimento.com',
   address: 'São Paulo, SP',
   notification_sound: '/assets/sounds/notificações1.mp3',
   notification_enabled: 1,

@@ -276,8 +276,8 @@ class AuthSystem {
                     e.preventDefault();
                     if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
                     try {
-                        const cart = localStorage.getItem('pizza_cart');
-                        if (cart) localStorage.setItem('pizza_cart_backup', cart);
+                        const cart = localStorage.getItem('produto_cart');
+                        if (cart) localStorage.setItem('produto_cart_backup', cart);
                         localStorage.setItem('pizzaria_open_cart_on_load', '1');
                     } catch(_) {}
                     window.location.href = '/login?redirect=' + encodeURIComponent('/menu#checkout');

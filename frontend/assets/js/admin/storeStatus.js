@@ -5,7 +5,7 @@
 
 class StoreStatusManager {
     constructor() {
-        this.statusKey = 'pizzaria_status';
+        this.statusKey = 'estabelecimento_status';
         this.checkInterval = 5000; // Verifica a cada 5 segundos
         this.isStoreClosed = false;
         this.nextOpenTime = null;

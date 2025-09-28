@@ -9,6 +9,7 @@ const customerRoutes = require('./customer');
 // Rotas de catálogo público e admin produtos
 const publicCatalogRoutes = require('./public/catalog');
 const publicLayoutRoutes = require('./public/layout');
+const publicCategoriesRoutes = require('./public/categories');
 const publicSettingsRoutes = require('./public/settings');
 const publicDeliveryRoutes = require('./public/delivery');
 const publicStoreRoutes = require('./public/store');
@@ -46,6 +47,7 @@ router.use('/customer', customerRoutes);
 router.use('/admin/auth', adminAuthRoutes);
 router.use('/public/catalog', publicCatalogRoutes);
 router.use('/public/layout', publicLayoutRoutes);
+router.use('/public/categories', publicCategoriesRoutes);
 router.use('/public/settings', publicSettingsRoutes);
 router.use('/public/delivery', publicDeliveryRoutes);
 router.use('/public/store', publicStoreRoutes);

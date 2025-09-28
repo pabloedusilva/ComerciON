@@ -5,7 +5,7 @@ const DEFAULTS = {
 	id: 1,
 	logo_url: null,
 	home_background_url: null,
-	home_title: 'Pizzas 10% OFF',
+	home_title: 'Produtos 10% OFF',
 	home_subtitle: 'Confira no cardápio',
 	home_description: 'Sabor e qualidade com ingredientes selecionados.',
 	// Observação: o carousel padrão é definido apenas quando NÃO houver registro.

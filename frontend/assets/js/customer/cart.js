@@ -2,7 +2,7 @@
 // A funcionalidade de adicionar ao carrinho está no geral.js
 //Salvar itens do carrinho no localStorage
 const saveCart = () => {
-  localStorage.setItem("pizza_cart", JSON.stringify(cart));
+  localStorage.setItem("produto_cart", JSON.stringify(cart));
 };
 
 // Mobile: abrir carrinho ao clicar no ícone (no menu.html isso abre imediatamente)
@@ -31,7 +31,7 @@ function updateCart() {
     if (details) details.style.display = '';
     document.querySelector(".cart").innerHTML = ""; //Limpar carrinho
 
-    let pizzasValor = 0;
+    let produtosValor = 0;
     let subtotal = 0;
     let entrega = 5;
     let desconto = 0;
@@ -39,15 +39,15 @@ function updateCart() {
 
     for (let i in cart) {
       // Determinar se é pizza ou drink e buscar no array correto
-      let dataArray = cart[i].type === 'pizza' ? pizzas : drinks;
-      let pizzaItem = dataArray.find((item) => item.id == cart[i].id);
+      let dataArray = cart[i].type === 'produto' ? produtos : drinks;
+      let produtoItem = dataArray.find((item) => item.id == cart[i].id);
       
       // Se não encontrou o item, pular para o próximo
-      if (!pizzaItem) {
+      if (!produtoItem) {
         continue;
       }
       
-      pizzasValor += cart[i].price * cart[i].qt;
+      produtosValor += cart[i].price * cart[i].qt;
 
   // Proteção de checkout extremamente rígida
   const enforceCheckoutAuth = () => {
@@ -65,8 +65,8 @@ function updateCart() {
           // Impede outros listeners, inclusive em fase de captura
           if (typeof ev.stopImmediatePropagation === 'function') ev.stopImmediatePropagation();
           try {
-            const curr = localStorage.getItem('pizza_cart');
-            if (curr) localStorage.setItem('pizza_cart_backup', curr);
+            const curr = localStorage.getItem('produto_cart');
+            if (curr) localStorage.setItem('produto_cart_backup', curr);
             // Garante abertura do carrinho ao voltar do login
             localStorage.setItem('pizzaria_open_cart_on_load', '1');
           } catch(_) {}
@@ -77,20 +77,20 @@ function updateCart() {
   };
   // Defer para garantir DOM pronto e elementos presentes
   setTimeout(enforceCheckoutAuth, 0);
-      let pizzaSizeName = pizzaItem.sizes[cart[i].size];
-      let pizzaName = `${pizzaItem.name} (${pizzaSizeName})`;
+      let produtoSizeName = produtoItem.sizes[cart[i].size];
+      let produtoName = `${produtoItem.name} (${produtoSizeName})`;
       
       // Adicionar ingredientes removidos se houver
       if (cart[i].removedIngredients && cart[i].removedIngredients.length > 0) {
-        pizzaName += `<br><small style="color: #999; font-size: 11px;">Sem: ${cart[i].removedIngredients}</small>`;
+        produtoName += `<br><small style="color: #999; font-size: 11px;">Sem: ${cart[i].removedIngredients}</small>`;
       }
       
       let cartItem = document
         .querySelector(".models .cart--item")
         .cloneNode(true);
 
-      cartItem.querySelector("img").src = pizzaItem.img;
-      cartItem.querySelector(".cart--item-nome").innerHTML = pizzaName;
+      cartItem.querySelector("img").src = produtoItem.img;
+      cartItem.querySelector(".cart--item-nome").innerHTML = produtoName;
       cartItem.querySelector(".cart--item--qt").innerHTML = cart[i].qt;
       cartItem
         .querySelector(".cart--item-qtmenos")
@@ -114,13 +114,13 @@ function updateCart() {
       document.querySelector(".cart").append(cartItem);
     }
 
-    subtotal = pizzasValor + entrega;
+    subtotal = produtosValor + entrega;
     desconto = subtotal * 0.1;
     total = subtotal - desconto;
 
     document.querySelector(
-      ".pizzasValor span:last-child"
-    ).innerHTML = `${pizzasValor.toLocaleString("pt-br", {
+      ".produtosValor span:last-child"
+    ).innerHTML = `${produtosValor.toLocaleString("pt-br", {
       style: "currency",
       currency: "BRL",
     })}`;
@@ -157,8 +157,8 @@ function updateCart() {
         <div class="cart-empty">
           <div class="cart-empty-icon"><i class="fa-regular fa-face-frown"></i></div>
           <h2 class="cart-empty-title">Seu carrinho está vazio</h2>
-          <p class="cart-empty-sub">Adicione pizzas ou bebidas para começar</p>
-          <a href="/menu#pizzas" class="cart-empty-cta">Ver Cardápio</a>
+          <p class="cart-empty-sub">Adicione produtos ou bebidas para começar</p>
+          <a href="/menu#produtos" class="cart-empty-cta">Ver Cardápio</a>
         </div>
       `);
       // Tornar o CTA mais inteligente: se já estamos no menu, apenas fechar o carrinho e focar no cardápio
@@ -172,11 +172,11 @@ function updateCart() {
               aside.classList.remove('show');
               aside.style.left = '100vw';
             }
-            const anchor = document.getElementById('pizzas');
+            const anchor = document.getElementById('produtos');
             if (anchor && typeof anchor.scrollIntoView === 'function') {
               anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
             } else {
-              window.location.hash = '#pizzas';
+              window.location.hash = '#produtos';
             }
           }
         });
@@ -187,7 +187,7 @@ function updateCart() {
     if (details) details.style.display = 'none';
     // Zera os totais exibidos
     const zero = (0).toLocaleString("pt-br", { style: "currency", currency: "BRL" });
-    document.querySelector(".pizzasValor span:last-child").textContent = zero;
+    document.querySelector(".produtosValor span:last-child").textContent = zero;
     document.querySelector(".entrega span:last-child").textContent = zero;
     document.querySelector(".subtotal span:last-child").textContent = zero;
     document.querySelector(".desconto span:last-child").textContent = zero;
@@ -234,8 +234,8 @@ document.querySelector(".cart--finalizar").addEventListener("click", (e) => {
   const isAuth = !!(auth && typeof auth.isAuthenticated === 'function' && auth.isAuthenticated());
   if (!isAuth) {
     try {
-      const curr = localStorage.getItem('pizza_cart');
-      if (curr) localStorage.setItem('pizza_cart_backup', curr);
+      const curr = localStorage.getItem('produto_cart');
+      if (curr) localStorage.setItem('produto_cart_backup', curr);
       localStorage.setItem('pizzaria_open_cart_on_load', '1');
     } catch(_) {}
     window.location.href = '/login?redirect=' + encodeURIComponent('/menu#checkout');

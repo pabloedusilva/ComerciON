@@ -67,7 +67,7 @@
     emptyEl.classList.add('hidden');
     listEl.innerHTML = orders.map(o=>{
       const items = Array.isArray(o.items) ? o.items : [];
-      const resumo = items.map(it=> `${it.quantity}x ${it.category==='pizza'?'Pizza':'Bebida'} ${['320g','530g','860g'][it.size]||''}`).join(', ');
+      const resumo = items.map(it=> `${it.quantity}x ${it.category==='produto'?'Produto':'Bebida'} ${['320g','530g','860g'][it.size]||''}`).join(', ');
       const st = String(o.status || '').toLowerCase();
       const fmtAddr = (()=>{
         if (o.formattedAddress && typeof o.formattedAddress === 'string') return o.formattedAddress;
@@ -186,7 +186,7 @@
 
   function openRatingModal(orderId){
     ratingState.orderId = orderId;
-    const ratingArea = document.querySelector('.rating.pizzaWindowArea');
+    const ratingArea = document.querySelector('.rating.modalArea');
     if (!ratingArea) return;
     // Reset visual
     ratingState.value = 0;
@@ -211,7 +211,7 @@
   }
 
   function closeRatingModal(){
-    const ratingArea = document.querySelector('.rating.pizzaWindowArea');
+    const ratingArea = document.querySelector('.rating.modalArea');
     if (!ratingArea) return;
     const successAnim = document.getElementById('ratingSuccessAnimation');
     if (successAnim) successAnim.classList.remove('show');
@@ -286,7 +286,7 @@
     // Fechar com ESC quando aberto
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        const area = document.querySelector('.rating.pizzaWindowArea');
+        const area = document.querySelector('.rating.modalArea');
         if (area && area.style.display === 'flex') closeRatingModal();
       }
     });

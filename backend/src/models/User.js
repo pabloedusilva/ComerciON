@@ -1,4 +1,4 @@
-// Model User - Clientes da pizzaria
+// Model User - Clientes do estabelecimento
 const bcrypt = require('bcrypt');
 const { pool } = require('../config/database');
 const { bcryptRounds } = require('../config/environment');

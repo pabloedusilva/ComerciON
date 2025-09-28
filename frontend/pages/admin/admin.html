@@ -27,7 +27,119 @@
     <link rel="stylesheet" href="../../assets/css/admin/notifications.css">
     <!-- CSS da Seção de Desenvolvedor (carregado condicionalmente) -->
     <link rel="stylesheet" href="../../assets/css/admin/developer.css" id="developer-styles" disabled>
-    <title>Dashboard Admin - Pizzaria</title>
+        <style>
+            /* Scoped styles for Category Modal layout */
+                #categoryModal .modal-content {
+                    box-sizing: border-box;
+                    max-width: 980px;
+                    width: min(96vw, 980px);
+                    max-height: 92vh;
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden; /* evita scroll lateral em conteúdos internos */
+                }
+                #categoryModal .modal-body {
+                    overflow: auto; /* apenas scroll vertical quando necessário */
+                    padding: 12px 16px 16px;
+                    overscroll-behavior: contain;
+                }
+            .category-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; }
+            .category-form-card, .category-list-card {
+                background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+            }
+            .category-form-card .form-title, .category-list-card .list-title { margin-bottom: 10px; }
+            .form-subtitle { color: #6b7280; font-size: 0.92rem; margin: 4px 0 0; }
+            .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+            .form-group { display: flex; flex-direction: column; }
+            .form-group-inline .inline-field { display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; }
+            .helper { color: #9ca3af; font-size: 0.82rem; margin-top: 6px; }
+            .stick-right { display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px; }
+                #categoryModal .table-wrapper {
+                    overflow-x: hidden; /* remove barra horizontal */
+                    overflow-y: auto;
+                    max-height: 52vh; /* permite header sticky visível com muita lista */
+                    -webkit-overflow-scrolling: touch;
+                }
+                #categoryModal table {
+                    width: 100%;
+                    min-width: 0; /* permite encolher sem barra horizontal */
+                    border-collapse: collapse;
+                    table-layout: auto;
+                }
+                #categoryModal table thead th {
+                    position: sticky;
+                    top: 0;
+                    z-index: 1;
+                    background: #ffffff;
+                    box-shadow: inset 0 -1px 0 #eef2f7;
+                }
+                #categoryModal table th,
+                #categoryModal table td { vertical-align: middle; }
+                #categoryModal table td { word-break: break-word; overflow-wrap: anywhere; }
+                /* Truncamento suave para células longas no desktop */
+                #categoryModal .truncate { display: inline-block; max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+                #categoryModal .truncate.slug { max-width: 220px; color: #374151; }
+                /* Badge de status clicável */
+                #categoryModal .status-badge { padding: 4px 10px; border-radius: 999px; font-size: 0.78rem; cursor: pointer; user-select: none; }
+                #categoryModal .status-badge.active { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+                #categoryModal .status-badge.inactive { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+                #categoryModal .status-badge:focus { outline: 2px solid #93c5fd; outline-offset: 2px; }
+                /* Ponto de status compacto */
+                #categoryModal .status-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); cursor: pointer; }
+                #categoryModal .status-dot.green { background: #10b981; }
+                #categoryModal .status-dot.red { background: #ef4444; }
+                #categoryModal .status-dot:focus { outline: 2px solid #93c5fd; outline-offset: 2px; }
+                /* Ações */
+                #categoryModal .action-buttons { display: inline-flex; gap: 8px; align-items: center; }
+                #categoryModal .action-buttons .action-btn { border: none; background: #f3f4f6; color: #374151; padding: 6px 8px; border-radius: 8px; cursor: pointer; }
+                #categoryModal .action-buttons .action-btn:hover { background: #e5e7eb; }
+                #categoryModal .action-buttons .action-btn.delete { background: #fee2e2; color: #991b1b; }
+                #categoryModal .action-buttons .action-btn.delete:hover { background: #fecaca; }
+            @media (max-width: 980px) {
+                .category-grid { grid-template-columns: 1fr; }
+            }
+                @media (max-width: 720px) {
+                    #categoryModal .modal-header h3 { font-size: 1.1rem; }
+                    .form-row { grid-template-columns: 1fr; gap: 10px; }
+                    .category-form-card, .category-list-card { padding: 12px; border-radius: 10px; }
+                    .helper { font-size: 0.78rem; }
+                    .stick-right { flex-direction: column-reverse; align-items: stretch; gap: 8px; }
+                    #categoryModal .btn-primary, #categoryModal .btn-secondary { width: 100%; }
+                }
+                /* Card layout para tabela em telas pequenas (remove necessidade de scroll horizontal) */
+                @media (max-width: 620px) {
+                    #categoryModal .modal-content { width: 98vw; }
+                    #categoryModal .products-table thead { display: none; }
+                    #categoryModal .products-table tbody tr {
+                        display: grid;
+                        grid-template-columns: 1fr;
+                        gap: 8px;
+                        padding: 12px;
+                        margin-bottom: 10px;
+                        border: 1px solid #eef2f7;
+                        border-radius: 10px;
+                        background: #fff;
+                    }
+                    #categoryModal .products-table tbody td {
+                        display: grid;
+                        grid-template-columns: 110px 1fr;
+                        align-items: center;
+                        gap: 8px;
+                        padding: 0;
+                    }
+                    #categoryModal .products-table tbody td::before {
+                        content: attr(data-label);
+                        font-weight: 600;
+                        color: #6b7280;
+                    }
+                    #categoryModal .products-table tbody td:last-child {
+                        grid-template-columns: 1fr; /* ações ocupam toda linha */
+                    }
+                    #categoryModal .products-table .action-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+                    #categoryModal .truncate { max-width: 100%; white-space: normal; overflow: visible; text-overflow: clip; }
+                }
+        </style>
+    <title>Dashboard Admin - Estabelecimento</title>
 </head>
 
 <body>
@@ -317,18 +429,22 @@
             <section id="produtos-section" class="content-section">
                 <div class="section-header">
                     <h2>Gestão de Produtos</h2>
-                    <button class="btn-primary" id="addProductBtn">
-                        <i class="fas fa-plus"></i>
-                        Adicionar Produto
-                    </button>
+                    <div class="header-actions">
+                        <button class="btn-secondary" id="manageCategoriesBtn" title="Gerenciar categorias">
+                            <i class="fas fa-tags"></i>
+                            Categorias
+                        </button>
+                        <button class="btn-primary" id="addProductBtn">
+                            <i class="fas fa-plus"></i>
+                            Adicionar Produto
+                        </button>
+                    </div>
                 </div>
 
                 <div class="filters-bar">
                     <div class="filter-group">
                         <select id="categoryFilter">
                             <option value="">Todas as Categorias</option>
-                            <option value="pizza">Pizzas</option>
-                            <option value="drink">Bebidas</option>
                         </select>
                     </div>
                     <div class="search-filter">
@@ -802,7 +918,7 @@
                             <div class="text-editor-grid">
                                 <div class="text-field">
                                     <label for="titleText">Título Principal</label>
-                                    <input type="text" id="titleText" value="Pizzas 10% OFF" placeholder="Digite o título">
+                                    <input type="text" id="titleText" value="Produtos 10% OFF" placeholder="Digite o título">
                                     <small>Texto grande e em destaque</small>
                                 </div>
                                 <div class="text-field">
@@ -818,7 +934,7 @@
                             </div>
                             <div class="text-preview">
                                 <div class="text-preview-content">
-                                    <h1 id="previewTitle">Pizzas 10% OFF</h1>
+                                    <h1 id="previewTitle">Produtos 10% OFF</h1>
                                     <h2 id="previewSubtitle">Confira no cardápio</h2>
                                     <p id="previewDescription">Lorem ipsum dolor sit amet consectetur adipisicing elit. Incidunt, vitae beatae sint magnam, libero harum quae nobis veritatis iure hic provident illo porro.</p>
                                 </div>
@@ -1236,6 +1352,81 @@
     </main>
 
     <!-- Modals -->
+    <!-- Modal de Categorias -->
+    <div class="modal" id="categoryModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Gerenciar Categorias</h3>
+                <button class="modal-close" aria-label="Fechar">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="category-grid">
+                    <!-- Coluna esquerda: formulário -->
+                    <div class="category-form-card">
+                        <div class="form-title">
+                            <h4>Nova categoria</h4>
+                            <p class="form-subtitle">Crie seções do cardápio com título, ordem e visibilidade.</p>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="catTitle">Título *</label>
+                                <input type="text" id="catTitle" placeholder="Ex: Produtos" required>
+                                <small class="helper">Aparece como título H1 no menu.</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="catSlug">Slug</label>
+                                <input type="text" id="catSlug" placeholder="gerado automaticamente" disabled>
+                                <small class="helper">Usado internamente e na âncora da página.</small>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="catPosition">Posição</label>
+                                <input type="number" id="catPosition" min="0" value="0">
+                                <small class="helper">Define a ordem de exibição (menor aparece primeiro).</small>
+                            </div>
+                            <div class="form-group form-group-inline">
+                                <label for="catActive">Status</label>
+                                <div class="inline-field">
+                                    <input type="checkbox" id="catActive" checked>
+                                    <span>Ativa</span>
+                                </div>
+                                <small class="helper">Desmarque para ocultar do menu público.</small>
+                            </div>
+                        </div>
+                        <div class="form-actions stick-right">
+                            <button type="button" class="btn-secondary" id="cancelCategoryBtn">Fechar</button>
+                            <button type="button" class="btn-primary" id="saveCategoryBtn">Adicionar</button>
+                        </div>
+                    </div>
+
+                    <!-- Coluna direita: tabela/lista -->
+                    <div class="category-list-card">
+                        <div class="list-title">
+                            <h4>Categorias</h4>
+                            <p class="form-subtitle">Gerencie as categorias existentes abaixo.</p>
+                        </div>
+                        <div class="products-table">
+                            <div class="table-wrapper">
+                                <table class="table-responsive">
+                                    <thead>
+                                        <tr>
+                                            <th>Título</th>
+                                            <th>Slug</th>
+                                            <th>Posição</th>
+                                            <th>Ativa</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="categoriesTableBody"><!-- preenchido via JS --></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- Modal de Produto -->
     <div class="modal" id="productModal">
         <div class="modal-content">
@@ -1254,8 +1445,6 @@
                             <label>Categoria *</label>
                             <select name="category" required>
                                 <option value="">Selecione...</option>
-                                <option value="pizza">Pizza</option>
-                                <option value="drink">Bebida</option>
                             </select>
                         </div>
                     </div>

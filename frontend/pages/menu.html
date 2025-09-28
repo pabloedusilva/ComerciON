@@ -28,7 +28,7 @@
   </style>
   <link rel="stylesheet" href="../assets/css/shared/style.css">
   <link href="https://fonts.googleapis.com/css?family=Hepta+Slab:400,700|Lato:400,700&display=swap" rel="stylesheet">
-  <title>Pizzaria</title>
+  <title>Estabelecimento</title>
 </head>
 
 <body>
@@ -48,13 +48,13 @@
   <div class="container">
     <div class="container-area">
       <div class="models">
-        <div class="pizza-item">
+        <div class="produto-item">
           <a href="">
-            <div class="pizza-item--img"><img src="" /></div>
-            <div class="pizza-item--add">+</div>
-            <div class="pizza-item--price">R$ --</div>
-            <div class="pizza-item--name">--</div>
-            <div class="pizza-item--desc">--</div>
+            <div class="produto-item--img"><img src="" /></div>
+            <div class="produto-item--add">+</div>
+            <div class="produto-item--price">R$ --</div>
+            <div class="produto-item--name">--</div>
+            <div class="produto-item--desc">--</div>
           </a>
         </div>
         <div class="cart--item">
@@ -68,8 +68,8 @@
         </div>
       </div>
       <main>
-        <h1 class="titulo--h1" id="pizzas">Pizzas</h1>
-        <div class="pizza-area"></div>
+        <h1 class="titulo--h1" id="produtos">Produtos</h1>
+        <div class="produto-area"></div>
         
         <!-- Seção de Bebidas -->
         <h1 class="titulo--h1" id="bebidas" style="margin-top: 60px;">Bebidas</h1>
@@ -83,7 +83,7 @@
           <h1>Seu Carrinho</h1>
           <div class="cart"></div>
           <div class="cart--details">
-            <div class="cart--totalitem pizzasValor">
+            <div class="cart--totalitem produtosValor">
               <span>Itens</span>
               <span>R$ --</span>
             </div>
@@ -107,37 +107,37 @@
           </div>
         </div>
       </aside>
-      <div class="pizzaWindowArea">
-        <div class="pizzaWindowBody modal">
-          <div class="pizzaInfo--cancelMobileButton">
+      <div class="modalArea">
+        <div class="modalBody modal">
+          <div class="produtoInfo--cancelMobileButton">
             <i class="fa-solid fa-arrow-left"></i>
           </div>
-          <div class="pizzaBig">
+          <div class="produtoBig">
             <img src="" />
             <div class="image-disclaimer">
               Imagens ilustrativas
             </div>
           </div>
-          <div class="pizzaInfo">
+          <div class="produtoInfo">
             <h1>--</h1>
-            <div class="pizzaInfo--desc">--</div>
-            <div class="pizzaInfo--sizearea">
-              <div class="pizzaInfo--sector">Tamanho</div>
-              <div class="pizzaInfo--sizes">
-                <div data-key="0" class="pizzaInfo--size">
+            <div class="produtoInfo--desc">--</div>
+            <div class="produtoInfo--sizearea">
+              <div class="produtoInfo--sector">Tamanho</div>
+              <div class="produtoInfo--sizes">
+                <div data-key="0" class="produtoInfo--size">
                   PEQUENA <span>--</span>
                 </div>
-                <div data-key="1" class="pizzaInfo--size">
+                <div data-key="1" class="produtoInfo--size">
                   MÉDIO <span>--</span>
                 </div>
-                <div data-key="2" class="pizzaInfo--size selected">
+                <div data-key="2" class="produtoInfo--size selected">
                   GRANDE <span>--</span>
                 </div>
               </div>
             </div>
-            <div class="pizzaInfo--customizearea">
-              <div class="pizzaInfo--sector">Personalizar</div>
-              <div class="pizzaInfo--customize">
+            <div class="produtoInfo--customizearea">
+              <div class="produtoInfo--sector">Personalizar</div>
+              <div class="produtoInfo--customize">
                 <div class="customize-input-wrapper">
                   <input type="text" 
                          id="removeIngredients" 
@@ -150,24 +150,24 @@
                 </div>
               </div>
             </div>
-            <div class="pizzaInfo--pricearea">
-              <div class="pizzaInfo--sector">Preço</div>
-              <div class="pizzaInfo--price">
-                <div class="pizzaInfo--actualPrice">R$ --</div>
-                <div class="pizzaInfo--qtarea">
-                  <button class="pizzaInfo--qtmenos">-</button>
-                  <div class="pizzaInfo--qt">1</div>
-                  <button class="pizzaInfo--qtmais">+</button>
+            <div class="produtoInfo--pricearea">
+              <div class="produtoInfo--sector">Preço</div>
+              <div class="produtoInfo--price">
+                <div class="produtoInfo--actualPrice">R$ --</div>
+                <div class="produtoInfo--qtarea">
+                  <button class="produtoInfo--qtmenos">-</button>
+                  <div class="produtoInfo--qt">1</div>
+                  <button class="produtoInfo--qtmais">+</button>
                 </div>
               </div>
             </div>
-            <div class="pizzaInfo--addButton">Adicionar ao carrinho</div>
-            <div class="pizzaInfo--cancelButton">Cancelar</div>
+            <div class="produtoInfo--addButton">Adicionar ao carrinho</div>
+            <div class="produtoInfo--cancelButton">Cancelar</div>
           </div>
         </div>
       </div>
-      <div class="success pizzaWindowArea">
-        <div class="pizzaWindowBody success">
+      <div class="success modalArea">
+        <div class="modalBody success">
           <div class="pedido-finalizado">
             <i class="fa-solid fa-circle-check success-img"></i>
             <h1>Seu pedido foi finalizado!</h1>
@@ -200,7 +200,7 @@
     <div class="footer-container">
       <div class="footer-content">
         <div class="footer-brand">
-          <img src="../assets/images/default-images/logo_pizza.png" alt="Pizzaria Logo" class="footer-logo">
+          <img src="../assets/images/default-images/logo_estabelecimento.png" alt="Estabelecimento Logo" class="footer-logo">
           <p>Sabor que conquista</p>
         </div>
         
@@ -208,7 +208,7 @@
           <div class="footer-section">
             <h4>Menu</h4>
             <ul>
-              <li><a href="/menu#pizzas">Pizzas</a></li>
+              <li><a href="/menu#produtos">Produtos</a></li>
               <li><a href="/menu#bebidas">Bebidas</a></li>
               <li><a href="/">Home</a></li>
             </ul>
@@ -224,9 +224,9 @@
                 </a>
               </li>
               <li>
-                <a class="contact-link" href="mailto:contato@pizzaria.com" aria-label="Enviar e-mail para contato@pizzaria.com">
+                <a class="contact-link" href="mailto:contato@estabelecimento.com" aria-label="Enviar e-mail para contato@estabelecimento.com">
                   <i class="fas fa-envelope" aria-hidden="true"></i>
-                  <span>contato@pizzaria.com</span>
+                  <span>contato@estabelecimento.com</span>
                 </a>
               </li>
               <li>
@@ -250,7 +250,7 @@
       
       <div class="footer-bottom">
         <div class="footer-credits">
-          <p>&copy; 2025 Pizzaria. Todos os direitos reservados.</p>
+          <p>&copy; 2025 Estabelecimento. Todos os direitos reservados.</p>
           <p class="dev-credit">
             <a href="https://github.com/pabloedusilva" target="_blank">
               Desenvolvido por Pablo Silva
@@ -283,8 +283,8 @@
   <script type="text/javascript" src="../assets/js/customer/cart.js"></script>
 
   <!-- Modal de loja fechada (reutiliza estilos) -->
-  <div class="pizzaWindowArea" id="storeClosedModal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="storeClosedTitle">
-    <div class="pizzaWindowBody modal" style="max-width:560px; width:96%; display:block; position:relative;">
+  <div class="modalArea" id="storeClosedModal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="storeClosedTitle">
+    <div class="modalBody modal" style="max-width:560px; width:96%; display:block; position:relative;">
       <div class="rating-content">
         <h3 id="storeClosedTitle" class="rating-title">Estamos fechados no momento</h3>
         <p id="storeClosedMsg" class="rating-subtitle">Volte mais tarde para finalizar seu pedido.</p>

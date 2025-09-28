@@ -3,8 +3,8 @@ const Product = require('../../models/Product');
 
 function computeTotals(items) {
   const entrega = 5.0;
-  const pizzasValor = items.reduce((acc, it) => acc + (it.unit_price * it.quantity), 0);
-  const subtotal = pizzasValor + entrega;
+  const produtosValor = items.reduce((acc, it) => acc + (it.unit_price * it.quantity), 0);
+  const subtotal = produtosValor + entrega;
   const desconto = subtotal * 0.10;
   const total = subtotal - desconto;
   return { subtotal, entrega, desconto, total };
@@ -27,7 +27,7 @@ module.exports = {
         const id = parseInt(it.id, 10);
         const size = parseInt(it.size, 10);
         const quantity = parseInt(it.qt || it.quantity || 0, 10);
-        const category = (it.type === 'drink' || it.category === 'drink') ? 'drink' : 'pizza';
+        const category = (it.type === 'drink' || it.category === 'drink') ? 'drink' : 'produto';
         const removed = (it.removedIngredients || '').toString().slice(0, 200) || null;
         if (!id || !Number.isFinite(size) || size < 0 || size > 2 || !quantity || quantity < 1) {
           return res.status(400).json({ sucesso: false, mensagem: 'Item inválido' });

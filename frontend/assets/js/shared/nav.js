@@ -77,7 +77,7 @@ header = header.innerHTML = `<div class="menu-area">
     </div>
     <div class="logo">
         <a href="/">
-            <img src="${assetsPath}images/default-images/logo_pizza.png" alt="logo_pizza.png">
+            <img src="${assetsPath}images/default-images/logo_estabelecimento.png" alt="logo_estabelecimento.png">
         </a>
     </div>
     <nav>
@@ -180,7 +180,7 @@ document.addEventListener("keydown", (e) => {
 try {
     const badge = document.querySelector('.menu-openner span');
     if (badge) {
-        const stored = localStorage.getItem('pizza_cart');
+        const stored = localStorage.getItem('produto_cart');
         const len = stored ? (JSON.parse(stored) || []).length : 0;
         badge.textContent = len;
     }
@@ -224,7 +224,7 @@ try {
 
     // Atualizar badge em tempo real se o carrinho mudar em outra aba
         window.addEventListener('storage', (e) => {
-        if (e.key === 'pizza_cart') {
+        if (e.key === 'produto_cart') {
             try {
                 const badge = document.querySelector('.menu-openner span');
                 if (!badge) return;

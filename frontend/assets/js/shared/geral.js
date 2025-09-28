@@ -3,14 +3,15 @@ console.log('Geral.js carregado!');
 let cart = [];
 let modalQt = 1;
 let modalKey = 0;
-let modalType = 'pizza'; // 'pizza' ou 'drink'
-let pizzas;
+let modalType = 'produto'; // 'produto' ou 'drink'
+let produtos;
 let drinks;
+let categorias = [];
 let currentData; // dados atuais sendo exibidos no modal
 
 // GET CART BY SESSION STORAGE
-localStorage.getItem("pizza_cart")
-  ? (cart = JSON.parse(localStorage.getItem("pizza_cart")))
+localStorage.getItem("produto_cart")
+  ? (cart = JSON.parse(localStorage.getItem("produto_cart")))
   : (cart = []);
 
 // Função para compatibilizar carrinho antigo (qtd -> qt)
@@ -20,7 +21,7 @@ cart = cart.map(item => {
     delete item.qtd;
   }
   if (!item.type) {
-    item.type = 'pizza'; // assume pizza para itens antigos
+    item.type = 'produto'; // assume produto para itens antigos
   }
   if (!item.price && item.id) {
     // Recuperar preço se não estiver salvo (será definido após carregar API)
@@ -49,18 +50,42 @@ document.addEventListener('DOMContentLoaded', function() {
     const assetsPath = getAssetsPath();
     console.log('Assets path:', assetsPath);
 
-  const api = fetch(`/api/public/catalog/products`)
-  .then(async (response) => await response.json())
-  .then((result) => {
+  const fetchProducts = fetch(`/api/public/catalog/products`).then(r=>r.json());
+  const fetchCategories = fetch(`/api/public/categories`).then(r=>r.json()).catch(()=>({ sucesso:false, data:[] }));
+  Promise.all([fetchProducts, fetchCategories])
+  .then(([result, catRes]) => {
     if(!result.sucesso){ throw new Error(result.mensagem || 'Falha ao carregar catálogo'); }
     const all = result.data || [];
-    pizzas = all.filter(p => p.category === 'pizza');
-    drinks = all.filter(p => p.category === 'drink');
+    // Separar produtos e drinks pelo campo category armazenado
+    drinks = all.filter(p => String(p.category).toLowerCase() === 'drink');
+    produtos = all.filter(p => String(p.category).toLowerCase() !== 'drink');
+
+    // Normalizar categorias vindas da API pública e garantir canônicas
+    const rawCats = Array.isArray(catRes?.data) ? (catRes.data || []) : [];
+    const alias = (s)=>{
+      const v = String(s||'').toLowerCase();
+      if (v === 'bebida' || v === 'bebidas' || v === 'drinks') return 'drink';
+      if (v === 'produtos' || v === 'product' || v === 'products') return 'produto';
+      return v;
+    };
+    const titleFor = (slug)=> slug === 'drink' ? 'Bebidas' : (slug === 'produto' ? 'Produtos' : slug);
+    const map = new Map();
+    rawCats.forEach(c=>{
+      const s = alias(c.slug);
+      const t = c.title && c.title.trim() ? c.title : titleFor(s);
+      if (!map.has(s)) map.set(s, { slug: s, title: t, position: Number(c.position)||0, active: c.active!==0 });
+    });
+    // Garantir categorias canônicas quando existirem itens correspondentes
+    if (drinks.length && !map.has('drink')) map.set('drink', { slug:'drink', title:'Bebidas', position: 999, active: true });
+    if (produtos.length && !map.has('produto')) map.set('produto', { slug:'produto', title:'Produtos', position: 1, active: true });
+    categorias = Array.from(map.values()).filter(c=>c.active !== false).sort((a,b)=> (a.position||0)-(b.position||0));
+    // Fallback final seguro
+    if (!categorias.length) categorias = [{ slug:'produto', title:'Produtos' }, { slug:'drink', title:'Bebidas' }];
 
     // Atualizar preços de itens antigos no carrinho
     cart = cart.map(item => {
       if (item.needsPriceUpdate) {
-        let dataArray = item.type === 'pizza' ? pizzas : drinks;
+        let dataArray = item.type === 'produto' ? produtos : drinks;
         let productItem = dataArray.find(product => product.id == item.id);
         if (productItem) {
           item.price = productItem.price[item.size];
@@ -72,87 +97,86 @@ document.addEventListener('DOMContentLoaded', function() {
 
     updateCart();
 
-    //##LIST PIZZAS
-  pizzas.map((item, index) => {
-      //Mapear todos os objetos do JSON
-      let pizzaItem = document
-        .querySelector(".models .pizza-item")
-        .cloneNode(true); //cloneNode() = Clona o elemento selecionado com a qtd do JSON
-      pizzaItem.setAttribute("data-key", index); // colocando atributo e valor
+    // Render dinâmico de categorias e itens mantendo estilos
+    try {
+      const main = document.querySelector('main');
+      if (main) {
+        // Limpa seções estáticas para evitar duplicação
+        main.querySelectorAll('.titulo--h1, .produto-area, .drinks-area').forEach(el => el.remove());
+      }
+      categorias.forEach(cat => {
+        const slug = String(cat.slug||'').toLowerCase();
+        const title = cat.title || slug;
+        // Heading
+        const h1 = document.createElement('h1');
+        h1.className = 'titulo--h1';
+        h1.id = (slug === 'produto') ? 'produtos' : (slug === 'drink' ? 'bebidas' : slug);
+        h1.textContent = title;
+        main.appendChild(h1);
+        // Grid container
+        const area = document.createElement('div');
+        area.className = 'produto-area'; // mantém grid e estilos atuais
+        area.dataset.slug = slug;
+        main.appendChild(area);
 
-  pizzaItem.querySelector(".pizza-item--img img").src = item.img || (assetsPath + 'images/default-images/pizza-desenho.png');
-      pizzaItem.querySelector(
-        ".pizza-item--price"
-      ).innerHTML = `${item.price[2].toLocaleString("pt-br", {
-        style: "currency",
-        currency: "BRL",
-      })}`;
-      pizzaItem.querySelector(".pizza-item--name").innerHTML = item.name;
-      pizzaItem.querySelector(".pizza-item--desc").innerHTML = item.description;
-
-      //### MODAL PIZZAS
-      pizzaItem.querySelector("a").addEventListener("click", (e) => {
-        e.preventDefault();
-        let key = e.target.closest(".pizza-item").getAttribute("data-key");
-        openModal(key, 'pizza');
+        // Selecionar itens da categoria de forma robusta
+        let list;
+        if (slug === 'drink') {
+          list = drinks;
+        } else if (slug === 'produto') {
+          list = produtos;
+        } else {
+          list = all.filter(p => String(p.category).toLowerCase() === slug);
+        }
+        list.forEach(prod => {
+          const itemEl = document.querySelector('.models .produto-item').cloneNode(true);
+          const isDrink = String(prod.category).toLowerCase() === 'drink';
+          const keyIndex = isDrink ? drinks.findIndex(p=>p.id===prod.id) : produtos.findIndex(p=>p.id===prod.id);
+          itemEl.setAttribute('data-key', String(keyIndex >= 0 ? keyIndex : 0));
+          itemEl.setAttribute('data-type', isDrink ? 'drink' : 'produto');
+          itemEl.querySelector('.produto-item--img img').src = prod.img || (assetsPath + 'images/default-images/produto-padrao.png');
+          itemEl.querySelector('.produto-item--price').innerHTML = `${(prod.price[2]||0).toLocaleString('pt-br', { style:'currency', currency:'BRL' })}`;
+          itemEl.querySelector('.produto-item--name').innerHTML = prod.name;
+          itemEl.querySelector('.produto-item--desc').innerHTML = prod.description;
+          itemEl.querySelector('a').addEventListener('click', (e)=>{
+            e.preventDefault();
+            const k = e.currentTarget.closest('.produto-item').getAttribute('data-key');
+            const t = e.currentTarget.closest('.produto-item').getAttribute('data-type');
+            openModal(k, t);
+          });
+          area.appendChild(itemEl);
+        });
       });
-
-      document.querySelector(".pizza-area").append(pizzaItem);
-    });
-
-    //##LIST DRINKS
-  drinks.map((item, index) => {
-      let drinkItem = document
-        .querySelector(".models .pizza-item")
-        .cloneNode(true);
-      drinkItem.setAttribute("data-key", index);
-
-  drinkItem.querySelector(".pizza-item--img img").src = item.img || (assetsPath + 'images/default-images/pizza-desenho.png');
-      drinkItem.querySelector(
-        ".pizza-item--price"
-      ).innerHTML = `${item.price[2].toLocaleString("pt-br", {
-        style: "currency",
-        currency: "BRL",
-      })}`;
-      drinkItem.querySelector(".pizza-item--name").innerHTML = item.name;
-      drinkItem.querySelector(".pizza-item--desc").innerHTML = item.description;
-
-      //### MODAL DRINKS
-      drinkItem.querySelector("a").addEventListener("click", (e) => {
-        e.preventDefault();
-        let key = e.target.closest(".pizza-item").getAttribute("data-key");
-        openModal(key, 'drink');
-      });
-
-      document.querySelector(".drinks-area").append(drinkItem);
-    });
+    } catch(err) {
+      console.warn('Falha ao renderizar categorias dinâmicas:', err);
+    }
   })
   .catch(error => {
     console.error('Erro ao carregar dados:', error);
   });
 });
 
-// Função para abrir modal (pizzas e drinks)
+// Função para abrir modal (produtos e drinks)
 function openModal(key, type) {
   modalQt = 1;
   modalKey = key;
   modalType = type;
-  currentData = type === 'pizza' ? pizzas : drinks;
+  currentData = type === 'produto' ? produtos : drinks;
 
   const assetsPath = getAssetsPath();
-  document.querySelector(".pizzaBig img").src = currentData[key].img || (assetsPath + 'images/default-images/pizza-desenho.png');
-  document.querySelector(".pizzaInfo h1").innerHTML = currentData[key].name;
-  document.querySelector(".pizzaInfo--desc").innerHTML = currentData[key].description;
-  document.querySelector(".pizzaInfo--actualPrice").innerHTML = `${currentData[key].price[2].toLocaleString("pt-br", {
+  document.querySelector(".produtoBig img").src = currentData[key].img || (assetsPath + 'images/default-images/produto-padrao.png');
+  document.querySelector(".produtoInfo h1").innerHTML = currentData[key].name;
+  document.querySelector(".produtoInfo--desc").innerHTML = currentData[key].description;
+  document.querySelector(".produtoInfo--actualPrice").innerHTML = `${currentData[key].price[2].toLocaleString("pt-br", {
     style: "currency",
     currency: "BRL",
   })}`;
   
-  // Mostrar/ocultar área de personalização apenas para pizzas
-  const customizeArea = document.querySelector(".pizzaInfo--customizearea");
+  // Mostrar/ocultar área de personalização apenas para produtos
+  const customizeArea = document.querySelector(".produtoInfo--customizearea");
   const removeIngredientsInput = document.getElementById("removeIngredients");
   
-  if (type === 'pizza') {
+  if (type === 'produto') {
     customizeArea.style.display = 'block';
     removeIngredientsInput.value = '';
   } else {
@@ -160,27 +184,27 @@ function openModal(key, type) {
   }
   
   // Reset tamanhos
-  document.querySelector(".pizzaInfo--size.selected")?.classList.remove("selected");
-  document.querySelectorAll(".pizzaInfo--size").forEach((size, sizeIndex) => {
+  document.querySelector(".produtoInfo--size.selected")?.classList.remove("selected");
+  document.querySelectorAll(".produtoInfo--size").forEach((size, sizeIndex) => {
     if (sizeIndex == 2) {
       size.classList.add("selected");
     }
     size.querySelector("span").innerHTML = currentData[key].sizes[sizeIndex];
   });
 
-  document.querySelector(".pizzaInfo--qt").innerHTML = modalQt;
-  document.querySelector(".pizzaWindowArea").style.opacity = 0;
-  document.querySelector(".pizzaWindowArea").style.display = "flex";
+  document.querySelector(".produtoInfo--qt").innerHTML = modalQt;
+  document.querySelector(".modalArea").style.opacity = 0;
+  document.querySelector(".modalArea").style.display = "flex";
   setTimeout(() => {
-    document.querySelector(".pizzaWindowArea").style.opacity = 1;
+    document.querySelector(".modalArea").style.opacity = 1;
   }, 200);
 }
 
 //##MODAL EVENTS
 function closeModal() {
-  document.querySelector(".pizzaWindowArea").style.opacity = 0;
+  document.querySelector(".modalArea").style.opacity = 0;
   setTimeout(() => {
-    document.querySelector(".pizzaWindowArea").style.display = "none";
+    document.querySelector(".modalArea").style.display = "none";
   }, 600);
   window.scrollTo(0, 0);
 }
@@ -188,32 +212,32 @@ function closeModal() {
 //Fechar modal com Esc
 document.addEventListener("keydown", (event) => {
   const isEscKey = event.key === "Escape";
-  if (document.querySelector(".pizzaWindowArea").style.display === "flex" && isEscKey) {
+  if (document.querySelector(".modalArea").style.display === "flex" && isEscKey) {
     closeModal();
   }
 });
 
 //Fechar modal com click no 'cancelar'
 document
-  .querySelectorAll(".pizzaInfo--cancelButton, .pizzaInfo--cancelMobileButton")
+  .querySelectorAll(".produtoInfo--cancelButton, .produtoInfo--cancelMobileButton")
   .forEach((item) => {
     item.addEventListener("click", closeModal);
   });
 
 //##CONTROLS
-document.querySelector(".pizzaInfo--qtmenos").addEventListener("click", () => {
+document.querySelector(".produtoInfo--qtmenos").addEventListener("click", () => {
   if (modalQt > 1) {
     let size = parseInt(
       document
-        .querySelector(".pizzaInfo--size.selected")
+        .querySelector(".produtoInfo--size.selected")
         .getAttribute("data-key")
     );
     let preco = currentData[modalKey].price[size];
     modalQt--;
-    document.querySelector(".pizzaInfo--qt").innerHTML = modalQt;
+    document.querySelector(".produtoInfo--qt").innerHTML = modalQt;
     let updatePreco = preco * modalQt;
     document.querySelector(
-      ".pizzaInfo--actualPrice"
+      ".produtoInfo--actualPrice"
     ).innerHTML = `${updatePreco.toLocaleString("pt-br", {
       style: "currency",
       currency: "BRL",
@@ -221,34 +245,34 @@ document.querySelector(".pizzaInfo--qtmenos").addEventListener("click", () => {
   }
 });
 
-document.querySelector(".pizzaInfo--qtmais").addEventListener("click", () => {
+document.querySelector(".produtoInfo--qtmais").addEventListener("click", () => {
   let size = parseInt(
-    document.querySelector(".pizzaInfo--size.selected").getAttribute("data-key")
+    document.querySelector(".produtoInfo--size.selected").getAttribute("data-key")
   );
   let preco = currentData[modalKey].price[size];
   modalQt++;
-  document.querySelector(".pizzaInfo--qt").innerHTML = modalQt;
+  document.querySelector(".produtoInfo--qt").innerHTML = modalQt;
   let updatePreco = preco * modalQt;
   document.querySelector(
-    ".pizzaInfo--actualPrice"
+    ".produtoInfo--actualPrice"
   ).innerHTML = `${updatePreco.toLocaleString("pt-br", {
     style: "currency",
     currency: "BRL",
   })}`;
 });
 
-document.querySelectorAll(".pizzaInfo--size").forEach((size, sizeIndex) => {
+document.querySelectorAll(".produtoInfo--size").forEach((size, sizeIndex) => {
   size.addEventListener("click", (e) => {
     document
-      .querySelector(".pizzaInfo--size.selected")
+      .querySelector(".produtoInfo--size.selected")
       ?.classList.remove("selected");
     size.classList.add("selected");
     
     // Atualizar preço baseado no tamanho selecionado
     modalQt = 1;
-    document.querySelector(".pizzaInfo--qt").innerHTML = modalQt;
+    document.querySelector(".produtoInfo--qt").innerHTML = modalQt;
     document.querySelector(
-      ".pizzaInfo--actualPrice"
+      ".produtoInfo--actualPrice"
     ).innerHTML = `${currentData[modalKey].price[sizeIndex].toLocaleString("pt-br", {
       style: "currency", 
       currency: "BRL"
@@ -257,14 +281,14 @@ document.querySelectorAll(".pizzaInfo--size").forEach((size, sizeIndex) => {
 });
 
 //##ADD CART
-document.querySelector(".pizzaInfo--addButton").addEventListener("click", () => {
+document.querySelector(".produtoInfo--addButton").addEventListener("click", () => {
   let size = parseInt(
-    document.querySelector(".pizzaInfo--size.selected").getAttribute("data-key")
+    document.querySelector(".produtoInfo--size.selected").getAttribute("data-key")
   );
 
-  // Pegar ingredientes removidos (apenas para pizzas)
+  // Pegar ingredientes removidos (apenas para produtos)
   let removedIngredients = '';
-  if (modalType === 'pizza') {
+  if (modalType === 'produto') {
     removedIngredients = document.getElementById("removeIngredients").value.trim();
   }
 
@@ -291,7 +315,7 @@ document.querySelector(".pizzaInfo--addButton").addEventListener("click", () => 
   updateCart();
   closeModal();
   //Salvar no localStorage
-  localStorage.setItem("pizza_cart", JSON.stringify(cart));
+  localStorage.setItem("produto_cart", JSON.stringify(cart));
 });
 
 // ##CART - Esta função será sobrescrita pelo cart.js

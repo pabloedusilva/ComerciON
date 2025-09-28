@@ -43,7 +43,7 @@
 
   const money = (v) => Number(v||0).toLocaleString('pt-br', { style: 'currency', currency: 'BRL' });
   function computeTotal(){
-    const cart = JSON.parse(localStorage.getItem('pizza_cart') || '[]');
+    const cart = JSON.parse(localStorage.getItem('produto_cart') || '[]');
     let items = 0;
     cart.forEach(i=> items += (i.price||0) * (i.qt||1));
     const entrega = 5;
@@ -54,7 +54,7 @@
   document.getElementById('payTotal').textContent = money(computeTotal());
 
   function clearCart(){
-    localStorage.removeItem('pizza_cart');
+    localStorage.removeItem('produto_cart');
     try { localStorage.removeItem('checkout_address'); } catch(_) {}
   }
 
@@ -62,7 +62,7 @@
   const showModal = () => successModal && typeof successModal.showModal === 'function' ? successModal.showModal() : alert('Pedido realizado com sucesso!');
 
   async function createOrderFromCart(){
-    const cart = JSON.parse(localStorage.getItem('pizza_cart') || '[]');
+    const cart = JSON.parse(localStorage.getItem('produto_cart') || '[]');
     if (!Array.isArray(cart) || cart.length === 0) throw new Error('Carrinho vazio');
     // Tentar recuperar endereço do checkout armazenado temporariamente
     let address = null;

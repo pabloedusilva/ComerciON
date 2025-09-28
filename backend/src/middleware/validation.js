@@ -157,7 +157,8 @@ const estimateBase64SizeBytes = (b64) => {
 
 const validarProdutoBase = [
     body('name').isString().isLength({ min: 2, max: 255 }).withMessage('Nome inválido'),
-    body('category').isIn(['pizza','drink']).withMessage('Categoria inválida'),
+    // Aceitar slug de categoria dinâmico (a-z0-9-_) e 'drink' como padrão
+    body('category').isString().matches(/^[a-z0-9_-]{3,50}$/).withMessage('Categoria inválida'),
     body('description').optional().isString().isLength({ max: 5000 }).withMessage('Descrição muito longa'),
     body('price').isArray({ min: 1, max: 3 }).withMessage('Preço deve ser array de até 3 itens'),
     body('price.*').isFloat({ min: 0, max: 9999 }).withMessage('Preço inválido'),

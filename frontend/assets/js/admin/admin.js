@@ -387,7 +387,7 @@ function initSidebarStatusPill() {
 
     // Atualizar quando localStorage mudar (outra aba/parte do app)
     window.addEventListener('storage', (e) => {
-        if (e.key === 'pizzaria_status') update();
+        if (e.key === 'estabelecimento_status') update();
     });
 
     // Não mais interceptar o statusManager.save aqui
@@ -556,7 +556,7 @@ function updatePopularProducts(list) {
         const card = document.createElement('div');
         card.className = 'product-card';
         card.innerHTML = `
-            <img src="../../assets/images/default-images/pizza-desenho.png" alt="${p.name}">
+            <img src="../../assets/images/default-images/produto-padrao.png" alt="${p.name}">
             <div class="product-info">
                 <h4>${p.name}</h4>
                 <p>${p.vendas} vendas</p>
@@ -1320,6 +1320,190 @@ function setupModals() {
     });
 }
 
+// ===== Categorias =====
+document.getElementById('manageCategoriesBtn')?.addEventListener('click', async ()=>{
+    await openCategoryModal();
+});
+
+async function openCategoryModal(){
+    const modal = document.getElementById('categoryModal');
+    const closeBtn = modal.querySelector('.modal-close');
+    const cancelBtn = document.getElementById('cancelCategoryBtn');
+    const saveBtn = document.getElementById('saveCategoryBtn');
+    const titleInput = document.getElementById('catTitle');
+    const slugInput = document.getElementById('catSlug');
+    const posInput = document.getElementById('catPosition');
+    const activeInput = document.getElementById('catActive');
+    const formTitle = modal.querySelector('.category-form-card .form-title h4');
+
+    // limpar form
+    titleInput.value = '';
+    slugInput.value = '';
+    posInput.value = 0;
+    activeInput.checked = true;
+    formTitle && (formTitle.textContent = 'Nova categoria');
+    saveBtn.textContent = 'Adicionar';
+    saveBtn.dataset.mode = 'create';
+    saveBtn.dataset.slug = '';
+
+    // listeners
+    const normalize = (s)=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/[^a-z0-9_\-\s]/g,'').replace(/\s+/g,'-');
+    titleInput.oninput = ()=>{ slugInput.value = normalize(titleInput.value); };
+
+    closeBtn.onclick = ()=> closeModal('categoryModal');
+    cancelBtn.onclick = ()=> closeModal('categoryModal');
+    saveBtn.onclick = async ()=>{
+        const token = localStorage.getItem('admin_token');
+        const payload = { title: titleInput.value.trim(), slug: slugInput.value.trim(), position: parseInt(posInput.value)||0, active: !!activeInput.checked };
+        if (!payload.title) { showNotification('Informe um título', 'warning'); return; }
+        try {
+            if (saveBtn.dataset.mode === 'edit' && saveBtn.dataset.slug) {
+                // Update existing (slug is immutable by backend; we update title/position/active)
+                const resp = await fetch(`/api/admin/categories/${encodeURIComponent(saveBtn.dataset.slug)}`, {
+                    method:'PUT',
+                    headers: { 'Content-Type':'application/json', 'Authorization': token?`Bearer ${token}`:'' },
+                    body: JSON.stringify({ title: payload.title, position: payload.position, active: payload.active })
+                });
+                const json = await resp.json();
+                if (!resp.ok || !json?.sucesso) throw new Error(json?.mensagem || 'Falha ao atualizar categoria');
+                await renderCategoriesTable();
+                await populateCategoryFilter();
+                showNotification('Categoria atualizada!', 'success');
+            } else {
+                // Create new
+                const resp = await fetch('/api/admin/categories', { method:'POST', headers: { 'Content-Type':'application/json', 'Authorization': token?`Bearer ${token}`:'' }, body: JSON.stringify(payload) });
+                const json = await resp.json();
+                if (!resp.ok || !json?.sucesso) throw new Error(json?.mensagem || 'Falha ao salvar categoria');
+                await renderCategoriesTable();
+                await populateCategoryFilter();
+                showNotification('Categoria adicionada!', 'success');
+            }
+            // Reset form to create mode
+            titleInput.value = '';
+            slugInput.value = '';
+            posInput.value = 0;
+            activeInput.checked = true;
+            formTitle && (formTitle.textContent = 'Nova categoria');
+            saveBtn.textContent = 'Adicionar';
+            saveBtn.dataset.mode = 'create';
+            saveBtn.dataset.slug = '';
+        } catch(e){ showNotification(e.message, 'error'); }
+    };
+
+    await renderCategoriesTable();
+    modal.classList.add('show');
+}
+
+async function renderCategoriesTable(){
+    const tbody = document.getElementById('categoriesTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5">Carregando...</td></tr>';
+    try {
+        const token = localStorage.getItem('admin_token');
+        const resp = await fetch('/api/admin/categories', { headers: { 'Authorization': token?`Bearer ${token}`:'' }});
+        const json = await resp.json();
+        if (!resp.ok || !json?.sucesso) throw new Error(json?.mensagem || 'Falha ao carregar categorias');
+        const cats = json.data || [];
+        tbody.innerHTML = '';
+        cats.forEach(c => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td data-label="Título"><span class="truncate" title="${escapeHtml(c.title||'')}">${escapeHtml(c.title||'')}</span></td>
+                <td data-label="Slug"><span class="truncate slug" title="${escapeHtml(c.slug||'')}">${escapeHtml(c.slug||'')}</span></td>
+                <td data-label="Posição">${Number.isFinite(c.position)? c.position : ''}</td>
+                <td data-label="Ativa"><button type="button" class="status-dot ${c.active? 'green' : 'red'} toggle-active" data-slug="${encodeURIComponent(c.slug)}" aria-pressed="${c.active? 'true':'false'}" title="${c.active? 'Ativa' : 'Inativa'}"></button></td>
+                <td data-label="Ações">
+                    <div class="action-buttons">
+                        <button class="action-btn edit" data-slug="${escapeHtml(c.slug||'')}" data-title="${escapeHtml(c.title||'')}" data-position="${Number.isFinite(c.position)? c.position : 0}" data-active="${c.active? '1':'0'}" title="Editar" aria-label="Editar categoria"><i class="fas fa-edit"></i></button>
+                        <button class="action-btn delete" data-slug="${c.slug}" title="Excluir"><i class="fas fa-trash"></i></button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+        // Bind delete
+        tbody.querySelectorAll('button.delete').forEach(btn => {
+            btn.addEventListener('click', async (e)=>{
+                const slug = e.currentTarget.getAttribute('data-slug');
+                const confirmed = await customConfirm('Excluir categoria?', 'Excluir Categoria', 'Excluir', 'Cancelar');
+                if (!confirmed) return;
+                const token = localStorage.getItem('admin_token');
+                try {
+                    const resp = await fetch(`/api/admin/categories/${encodeURIComponent(slug)}`, { method:'DELETE', headers: { 'Authorization': token?`Bearer ${token}`:'' } });
+                    const json = await resp.json();
+                    if (!resp.ok || !json?.sucesso) throw new Error(json?.mensagem || 'Falha ao excluir');
+                    await renderCategoriesTable();
+                    await populateCategoryFilter();
+                    showNotification('Categoria excluída', 'success');
+                } catch(err){ showNotification(err.message, 'error'); }
+            });
+        });
+
+        // Bind edit -> load into form
+        tbody.querySelectorAll('button.edit').forEach(btn => {
+            btn.addEventListener('click', (e)=>{
+                const modal = document.getElementById('categoryModal');
+                const titleInput = document.getElementById('catTitle');
+                const slugInput = document.getElementById('catSlug');
+                const posInput = document.getElementById('catPosition');
+                const activeInput = document.getElementById('catActive');
+                const saveBtn = document.getElementById('saveCategoryBtn');
+                const formTitle = modal.querySelector('.category-form-card .form-title h4');
+                const t = e.currentTarget.getAttribute('data-title') || '';
+                const s = e.currentTarget.getAttribute('data-slug') || '';
+                const p = parseInt(e.currentTarget.getAttribute('data-position')) || 0;
+                const a = e.currentTarget.getAttribute('data-active') === '1';
+                titleInput.value = t;
+                slugInput.value = s;
+                posInput.value = p;
+                activeInput.checked = a;
+                if (formTitle) formTitle.textContent = 'Editar categoria';
+                saveBtn.textContent = 'Salvar alterações';
+                saveBtn.dataset.mode = 'edit';
+                saveBtn.dataset.slug = s;
+                // Focus first field
+                setTimeout(()=>titleInput.focus(), 0);
+            });
+        });
+
+        // Bind toggle active
+        tbody.querySelectorAll('button.toggle-active').forEach(btn => {
+            btn.addEventListener('click', async (e)=>{
+                const el = e.currentTarget;
+                const slug = el.getAttribute('data-slug');
+                const currentlyActive = el.classList.contains('active');
+                const token = localStorage.getItem('admin_token');
+                try {
+                    const resp = await fetch(`/api/admin/categories/${encodeURIComponent(slug)}`, {
+                        method: 'PUT',
+                        headers: { 'Authorization': token?`Bearer ${token}`:'', 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ active: !currentlyActive })
+                    });
+                    const json = await resp.json();
+                    if (!resp.ok || !json?.sucesso) throw new Error(json?.mensagem || 'Falha ao atualizar status');
+                    await renderCategoriesTable();
+                    await populateCategoryFilter();
+                    showNotification('Status da categoria atualizado', 'success');
+                } catch (err) {
+                    showNotification(err.message, 'error');
+                }
+            });
+        });
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="5">Erro ao carregar categorias</td></tr>';
+    }
+}
+
+// Helper para escapar HTML em textos inseridos via template string
+function escapeHtml(str){
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 // Configurar filtros
 function setupFilters() {
     // Filtro de produtos
@@ -1327,7 +1511,11 @@ function setupFilters() {
     const categoryFilter = document.getElementById('categoryFilter');
 
     productSearch?.addEventListener('input', filterProducts);
-    categoryFilter?.addEventListener('change', filterProducts);
+    if (categoryFilter) {
+        categoryFilter.addEventListener('change', filterProducts);
+        // Carregar categorias dinâmicas
+        populateCategoryFilter();
+    }
 
     // Filtro de pedidos
     const orderSearch = document.getElementById('orderSearch');
@@ -1341,6 +1529,54 @@ function setupFilters() {
     // Filtro de clientes
     const clientSearch = document.getElementById('clientSearch');
     clientSearch?.addEventListener('input', filterClients);
+}
+
+async function fetchCategoriesPublic() {
+    try {
+        const resp = await fetch('/api/public/categories');
+        const json = await resp.json();
+        if (resp.ok && json?.sucesso) {
+            const rows = json.data || [];
+            // Normalizar slugs comuns
+            const alias = (s)=>{
+                const v = String(s||'').toLowerCase();
+                if (v === 'bebida' || v === 'bebidas' || v === 'drinks') return 'drink';
+                if (v === 'produtos' || v === 'product' || v === 'products') return 'produto';
+                return v;
+            };
+            const map = new Map();
+            rows.forEach(c=>{
+                const s = alias(c.slug);
+                const t = c.title && c.title.trim() ? c.title : (s==='drink'?'Bebidas':(s==='produto'?'Produtos':s));
+                if (!map.has(s)) map.set(s, { slug:s, title:t });
+            });
+            // Garantir padrão
+            if (!map.has('produto')) map.set('produto', { slug:'produto', title:'Produtos' });
+            if (!map.has('drink')) map.set('drink', { slug:'drink', title:'Bebidas' });
+            return Array.from(map.values());
+        }
+    } catch(_) {}
+    return [ { slug:'produto', title:'Produtos' }, { slug:'drink', title:'Bebidas' } ];
+}
+
+async function populateCategoryFilter() {
+    const select = document.getElementById('categoryFilter');
+    if (!select) return;
+    const prev = select.value;
+    const cats = await fetchCategoriesPublic();
+    const keep = select.querySelector('option[value=""]');
+    select.innerHTML = '';
+    const optAll = document.createElement('option');
+    optAll.value = '';
+    optAll.textContent = 'Todas as Categorias';
+    select.appendChild(optAll);
+    cats.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.slug;
+        opt.textContent = c.title;
+        select.appendChild(opt);
+    });
+    if ([...select.options].some(o=>o.value===prev)) select.value = prev;
 }
 
 // Configurar formulários de configuração
@@ -1373,10 +1609,10 @@ function setupConfigForms() {
                 // Salvar no backend (nome, telefone, email, endereço)
                 const token = localStorage.getItem('admin_token');
                 const payload = {
-                    name: configData.pizzariaName,
-                    phone: configData.pizzariaPhone,
-                    email: configData.pizzariaEmail,
-                    address: configData.pizzariaAddress,
+                    name: configData.estabelecimentoName,
+                    phone: configData.estabelecimentoPhone,
+                    email: configData.estabelecimentoEmail,
+                    address: configData.estabelecimentoAddress,
                 };
                 const resp = await fetch('/api/admin/settings', {
                     method: 'PUT',
@@ -1389,7 +1625,7 @@ function setupConfigForms() {
                 if (!resp.ok) throw new Error('Falha ao salvar configurações');
 
                 // Atualizar localStorage como cache (não mais fonte de verdade)
-                localStorage.setItem('pizzariaConfig', JSON.stringify(configData));
+                localStorage.setItem('estabelecimentoConfig', JSON.stringify(configData));
                 showNotification('Todas as configurações foram salvas com sucesso!', 'success');
             } catch (error) {
                 showNotification('Erro ao salvar configurações. Tente novamente.', 'error');
@@ -1413,7 +1649,7 @@ function setupConfigForms() {
             
             if (confirmed) {
                 // Limpar localStorage
-                localStorage.removeItem('pizzariaConfig');
+                localStorage.removeItem('estabelecimentoConfig');
                 
                 // Recarregar valores padrão
                 loadConfigDefaults();
@@ -1440,10 +1676,10 @@ async function loadSavedConfig() {
             if (json?.sucesso) {
                 const s = json.data || {};
                 const map = {
-                    pizzariaName: s.name,
-                    pizzariaPhone: s.phone,
-                    pizzariaEmail: s.email,
-                    pizzariaAddress: s.address,
+                    estabelecimentoName: s.name,
+                    estabelecimentoPhone: s.phone,
+                    estabelecimentoEmail: s.email,
+                    estabelecimentoAddress: s.address,
                 };
                 Object.keys(map).forEach(key => {
                     const field = document.querySelector(`[name="${key}"]`);
@@ -1453,7 +1689,7 @@ async function loadSavedConfig() {
         }
     } catch (_) {}
 
-    const savedConfig = localStorage.getItem('pizzariaConfig');
+    const savedConfig = localStorage.getItem('estabelecimentoConfig');
     if (savedConfig) {
         try {
             const config = JSON.parse(savedConfig);
@@ -1478,10 +1714,10 @@ async function loadSavedConfig() {
 // Carregar valores padrão
 function loadConfigDefaults() {
     const defaults = {
-        pizzariaName: 'Pizzaria Deliciosa',
-        pizzariaPhone: '(11) 99999-9999',
-        pizzariaEmail: 'contato@pizzaria.com',
-        pizzariaAddress: 'Rua das Pizzas, 123 - São Paulo, SP',
+        estabelecimentoName: 'Estabelecimento Delicioso',
+        estabelecimentoPhone: '(11) 99999-9999',
+        estabelecimentoEmail: 'contato@estabelecimento.com',
+        estabelecimentoAddress: 'Rua das Pizzas, 123 - São Paulo, SP',
         deliveryFee: '5.00',
         deliveryTime: '30',
         deliveryRadius: '15',
@@ -2061,14 +2297,14 @@ function renderProductsTable() {
     products.forEach(product => {
         const imgSrc = product.img && typeof product.img === 'string' && product.img.trim() !== ''
             ? product.img
-            : '/assets/images/default-images/pizza-desenho.png';
+            : '/assets/images/default-images/produto-padrao.png';
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>
-                <img src="${imgSrc}" alt="${product.name}" class="product-img" onerror="this.onerror=null;this.src='/assets/images/default-images/pizza-desenho.png'">
+                <img src="${imgSrc}" alt="${product.name}" class="product-img" onerror="this.onerror=null;this.src='/assets/images/default-images/produto-padrao.png'">
             </td>
             <td>${product.name}</td>
-            <td>${product.category === 'pizza' ? 'Pizza' : 'Bebida'}</td>
+            <td>${(product.category==='drink') ? 'Bebida' : 'Produto'}</td>
             <td>R$ ${product.price[product.price.length - 1].toFixed(2)}</td>
             <td>
                 <span class="status-badge ${product.status}">
@@ -2309,14 +2545,14 @@ function renderFilteredProducts(filteredProducts) {
     filteredProducts.forEach(product => {
         const imgSrc = product.img && typeof product.img === 'string' && product.img.trim() !== ''
             ? product.img
-            : '/assets/images/default-images/pizza-desenho.png';
+            : '/assets/images/default-images/produto-padrao.png';
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>
-                <img src="${imgSrc}" alt="${product.name}" class="product-img" onerror="this.onerror=null;this.src='/assets/images/default-images/pizza-desenho.png'">
+                <img src="${imgSrc}" alt="${product.name}" class="product-img" onerror="this.onerror=null;this.src='/assets/images/default-images/produto-padrao.png'">
             </td>
             <td>${product.name}</td>
-            <td>${product.category === 'pizza' ? 'Pizza' : 'Bebida'}</td>
+            <td>${(product.category==='drink') ? 'Bebida' : 'Produto'}</td>
             <td>R$ ${product.price[product.price.length - 1].toFixed(2)}</td>
             <td>
                 <span class="status-badge ${product.status}">
@@ -2453,12 +2689,25 @@ function openProductModal(productId = null) {
     previewBox?.querySelector('.placeholder')?.classList.remove('hidden');
     form.dataset.imageData = '';
 
+    // Preencher select de categorias dinamicamente, mantendo estilo
+    (async ()=>{
+        try {
+            const cats = await fetchCategoriesPublic();
+            const sel = form.querySelector('select[name="category"]');
+            if (sel) {
+                const current = sel.value;
+                sel.innerHTML = '<option value="">Selecione...</option>' + cats.map(c=>`<option value="${c.slug}">${c.title}</option>`).join('');
+                if (current) sel.value = current;
+            }
+        } catch(_) {}
+    })();
+
     if (productId) {
         const product = products.find(p => p.id === productId);
         title.textContent = 'Editar Produto';
         
         form.name.value = product.name;
-        form.category.value = product.category;
+    if (form.category) form.category.value = product.category;
         form.description.value = product.description;
         form.price1.value = product.price[0] || '';
         form.price2.value = product.price[1] || '';
@@ -2477,6 +2726,8 @@ function openProductModal(productId = null) {
         title.textContent = 'Adicionar Produto';
         form.reset();
         delete form.dataset.editId;
+        // Garantir select preenchido para novo produto
+        (async ()=>{ try { const cats = await fetchCategoriesPublic(); const sel = form.querySelector('select[name="category"]'); if (sel) sel.innerHTML = '<option value="">Selecione...</option>' + cats.map(c=>`<option value="${c.slug}">${c.title}</option>`).join(''); } catch(_){} })();
     }
 
     modal.classList.add('show');
@@ -3175,8 +3426,8 @@ const layoutManager = {
     eventsBound: false,
     currentLayout: {
         background: '../../assets/images/default-images/background.jpg',
-        logo: '../../assets/images/default-images/logo_pizza.png',
-        title: 'Pizzas 10% OFF',
+        logo: '../../assets/images/default-images/logo_estabelecimento.png',
+        title: 'Produtos 10% OFF',
         subtitle: 'Confira no cardápio',
         description: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Incidunt, vitae beatae sint magnam, libero harum quae nobis veritatis iure hic provident illo porro.',
         carouselSlides: [
@@ -3274,7 +3525,7 @@ const layoutManager = {
     },
 
     loadStoredLayout() {
-        const stored = localStorage.getItem('pizzaria_layout');
+        const stored = localStorage.getItem('estabelecimento_layout');
         if (stored) {
             try {
                 this.currentLayout = { ...this.currentLayout, ...JSON.parse(stored) };
@@ -3285,12 +3536,12 @@ const layoutManager = {
     },
 
     saveLayout() {
-        localStorage.setItem('pizzaria_layout', JSON.stringify(this.currentLayout));
+        localStorage.setItem('estabelecimento_layout', JSON.stringify(this.currentLayout));
         showNotification('Layout salvo com sucesso!', 'success');
     },
 
     saveLayoutSilent() {
-        localStorage.setItem('pizzaria_layout', JSON.stringify(this.currentLayout));
+        localStorage.setItem('estabelecimento_layout', JSON.stringify(this.currentLayout));
     },
 
     updatePreviews() {
@@ -3388,7 +3639,7 @@ const layoutManager = {
 
     async resetLogo() {
         try {
-            const url = '../../assets/images/default-images/logo_pizza.png';
+            const url = '../../assets/images/default-images/logo_estabelecimento.png';
             const resp = await this.apiFetch('/api/admin/layout/logo', {
                 method: 'PUT',
                 body: JSON.stringify({ image: url })
@@ -3445,7 +3696,7 @@ const layoutManager = {
     },
 
     resetTexts() {
-        this.currentLayout.title = 'Pizzas 10% OFF';
+        this.currentLayout.title = 'Produtos 10% OFF';
         this.currentLayout.subtitle = 'Confira no cardápio';
         this.currentLayout.description = 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Incidunt, vitae beatae sint magnam, libero harum quae nobis veritatis iure hic provident illo porro.';
         
@@ -4404,11 +4655,11 @@ const instagramManager = {
                 this.state.handle = set.instagram_handle || '';
                 this.state.text = set.instagram_text || '';
                 // sincroniza cache local apenas como espelho do DB, não fonte de verdade
-                try { localStorage.setItem('pizzaria_instagram', JSON.stringify(this.state)); } catch(_) {}
+                try { localStorage.setItem('estabelecimento_instagram', JSON.stringify(this.state)); } catch(_) {}
                 return;
             }
             // fallback localStorage
-            const raw = localStorage.getItem('pizzaria_instagram');
+            const raw = localStorage.getItem('estabelecimento_instagram');
             if (raw) this.state = { enabled: false, handle: '', text: '', ...JSON.parse(raw) };
         } catch (e) {
             console.warn('Falha ao carregar configurações do Instagram:', e);
@@ -4417,7 +4668,7 @@ const instagramManager = {
 
     save() {
         // Sempre persiste no DB via API; localStorage é apenas cache não autoritativo
-        try { localStorage.setItem('pizzaria_instagram', JSON.stringify(this.state)); } catch(_) {}
+        try { localStorage.setItem('estabelecimento_instagram', JSON.stringify(this.state)); } catch(_) {}
     }
 };
 

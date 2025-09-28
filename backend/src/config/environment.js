@@ -18,7 +18,7 @@ module.exports = {
     dbPass: process.env.DB_PASS || '',
     
     // JWT Security
-    jwtSecret: process.env.JWT_SECRET || 'super_secret_key_pizzaria_2025',
+    jwtSecret: process.env.JWT_SECRET || 'super_secret_key_estabelecimento_2025',
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || '24h',
     jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
     

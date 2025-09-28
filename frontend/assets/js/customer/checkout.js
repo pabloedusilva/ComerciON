@@ -41,7 +41,7 @@
   const orderItemsEl = document.getElementById('orderItems');
 
   // Catalog cache for names/images/sizes/prices
-  let catalog = { pizzas: [], drinks: [], all: [], byId: new Map() };
+  let catalog = { produtos: [], drinks: [], all: [], byId: new Map() };
   async function fetchCatalogOnce(){
     if (catalog.all.length) return catalog;
     try {
@@ -50,7 +50,7 @@
       if (!res.ok || !json.sucesso) throw new Error(json.mensagem || 'Falha ao carregar catálogo');
       const all = Array.isArray(json.data) ? json.data : [];
       catalog.all = all;
-      catalog.pizzas = all.filter(p => p.category === 'pizza');
+      catalog.produtos = all.filter(p => p.category === 'produto');
       catalog.drinks = all.filter(p => p.category === 'drink');
       catalog.byId = new Map(all.map(p => [String(p.id), p]));
     } catch (e) {
@@ -93,7 +93,7 @@
 
   // Build order summary from localStorage cart
   async function buildOrderSummary(){
-    const cart = JSON.parse(localStorage.getItem('pizza_cart') || '[]');
+    const cart = JSON.parse(localStorage.getItem('produto_cart') || '[]');
     await fetchCatalogOnce();
     let itemsTotal = 0;
     const entrega = 5;
@@ -108,7 +108,7 @@
         const sizeText = prod && Array.isArray(prod.sizes) && typeof item.size === 'number' ? (prod.sizes[item.size] || '') : '';
         const removed = item.removedIngredients ? `<br><small style=\"color:#999;\">Sem: ${item.removedIngredients}</small>` : '';
         const displayName = prod && prod.name ? `${prod.name}${sizeText ? ` (${sizeText})` : ''}${removed}` : `Item ${item.id}${sizeText ? ` (${sizeText})` : ''}${removed}`;
-        const imgUrl = (prod && prod.img) ? prod.img : '/assets/images/default-images/pizza-desenho.png';
+        const imgUrl = (prod && prod.img) ? prod.img : '/assets/images/default-images/produto-padrao.png';
         const row = document.createElement('div');
         row.className = 'order-item';
         row.innerHTML = `
@@ -141,7 +141,7 @@
 
   // Guard: empty cart → back to menu checkout section
   function enforceCartNotEmpty(){
-    const cart = JSON.parse(localStorage.getItem('pizza_cart') || '[]');
+    const cart = JSON.parse(localStorage.getItem('produto_cart') || '[]');
     if (!Array.isArray(cart) || cart.length === 0) {
       window.location.href = '/menu#checkout';
       return false;
