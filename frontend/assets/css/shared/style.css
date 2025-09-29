@@ -763,6 +763,7 @@ h1 {
 .rating-skip {
     display: inline-block;
     margin-top: 10px;
+    margin-left: 12px;
     background: transparent;
     border: none;
     color: #888;
@@ -816,6 +817,14 @@ h1 {
 }
 a.btn-primary { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
 a.btn-primary:focus, button.btn-primary:focus { outline: none; box-shadow: 0 0 0 3px rgba(250, 180, 39, 0.22); }
+/* Disabled state for primary buttons */
+button.btn-primary[disabled],
+button.btn-primary:disabled,
+a.btn-primary[aria-disabled="true"] {
+    opacity: .6;
+    cursor: not-allowed;
+    filter: grayscale(.1);
+}
 
 .rating-success-animation.show {
     opacity: 1;

@@ -189,9 +189,11 @@
   // ===== Novo modal com o mesmo estilo do menu =====
   let ratingState = { value: 0, inited: false, orderId: null };
 
+  function getRatingArea(){ return document.querySelector('.rating.modalArea'); }
+
   function openRatingModal(orderId){
     ratingState.orderId = orderId;
-    const ratingArea = document.querySelector('.rating.modalArea');
+    const ratingArea = getRatingArea();
     if (!ratingArea) return;
     // Reset visual
     ratingState.value = 0;
@@ -210,18 +212,19 @@
     // Abrir modal
     ratingArea.style.opacity = 0;
     ratingArea.style.display = 'flex';
+  ratingArea.setAttribute('aria-hidden','false');
     setTimeout(()=>{ ratingArea.style.opacity = 1; }, 200);
 
     initRatingInteractionsOnce();
   }
 
   function closeRatingModal(){
-    const ratingArea = document.querySelector('.rating.modalArea');
+    const ratingArea = getRatingArea();
     if (!ratingArea) return;
     const successAnim = document.getElementById('ratingSuccessAnimation');
     if (successAnim) successAnim.classList.remove('show');
     ratingArea.style.opacity = 0;
-    setTimeout(()=>{ ratingArea.style.display = 'none'; }, 200);
+  setTimeout(()=>{ ratingArea.style.display = 'none'; ratingArea.setAttribute('aria-hidden','true'); }, 200);
   }
 
   function showRatingSuccessAnimation(){
@@ -291,7 +294,7 @@
     // Fechar com ESC quando aberto
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        const area = document.querySelector('.rating.modalArea');
+        const area = getRatingArea();
         if (area && area.style.display === 'flex') closeRatingModal();
       }
     });
