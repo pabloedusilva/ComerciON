@@ -68,6 +68,7 @@ function updateCart() {
             const curr = localStorage.getItem('produto_cart');
             if (curr) localStorage.setItem('produto_cart_backup', curr);
             // Garante abertura do carrinho ao voltar do login
+            localStorage.setItem('estab_open_cart_on_load', '1');
             localStorage.setItem('pizzaria_open_cart_on_load', '1');
           } catch(_) {}
           window.location.href = '/login?redirect=/menu%23checkout';
@@ -219,7 +220,7 @@ function updateCart() {
 // Auto-abertura do carrinho quando viemos de outra página mobile
 document.addEventListener('DOMContentLoaded', function(){
   try {
-    const shouldOpen = localStorage.getItem('pizzaria_open_cart_on_load') === '1';
+    const shouldOpen = localStorage.getItem('estab_open_cart_on_load') === '1' || localStorage.getItem('pizzaria_open_cart_on_load') === '1';
     if (shouldOpen) {
       const aside = document.querySelector('aside');
       if (aside) {
@@ -231,7 +232,7 @@ document.addEventListener('DOMContentLoaded', function(){
     }
   } finally {
     // limpar a flag independente do resultado
-    try { localStorage.removeItem('pizzaria_open_cart_on_load'); } catch(_) {}
+  try { localStorage.removeItem('pizzaria_open_cart_on_load'); localStorage.removeItem('estab_open_cart_on_load'); } catch(_) {}
   }
 });
 

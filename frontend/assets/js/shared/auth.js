@@ -279,6 +279,7 @@ class AuthSystem {
                         const cart = localStorage.getItem('produto_cart');
                         if (cart) localStorage.setItem('produto_cart_backup', cart);
                         localStorage.setItem('pizzaria_open_cart_on_load', '1');
+                        localStorage.setItem('estab_open_cart_on_load', '1');
                     } catch(_) {}
                     window.location.href = '/login?redirect=' + encodeURIComponent('/menu#checkout');
                     return false;

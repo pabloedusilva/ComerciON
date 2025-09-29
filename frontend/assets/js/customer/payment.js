@@ -8,12 +8,12 @@
       const d = json.data || {};
       const effectiveClosed = (d.effectiveClosed === true) || (d.closedNow === true);
       if (effectiveClosed) {
-        try { localStorage.setItem('pizzaria_trigger_closed_modal', '1'); } catch(_) {}
+  try { localStorage.setItem('estab_trigger_closed_modal', '1'); localStorage.setItem('pizzaria_trigger_closed_modal', '1'); } catch(_) {}
         window.location.href = '/menu?closed=1';
         return;
       }
     } catch(_) {
-      try { localStorage.setItem('pizzaria_trigger_closed_modal', '1'); } catch(_) {}
+  try { localStorage.setItem('estab_trigger_closed_modal', '1'); localStorage.setItem('pizzaria_trigger_closed_modal', '1'); } catch(_) {}
       window.location.href = '/menu?closed=1';
       return;
     }
@@ -98,7 +98,7 @@
       await createOrderFromCart();
       // Limpa o carrinho só após persistir
       clearCart();
-      try { localStorage.setItem('pizzaria_show_post_payment_success', '1'); } catch(_) {}
+  try { localStorage.setItem('estab_show_post_payment_success', '1'); localStorage.setItem('pizzaria_show_post_payment_success', '1'); } catch(_) {}
       window.location.href = '/menu';
     } catch (e) {
       btn.disabled = false; btn.textContent = 'Pagar';

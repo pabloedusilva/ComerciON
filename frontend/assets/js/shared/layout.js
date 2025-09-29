@@ -308,12 +308,14 @@
       const telDigits = String(settings.phone).replace(/\D+/g, '');
       phoneLink.href = `tel:+${telDigits.length <= 11 ? '55' + telDigits : telDigits}`;
       if (phoneSpan) { phoneSpan.textContent = settings.phone; reveal(phoneSpan); reveal(phoneLink); }
+      try { phoneLink.setAttribute('aria-label', `Ligar para ${settings.phone}`); } catch(_) {}
     }
   const emailLink = document.querySelector('.footer-section .contact-link[href^="mailto:"]');
     const emailSpan = emailLink?.querySelector('span');
     if (emailLink && settings.email) {
       emailLink.href = `mailto:${settings.email}`;
       if (emailSpan) { emailSpan.textContent = settings.email; reveal(emailSpan); reveal(emailLink); }
+      try { emailLink.setAttribute('aria-label', `Enviar e-mail para ${settings.email}`); } catch(_) {}
     }
   const addressLink = document.querySelector('.footer-section .contact-link[href*="google.com/maps"]');
     const addressSpan = addressLink?.querySelector('span');
@@ -349,6 +351,20 @@
         social.appendChild(a);
       }
     }
+
+    // Créditos do rodapé com nome dinâmico
+    try {
+      const credits = document.querySelector('.footer-credits');
+      if (credits) {
+        const firstP = credits.querySelector('p');
+        const year = new Date().getFullYear();
+        const name = settings.name || 'Estabelecimento';
+        if (firstP) {
+          firstP.textContent = `© ${year} ${name}. Todos os direitos reservados.`;
+          reveal(firstP);
+        }
+      }
+    } catch(_) {}
   }
 
   async function init() {

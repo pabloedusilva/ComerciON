@@ -428,10 +428,10 @@ function __showClosedModal(msg, reopenAt){
 document.addEventListener('DOMContentLoaded', async ()=>{
   try {
     const url = new URL(window.location.href);
-    const flagged = url.searchParams.get('closed') === '1' || localStorage.getItem('pizzaria_trigger_closed_modal') === '1';
+  const flagged = url.searchParams.get('closed') === '1' || localStorage.getItem('estab_trigger_closed_modal') === '1' || localStorage.getItem('pizzaria_trigger_closed_modal') === '1';
     if (!flagged) return;
     // limpar flag para não reabrir em navegações subsequentes
-    try { localStorage.removeItem('pizzaria_trigger_closed_modal'); } catch(_) {}
+  try { localStorage.removeItem('pizzaria_trigger_closed_modal'); localStorage.removeItem('estab_trigger_closed_modal'); } catch(_) {}
     const status = await __fetchStoreStatus();
     const isClosed = (status && (status.effectiveClosed === true || status.closedNow === true));
     if (isClosed) {
@@ -464,7 +464,7 @@ function applyInstagramSettings() {
   try {
     // If layout script already applied Instagram from DB, skip local overrides
     if (window.__layoutControlsInstagram) return;
-    const instagramSettings = localStorage.getItem('pizzaria_instagram');
+  const instagramSettings = localStorage.getItem('estab_instagram') || localStorage.getItem('pizzaria_instagram');
     if (!instagramSettings) return;
     
     const settings = JSON.parse(instagramSettings);
@@ -496,7 +496,7 @@ function applyInstagramSettings() {
     if (instagramLink && settings.handle) {
       const url = `https://www.instagram.com/${settings.handle}/`;
       instagramLink.href = url;
-      instagramLink.setAttribute('aria-label', `Instagram ${settings.handle || 'Pizzaria'}`);
+  instagramLink.setAttribute('aria-label', `Instagram ${settings.handle || 'Estabelecimento'}`);
     }
     
   } catch (e) {
@@ -509,7 +509,7 @@ document.addEventListener('DOMContentLoaded', applyInstagramSettings);
 
 // Escutar mudanças no localStorage para atualizar em tempo real
 window.addEventListener('storage', (e) => {
-  if (e.key === 'pizzaria_instagram') {
+  if (e.key === 'pizzaria_instagram' || e.key === 'estab_instagram') {
     applyInstagramSettings();
   }
 });

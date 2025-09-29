@@ -7,13 +7,13 @@
       const json = await res.json();
       if (!res.ok || !json.sucesso) throw new Error();
       if (json.data && json.data.closedNow === true) {
-        try { localStorage.setItem('pizzaria_trigger_closed_modal', '1'); } catch(_) {}
+  try { localStorage.setItem('estab_trigger_closed_modal', '1'); localStorage.setItem('pizzaria_trigger_closed_modal', '1'); } catch(_) {}
         window.location.href = '/menu?closed=1';
         return; // impede prosseguir
       }
     } catch(_) {
       // Por segurança, se não conseguir verificar, evita acesso
-      try { localStorage.setItem('pizzaria_trigger_closed_modal', '1'); } catch(_) {}
+  try { localStorage.setItem('estab_trigger_closed_modal', '1'); localStorage.setItem('pizzaria_trigger_closed_modal', '1'); } catch(_) {}
       window.location.href = '/menu?closed=1';
       return;
     }

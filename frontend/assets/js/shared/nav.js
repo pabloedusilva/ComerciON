@@ -214,7 +214,7 @@ try {
             const path = window.location.pathname;
             const onMenu = /\/?menu(\.html)?$/i.test(path);
             if (!onMenu) {
-            try { localStorage.setItem('pizzaria_open_cart_on_load', '1'); } catch(_) {}
+            try { localStorage.setItem('pizzaria_open_cart_on_load', '1'); localStorage.setItem('estab_open_cart_on_load', '1'); } catch(_) {}
             window.location.href = '/menu';
             ev.preventDefault();
             ev.stopPropagation();
