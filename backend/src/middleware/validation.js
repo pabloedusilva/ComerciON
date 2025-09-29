@@ -162,6 +162,16 @@ const validarProdutoBase = [
     body('description').optional().isString().isLength({ max: 5000 }).withMessage('Descrição muito longa'),
     body('price').isArray({ min: 1, max: 3 }).withMessage('Preço deve ser array de até 3 itens'),
     body('price.*').isFloat({ min: 0, max: 9999 }).withMessage('Preço inválido'),
+    body('price').custom((arr) => {
+        try {
+            if (!Array.isArray(arr)) return false;
+            const nums = arr.map(v => Number(v) || 0);
+            if (!nums.some(v => v > 0)) throw new Error('Pelo menos um preço deve ser maior que zero');
+            return true;
+        } catch (e) {
+            throw new Error(e.message || 'Preço inválido');
+        }
+    }),
     body('status').optional().isIn(['active','inactive']).withMessage('Status inválido')
 ];
 

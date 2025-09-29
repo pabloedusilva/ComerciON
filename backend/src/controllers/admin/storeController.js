@@ -46,6 +46,22 @@ const StoreController = {
         is_manual_mode: isManualMode
       });
 
+      try {
+        const io = req.app?.get('io');
+        const monitor = req.app?.get('storeMonitor');
+        if (io) {
+          // Notificar admin e clientes para atualização imediata do status (com payload)
+          const status = await StoreStatus.get();
+          const hours = await StoreHours.getAll();
+          const { composePublicStatus } = require('../../utils/storeStatus');
+          const payload = composePublicStatus(status, hours);
+          io.of('/admin').emit('dashboard:update', { reason: 'admin-update-status', status: payload });
+          io.of('/cliente').emit('store:status', payload);
+        }
+        // Recalibrar monitor para próximos limites de horário
+        try { await monitor?.refresh(); } catch (_) {}
+      } catch (_) { /* noop */ }
+
       res.json({
         sucesso: true,
         mensagem: 'Status da loja atualizado com sucesso',
@@ -73,6 +89,21 @@ const StoreController = {
       }
 
       const updatedHours = await StoreHours.update(hours);
+
+      try {
+        const io = req.app?.get('io');
+        const monitor = req.app?.get('storeMonitor');
+        if (io) {
+          const status = await StoreStatus.get();
+          const hours = await StoreHours.getAll();
+          const { composePublicStatus } = require('../../utils/storeStatus');
+          const payload = composePublicStatus(status, hours);
+          io.of('/admin').emit('dashboard:update', { reason: 'admin-update-hours', status: payload });
+          io.of('/cliente').emit('store:status', payload);
+        }
+        // Recalibrar monitor para próximos limites de horário
+        try { await monitor?.refresh(); } catch (_) {}
+      } catch (_) { /* noop */ }
 
       res.json({
         sucesso: true,

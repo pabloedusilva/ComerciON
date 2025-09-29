@@ -27,7 +27,8 @@ module.exports = {
         const id = parseInt(it.id, 10);
         const size = parseInt(it.size, 10);
         const quantity = parseInt(it.qt || it.quantity || 0, 10);
-        const category = (it.type === 'drink' || it.category === 'drink') ? 'drink' : 'produto';
+  // Usar a categoria real do produto (slug armazenado em products.category)
+  // Fallback seguro para 'produto' se não houver
         const removed = (it.removedIngredients || '').toString().slice(0, 200) || null;
         if (!id || !Number.isFinite(size) || size < 0 || size > 2 || !quantity || quantity < 1) {
           return res.status(400).json({ sucesso: false, mensagem: 'Item inválido' });
@@ -39,7 +40,7 @@ module.exports = {
         if (!Number.isFinite(unitPrice)) return res.status(400).json({ sucesso: false, mensagem: 'Preço inválido para o produto' });
         preparedItems.push({
           product_id: id,
-          category,
+          category: (product.category ? String(product.category).toLowerCase().slice(0,50) : 'produto'),
           size,
           quantity,
           unit_price: unitPrice,

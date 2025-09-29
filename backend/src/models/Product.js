@@ -63,7 +63,7 @@ const Product = {
       category: row.category,
       description: row.description,
       price: [Number(row.price_small), Number(row.price_medium), Number(row.price_large)],
-      sizes: ['320g', '530g', '860g'],
+      sizes: ['', '', ''],
       img: row.img,
       status: row.status,
       created_at: row.created_at,

@@ -350,37 +350,29 @@ function initSidebarStatusPill() {
     pill.setAttribute('title', 'Verificando status da loja');
     pill.setAttribute('aria-label', 'Verificando status da loja');
 
-    const update = () => {
-        // garantir que statusManager tenha estado carregado
-        try { statusManager.load?.(); } catch(e) {}
-        const closed = safeIsClosedNow();
-        
-        // Remover estado de carregamento e aplicar o real
-        pill.classList.remove('loading', 'closed', 'open');
-        pill.classList.add(closed ? 'closed' : 'open');
-        pill.innerHTML = closed ? '<i class="fas fa-circle"></i> Fechada' : '<i class="fas fa-circle"></i> Aberta';
-        pill.setAttribute('title', closed ? 'Loja fechada' : 'Loja aberta');
-        pill.setAttribute('aria-label', closed ? 'Loja fechada' : 'Loja aberta');
-    };
-
-    // Helper seguro para não depender de seção ativa
-    function safeIsClosedNow() {
+    // Atualizador que consulta o backend para garantir consistência com o público (effectiveClosed)
+    async function update() {
         try {
-            const now = new Date();
-            if (statusManager && typeof statusManager.isClosedAt === 'function') {
-                // garantir que horas existam
-                if (!statusManager.state?.hours) {
-                    statusManager.state = statusManager.state || {};
-                    statusManager.state.hours = statusManager.getDefaultHours();
-                }
-                return !!statusManager.isClosedAt(now);
-            }
-        } catch (e) { /* noop */ }
-        return false;
+            const res = await fetch('/api/public/store', { cache: 'no-store' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const json = await res.json();
+            const closed = !!(json && json.sucesso && json.data && (json.data.effectiveClosed === true || json.data.closedNow === true));
+            pill.classList.remove('loading', 'closed', 'open');
+            pill.classList.add(closed ? 'closed' : 'open');
+            pill.innerHTML = closed ? '<i class="fas fa-circle"></i> Fechada' : '<i class="fas fa-circle"></i> Aberta';
+            pill.setAttribute('title', closed ? 'Loja fechada' : 'Loja aberta');
+            pill.setAttribute('aria-label', closed ? 'Loja fechada' : 'Loja aberta');
+        } catch (e) {
+            // Em erro de rede, manter estado anterior mas remover loading
+            pill.classList.remove('loading');
+        }
     }
 
+    // Expor no escopo global para chamadas via eventos de socket
+    window.__updateSidebarStatusPill = update;
+
     // Aguardar um momento para carregar o estado real
-    setTimeout(update, 500);
+    setTimeout(update, 300);
 
     // Atualizar a cada minuto para refletir mudanças de horário
     setInterval(update, 60 * 1000);
@@ -390,8 +382,7 @@ function initSidebarStatusPill() {
         if (e.key === 'estabelecimento_status') update();
     });
 
-    // Não mais interceptar o statusManager.save aqui
-    // A sidebar será atualizada pelos botões específicos no statusManager
+    // Mantemos atualização reativa via socket em outro trecho
 }
 
 // ===== Badge de Pedidos (tempo real) =====
@@ -443,9 +434,33 @@ function initAdminSocket() {
         });
 
         // Pedido para atualizar tudo (dashboard:update)
-        __socket.on('dashboard:update', () => {
+        __socket.on('dashboard:update', (msg) => {
             refreshDashboardFromAPI();
             updateReportsCharts();
+            if (msg && msg.status) {
+                // Render sidebar from payload immediately
+                const pill = document.getElementById('sidebarStatusPill');
+                if (pill) {
+                    const closed = !!msg.status.effectiveClosed;
+                    pill.classList.remove('loading', 'closed', 'open');
+                    pill.classList.add(closed ? 'closed' : 'open');
+                    pill.innerHTML = closed ? '<i class="fas fa-circle"></i> Fechada' : '<i class="fas fa-circle"></i> Aberta';
+                }
+            } else {
+                try { window.__updateSidebarStatusPill?.(); } catch(_) {}
+            }
+        });
+        // Quando status/horário da loja mudar, atualizar pill imediatamente
+        __socket.on('store:status', (payload) => {
+            const pill = document.getElementById('sidebarStatusPill');
+            if (pill && payload) {
+                const closed = !!payload.effectiveClosed;
+                pill.classList.remove('loading', 'closed', 'open');
+                pill.classList.add(closed ? 'closed' : 'open');
+                pill.innerHTML = closed ? '<i class="fas fa-circle"></i> Fechada' : '<i class="fas fa-circle"></i> Aberta';
+            } else {
+                try { window.__updateSidebarStatusPill?.(); } catch(_) {}
+            }
         });
     } catch (e) {
         // silencioso
@@ -2299,13 +2314,15 @@ function renderProductsTable() {
             ? product.img
             : '/assets/images/default-images/produto-padrao.png';
         const row = document.createElement('tr');
+        const nonZeroPrices = (Array.isArray(product.price) ? product.price : []).filter(v => Number(v) > 0);
+        const displayPrice = nonZeroPrices.length ? Math.max(...nonZeroPrices) : 0;
         row.innerHTML = `
             <td>
                 <img src="${imgSrc}" alt="${product.name}" class="product-img" onerror="this.onerror=null;this.src='/assets/images/default-images/produto-padrao.png'">
             </td>
             <td>${product.name}</td>
             <td>${(product.category==='drink') ? 'Bebida' : 'Produto'}</td>
-            <td>R$ ${product.price[product.price.length - 1].toFixed(2)}</td>
+            <td>R$ ${Number(displayPrice).toFixed(2)}</td>
             <td>
                 <span class="status-badge ${product.status}">
                     ${product.status === 'active' ? 'Ativo' : 'Inativo'}
@@ -2547,13 +2564,15 @@ function renderFilteredProducts(filteredProducts) {
             ? product.img
             : '/assets/images/default-images/produto-padrao.png';
         const row = document.createElement('tr');
+        const nonZeroPrices = (Array.isArray(product.price) ? product.price : []).filter(v => Number(v) > 0);
+        const displayPrice = nonZeroPrices.length ? Math.max(...nonZeroPrices) : 0;
         row.innerHTML = `
             <td>
                 <img src="${imgSrc}" alt="${product.name}" class="product-img" onerror="this.onerror=null;this.src='/assets/images/default-images/produto-padrao.png'">
             </td>
             <td>${product.name}</td>
             <td>${(product.category==='drink') ? 'Bebida' : 'Produto'}</td>
-            <td>R$ ${product.price[product.price.length - 1].toFixed(2)}</td>
+            <td>R$ ${Number(displayPrice).toFixed(2)}</td>
             <td>
                 <span class="status-badge ${product.status}">
                     ${product.status === 'active' ? 'Ativo' : 'Inativo'}
@@ -2702,6 +2721,35 @@ function openProductModal(productId = null) {
         } catch(_) {}
     })();
 
+    // Size mode controls
+    const sizeModeInputs = form.querySelectorAll('input[name="sizeMode"]');
+    const multipleGroup = document.getElementById('multiplePricesGroup');
+    const uniqueGroup = document.getElementById('uniquePriceGroup');
+    const priceUniqueInput = form.querySelector('input[name="priceUnique"]');
+
+    function setSizeMode(mode) {
+        const isUnique = mode === 'unique';
+        if (isUnique) {
+            multipleGroup?.style && (multipleGroup.style.display = 'none');
+            uniqueGroup?.style && (uniqueGroup.style.display = 'grid');
+            // When switching to unique, prefill unique price with the last non-zero of p1/p2/p3
+            const p1 = parseFloat(form.price1.value) || 0;
+            const p2 = parseFloat(form.price2.value) || 0;
+            const p3 = parseFloat(form.price3.value) || 0;
+            const fallback = p3 || p2 || p1 || '';
+            if (priceUniqueInput && priceUniqueInput.value === '') priceUniqueInput.value = fallback;
+        } else {
+            multipleGroup?.style && (multipleGroup.style.display = 'grid');
+            uniqueGroup?.style && (uniqueGroup.style.display = 'none');
+        }
+        // reflect radio UI
+        sizeModeInputs.forEach(inp => { inp.checked = (inp.value === mode); });
+    }
+
+    sizeModeInputs.forEach(inp => {
+        inp.onchange = () => setSizeMode(inp.value);
+    });
+
     if (productId) {
         const product = products.find(p => p.id === productId);
         title.textContent = 'Editar Produto';
@@ -2712,6 +2760,17 @@ function openProductModal(productId = null) {
         form.price1.value = product.price[0] || '';
         form.price2.value = product.price[1] || '';
         form.price3.value = product.price[2] || '';
+        // Detect if product is unique-sized (exactly one price > 0)
+        const prices = product.price || [0,0,0];
+        const nonZero = prices.filter(v => Number(v) > 0);
+        if (nonZero.length === 1) {
+            if (priceUniqueInput) priceUniqueInput.value = String(nonZero[0] || '');
+            setSizeMode('unique');
+        } else {
+            // default: multiple
+            if (priceUniqueInput) priceUniqueInput.value = '';
+            setSizeMode('multiple');
+        }
         
         form.dataset.editId = productId;
         // Pre-fill preview with current product image if available
@@ -2726,6 +2785,9 @@ function openProductModal(productId = null) {
         title.textContent = 'Adicionar Produto';
         form.reset();
         delete form.dataset.editId;
+        // Default to multiple on new, clear unique price
+        if (priceUniqueInput) priceUniqueInput.value = '';
+        setSizeMode('multiple');
         // Garantir select preenchido para novo produto
         (async ()=>{ try { const cats = await fetchCategoriesPublic(); const sel = form.querySelector('select[name="category"]'); if (sel) sel.innerHTML = '<option value="">Selecione...</option>' + cats.map(c=>`<option value="${c.slug}">${c.title}</option>`).join(''); } catch(_){} })();
     }
@@ -2833,16 +2895,25 @@ async function saveProduct() {
     const formData = new FormData(form);
     
     const uploadedImage = form.dataset.imageData;
+    // Determine size mode
+    const sizeMode = formData.get('sizeMode') || 'multiple';
+    const p1 = parseFloat(formData.get('price1')) || 0;
+    const p2 = parseFloat(formData.get('price2')) || 0;
+    const p3 = parseFloat(formData.get('price3')) || 0;
+    const pU = parseFloat(formData.get('priceUnique')) || 0;
+    const prices = (sizeMode === 'unique') ? [pU, 0, 0] : [p1, p2, p3];
+
+    // Basic validation: ensure at least one price > 0
+    if (!prices.some(v => Number(v) > 0)) {
+        showNotification('Informe pelo menos um preço maior que zero.', 'warning');
+        return;
+    }
+
     const productData = {
         name: formData.get('name'),
         category: formData.get('category'),
         description: formData.get('description'),
-        price: [
-            parseFloat(formData.get('price1')) || 0,
-            parseFloat(formData.get('price2')) || 0,
-            parseFloat(formData.get('price3'))
-        ],
-        sizes: ['320g', '530g', '860g'],
+        price: prices,
         // Enviar base64 quando houver upload; caso contrário, enviar null para usar fallback no frontend
         img: uploadedImage || null,
         status: 'active'
@@ -4010,23 +4081,24 @@ const statusManager = {
                 showNotification('Erro ao salvar status', 'error');
             }
         });
+
+        // Limpar status manual (reabrir)
         clearBtn?.addEventListener('click', async () => {
-            // Só permite limpar se estivermos em modo manual
             if (!this.state.isManualMode) {
                 showNotification('Para alterar o status, mude para modo manual primeiro', 'warning');
                 return;
             }
-
-            this.state.closedNow = false; // Ao limpar, estamos reabrindo manualmente
+            this.state.closedNow = false;
             this.state.reason = '';
             this.state.reopenAt = '';
             this.state.notifyWhatsApp = false;
             this.state.notifyEmail = false;
-            
+
             const success = await this.save();
             if (success) {
                 this.render();
                 this.updateSidebarPill();
+                try { window.__updateSidebarStatusPill?.(); } catch(_) {}
                 showNotification('Loja reaberta manualmente!', 'info');
             } else {
                 showNotification('Erro ao limpar status', 'error');
@@ -4038,7 +4110,10 @@ const statusManager = {
             this.collectHoursFromUI();
             const success = await this.saveHours();
             if (success) {
+                // Atualiza imediatamente o pill com a lógica de modo automático (somente cálculo por horário)
+                try { this.updateSidebarPillAutoOnly(); } catch(_) {}
                 showNotification('Horários de funcionamento salvos!', 'success');
+                try { window.__updateSidebarStatusPill?.(); } catch(_) {}
             } else {
                 showNotification('Erro ao salvar horários', 'error');
             }
@@ -4057,6 +4132,9 @@ const statusManager = {
                     await this.load(); // Recarregar do banco
                     this.renderHours();
                     showNotification('Horários restaurados!', 'info');
+                    // Atualiza imediatamente o pill com a lógica de modo automático
+                    try { this.updateSidebarPillAutoOnly(); } catch(_) {}
+                    try { window.__updateSidebarStatusPill?.(); } catch(_) {}
                 } else {
                     showNotification('Erro ao restaurar horários', 'error');
                 }
@@ -4186,6 +4264,11 @@ const statusManager = {
             console.log('SidebarStatusPill não encontrado!');
             return;
         }
+        // Prefer authoritative server status via global updater
+        if (typeof window.__updateSidebarStatusPill === 'function') {
+            sidebarPill.classList.add('loading');
+            try { window.__updateSidebarStatusPill(); return; } catch(_) {}
+        }
         
         // SidebarPill mostra o status real da loja baseado na lógica de negócio
         let effectiveClosed;
@@ -4205,6 +4288,19 @@ const statusManager = {
         });
         
         // Remover estado de loading e aplicar o estado real
+        sidebarPill.classList.remove('loading', 'closed', 'open');
+        sidebarPill.classList.add(effectiveClosed ? 'closed' : 'open');
+        sidebarPill.innerHTML = effectiveClosed
+            ? '<i class="fas fa-circle"></i> Fechada'
+            : '<i class="fas fa-circle"></i> Aberta';
+    },
+
+    // Atualiza o pill imediatamente usando SOMENTE a lógica automática (ignorando modo manual)
+    // Útil após "Salvar horários" quando o desejo é refletir já o estado por horário atual
+    updateSidebarPillAutoOnly() {
+        const sidebarPill = document.getElementById('sidebarStatusPill');
+        if (!sidebarPill) return;
+        const effectiveClosed = this.isClosedBySchedule();
         sidebarPill.classList.remove('loading', 'closed', 'open');
         sidebarPill.classList.add(effectiveClosed ? 'closed' : 'open');
         sidebarPill.innerHTML = effectiveClosed
@@ -4277,12 +4373,20 @@ const statusManager = {
         if (!cfg || !cfg.enabled) return true;
         const [oH,oM] = (cfg.open||'00:00').split(':').map(n=>parseInt(n,10));
         const [cH,cM] = (cfg.close||'23:59').split(':').map(n=>parseInt(n,10));
-        const currentMinutes = d.getHours()*60 + d.getMinutes();
-        const openMinutes = oH*60 + oM;
-        const closeMinutes = cH*60 + cM;
-        const openNow = currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
-        // Fechada quando está fora do horário
-        return !openNow;
+        const nowMin = d.getHours()*60 + d.getMinutes();
+        const openMin = oH*60 + oM;
+        const closeMin = cH*60 + cM;
+        // Janela zero (open == close) => fechado o dia todo
+        if (openMin === closeMin) return true;
+        let isOpen;
+        if (closeMin > openMin) {
+            // janela no mesmo dia: [open, close)
+            isOpen = (nowMin >= openMin) && (nowMin < closeMin);
+        } else {
+            // cruza meia-noite: [open, 24h) U [0, close)
+            isOpen = (nowMin >= openMin) || (nowMin < closeMin);
+        }
+        return !isOpen;
     },
 
     isClosedBySchedule(date = new Date()) {
@@ -4296,13 +4400,20 @@ const statusManager = {
         
         const [oH, oM] = (cfg.open || '00:00').split(':').map(n => parseInt(n, 10));
         const [cH, cM] = (cfg.close || '23:59').split(':').map(n => parseInt(n, 10));
-        const currentMinutes = d.getHours() * 60 + d.getMinutes();
-        const openMinutes = oH * 60 + oM;
-        const closeMinutes = cH * 60 + cM;
-        
-        const openNow = currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
-        // Fechada quando está fora do horário
-        return !openNow;
+        const nowMin = d.getHours() * 60 + d.getMinutes();
+        const openMin = oH * 60 + oM;
+        const closeMin = cH * 60 + cM;
+        // Janela zero (open == close) => fechado o dia todo
+        if (openMin === closeMin) return true;
+        let isOpen;
+        if (closeMin > openMin) {
+            // janela no mesmo dia: [open, close)
+            isOpen = (nowMin >= openMin) && (nowMin < closeMin);
+        } else {
+            // cruza meia-noite: [open, 24h) U [0, close)
+            isOpen = (nowMin >= openMin) || (nowMin < closeMin);
+        }
+        return !isOpen;
     },
 
     async load() {

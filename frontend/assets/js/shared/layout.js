@@ -111,6 +111,87 @@
     }
   }
 
+  async function fetchPublicCategories() {
+    try {
+      const res = await fetch('/api/public/categories');
+      const json = await res.json();
+      if (!res.ok || !json.sucesso) throw new Error(json.mensagem || 'Falha ao carregar categorias');
+      const raw = Array.isArray(json.data) ? json.data : [];
+      // Normalização semelhante ao geral.js
+      const alias = (s) => {
+        const v = String(s || '').toLowerCase();
+        if (v === 'bebida' || v === 'bebidas' || v === 'drinks') return 'drink';
+        if (v === 'produtos' || v === 'product' || v === 'products') return 'produto';
+        return v;
+      };
+      const titleFor = (slug)=> slug === 'drink' ? 'Bebidas' : (slug === 'produto' ? 'Produtos' : slug);
+      const map = new Map();
+      raw.forEach(c => {
+        const s = alias(c.slug);
+        const t = c.title && c.title.trim() ? c.title : titleFor(s);
+        const pos = Number(c.position) || 0;
+        const active = c.active !== 0 && c.active !== false;
+        if (!map.has(s)) map.set(s, { slug: s, title: t, position: pos, active });
+      });
+      // Fallback canônico mínimo
+      if (map.size === 0) {
+        map.set('produto', { slug:'produto', title:'Produtos', position: 1, active: true });
+        map.set('drink', { slug:'drink', title:'Bebidas', position: 2, active: true });
+      }
+      const cats = Array.from(map.values()).filter(c => c.active !== false)
+        .sort((a,b)=> (a.position||0) - (b.position||0));
+      return cats;
+    } catch (e) {
+      console.warn('Categorias públicas indisponíveis:', e.message);
+      // Fallback
+      return [
+        { slug:'produto', title:'Produtos', position:1, active:true },
+        { slug:'drink', title:'Bebidas', position:2, active:true }
+      ];
+    }
+  }
+
+  function anchorIdForSlug(slug){
+    const s = String(slug||'').toLowerCase();
+    if (s === 'produto') return 'produtos';
+    if (s === 'drink') return 'bebidas';
+    return s;
+  }
+
+  function applyFooterMenuLinks(categories){
+    try {
+      const secs = Array.from(document.querySelectorAll('.footer-links .footer-section'));
+      const menuSecs = secs.filter(sec => {
+        const h = sec.querySelector('h4');
+        return h && h.textContent && h.textContent.trim().toLowerCase() === 'menu';
+      });
+      if (!menuSecs.length) return;
+      const top3 = (categories || []).slice(0,3);
+      menuSecs.forEach(sec => {
+        const ul = sec.querySelector('ul');
+        if (!ul) return;
+        ul.innerHTML = '';
+        top3.forEach(cat => {
+          const li = document.createElement('li');
+          const a = document.createElement('a');
+          a.href = `/menu#${anchorIdForSlug(cat.slug)}`;
+          a.textContent = cat.title || cat.slug;
+          li.appendChild(a);
+          ul.appendChild(li);
+        });
+        // Adiciona Home (estático)
+        const liHome = document.createElement('li');
+        const aHome = document.createElement('a');
+        aHome.href = '/';
+        aHome.textContent = 'Home';
+        liHome.appendChild(aHome);
+        ul.appendChild(liHome);
+      });
+    } catch (e) {
+      console.warn('Falha ao aplicar links do footer (Menu):', e.message);
+    }
+  }
+
   function applyLogo(layout) {
     if (!layout?.logo_url) return;
     document.querySelectorAll('.menu-area .logo img, .header-logo img, .footer-logo, .admin-header .header-logo img, .auth-logo').forEach(img => {
@@ -314,7 +395,7 @@
       if (socialLinks) appendSkeleton(socialLinks, 'skeleton-footer');
     }
 
-    const [layout, settings] = await Promise.all([fetchLayout(), fetchSettings()]);
+  const [layout, settings, categories] = await Promise.all([fetchLayout(), fetchSettings(), fetchPublicCategories()]);
     const isLayoutDefault = !!layout?.from_default;
     const isSettingsDefault = !!settings?.from_default;
     
@@ -351,6 +432,11 @@
       const socialLinks = document.querySelector('.footer-section .social-links');
       footerContactLinks.forEach(el => el.classList.add('hide-if-no-data'));
       if (socialLinks) socialLinks.classList.add('hide-if-no-data');
+    }
+
+    // Aplicar Menu dinâmico do footer (sempre que tivermos categorias)
+    if (categories && categories.length) {
+      applyFooterMenuLinks(categories);
     }
 
     // Marca página como pronta para liberar visibilidade padrão

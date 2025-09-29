@@ -67,7 +67,12 @@
     emptyEl.classList.add('hidden');
     listEl.innerHTML = orders.map(o=>{
       const items = Array.isArray(o.items) ? o.items : [];
-      const resumo = items.map(it=> `${it.quantity}x ${it.category==='produto'?'Produto':'Bebida'} ${['320g','530g','860g'][it.size]||''}`).join(', ');
+      const resumo = items.map(it=>{
+        const isProd = it.category==='produto';
+        let sizeText = '';
+        if (typeof it.size === 'number') sizeText = ['Pequeno','Médio','Grande'][it.size] || '';
+        return `${it.quantity}x ${isProd?'Produto':'Bebida'} ${sizeText}`.trim();
+      }).join(', ');
       const st = String(o.status || '').toLowerCase();
       const fmtAddr = (()=>{
         if (o.formattedAddress && typeof o.formattedAddress === 'string') return o.formattedAddress;

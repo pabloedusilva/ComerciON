@@ -77,8 +77,14 @@ function updateCart() {
   };
   // Defer para garantir DOM pronto e elementos presentes
   setTimeout(enforceCheckoutAuth, 0);
-      let produtoSizeName = produtoItem.sizes[cart[i].size];
-      let produtoName = `${produtoItem.name} (${produtoSizeName})`;
+      // Nome do tamanho dinâmico
+      let produtoSizeName = '';
+      if (Array.isArray(produtoItem.price)) {
+        const count = produtoItem.price.map(n=>Number(n)||0).filter(v=>v>0).length;
+        if (count === 1) produtoSizeName = 'Único';
+        else produtoSizeName = ['Pequeno','Médio','Grande'][cart[i].size] || '';
+      }
+      let produtoName = produtoSizeName ? `${produtoItem.name} (${produtoSizeName})` : `${produtoItem.name}`;
       
       // Adicionar ingredientes removidos se houver
       if (cart[i].removedIngredients && cart[i].removedIngredients.length > 0) {
@@ -167,8 +173,10 @@ function updateCart() {
         cta.addEventListener('click', (ev) => {
           if (window.location.pathname === '/menu') {
             ev.preventDefault();
+            // Em desktop, manter carrinho fixo; em mobile, fechar ao navegar para a âncora
+            const isMobile = window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
             const aside = document.querySelector('aside');
-            if (aside) {
+            if (isMobile && aside) {
               aside.classList.remove('show');
               aside.style.left = '100vw';
             }
@@ -228,22 +236,7 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 
 
-document.querySelector(".cart--finalizar").addEventListener("click", (e) => {
-  e.preventDefault();
-  const auth = window.AuthSystem;
-  const isAuth = !!(auth && typeof auth.isAuthenticated === 'function' && auth.isAuthenticated());
-  if (!isAuth) {
-    try {
-      const curr = localStorage.getItem('produto_cart');
-      if (curr) localStorage.setItem('produto_cart_backup', curr);
-      localStorage.setItem('pizzaria_open_cart_on_load', '1');
-    } catch(_) {}
-    window.location.href = '/login?redirect=' + encodeURIComponent('/menu#checkout');
-    return;
-  }
-  // Rota segura do checkout
-  window.location.href = '/checkout';
-});
+// Handler de finalizar movido para shared/geral.js para unificar spinner/fechamento
 
 // Pós-pagamento: abrir modal de "pedido sendo preparado" e depois avaliação
 // Removido: fluxo de modal de avaliação e pós-pagamento

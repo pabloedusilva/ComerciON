@@ -135,7 +135,14 @@ document.addEventListener('DOMContentLoaded', function() {
           itemEl.setAttribute('data-key', String(keyIndex >= 0 ? keyIndex : 0));
           itemEl.setAttribute('data-type', isDrink ? 'drink' : 'produto');
           itemEl.querySelector('.produto-item--img img').src = prod.img || (assetsPath + 'images/default-images/produto-padrao.png');
-          itemEl.querySelector('.produto-item--price').innerHTML = `${(prod.price[2]||0).toLocaleString('pt-br', { style:'currency', currency:'BRL' })}`;
+          // Mostrar o maior preço disponível (não-zero) na listagem
+          try {
+            const pArr = Array.isArray(prod.price) ? prod.price.map(n=>Number(n)||0) : [0,0,0];
+            const maxPrice = Math.max(...pArr.filter(v=>v>0), 0);
+            itemEl.querySelector('.produto-item--price').innerHTML = `${maxPrice.toLocaleString('pt-br', { style:'currency', currency:'BRL' })}`;
+          } catch(_) {
+            itemEl.querySelector('.produto-item--price').innerHTML = `${(prod.price?.[2]||0).toLocaleString('pt-br', { style:'currency', currency:'BRL' })}`;
+          }
           itemEl.querySelector('.produto-item--name').innerHTML = prod.name;
           itemEl.querySelector('.produto-item--desc').innerHTML = prod.description;
           itemEl.querySelector('a').addEventListener('click', (e)=>{
@@ -167,10 +174,55 @@ function openModal(key, type) {
   document.querySelector(".produtoBig img").src = currentData[key].img || (assetsPath + 'images/default-images/produto-padrao.png');
   document.querySelector(".produtoInfo h1").innerHTML = currentData[key].name;
   document.querySelector(".produtoInfo--desc").innerHTML = currentData[key].description;
-  document.querySelector(".produtoInfo--actualPrice").innerHTML = `${currentData[key].price[2].toLocaleString("pt-br", {
-    style: "currency",
-    currency: "BRL",
-  })}`;
+  // Preparar tamanhos dinâmicos com base nos preços disponíveis (>0)
+  const prices = Array.isArray(currentData[key].price) ? currentData[key].price.map(n=>Number(n)||0) : [0,0,0];
+  const available = prices
+    .map((v, idx) => ({ idx, v }))
+    .filter(({ v }) => v > 0);
+  const sizeEls = Array.from(document.querySelectorAll('.produtoInfo--size'));
+  const sizeArea = document.querySelector('.produtoInfo--sizearea');
+  const sizeList = document.querySelector('.produtoInfo--sizes');
+  // Label dinâmico sem gramas
+  const sizeLabels = ['Pequeno', 'Médio', 'Grande'];
+  const hasSingle = available.length === 1;
+  const setChip = (el, label, dataKey, selected) => {
+    if (!el) return;
+    el.style.display = 'inline-flex';
+    el.setAttribute('data-key', String(dataKey));
+    // Exibir apenas o nome do tamanho, sem spans auxiliares
+    el.textContent = label;
+    if (selected) el.classList.add('selected'); else el.classList.remove('selected');
+  };
+  // Exibir/ocultar itens conforme disponibilidade
+  sizeEls.forEach((el) => el.style.display = 'none');
+  if (available.length === 0) {
+    // fallback: esconder área de tamanho e usar preço 0
+    if (sizeArea) sizeArea.style.display = 'none';
+    document.querySelector('.produtoInfo--actualPrice').innerHTML = (0).toLocaleString('pt-br',{style:'currency',currency:'BRL'});
+  } else if (hasSingle) {
+    if (sizeArea) sizeArea.style.display = 'block';
+    const only = available[0];
+    const el = sizeEls[0];
+    const label = (only.idx === 0) ? 'Único' : (sizeLabels[only.idx] || `Tamanho ${only.idx+1}`);
+    setChip(el, label, only.idx, true);
+    // esconder os demais
+    sizeEls.slice(1).forEach(e=>{ e.style.display='none'; e.classList.remove('selected'); });
+    document.querySelector('.produtoInfo--actualPrice').innerHTML = prices[only.idx].toLocaleString('pt-br',{style:'currency',currency:'BRL'});
+  } else {
+    if (sizeArea) sizeArea.style.display = 'block';
+    let firstShown = false;
+    available.forEach(({ idx }, order) => {
+      const el = sizeEls[order];
+      if (!el) return;
+      const label = sizeLabels[idx] || `Tamanho ${idx+1}`;
+      setChip(el, label, idx, !firstShown);
+      if (!firstShown) firstShown = true;
+    });
+    // esconder qualquer extra
+    sizeEls.slice(available.length).forEach(e=>{ e.style.display='none'; e.classList.remove('selected'); });
+    const selectedIdx = parseInt(document.querySelector('.produtoInfo--size.selected')?.getAttribute('data-key')) || available[0].idx;
+    document.querySelector('.produtoInfo--actualPrice').innerHTML = prices[selectedIdx].toLocaleString('pt-br',{style:'currency',currency:'BRL'});
+  }
   
   // Mostrar/ocultar área de personalização apenas para produtos
   const customizeArea = document.querySelector(".produtoInfo--customizearea");
@@ -183,14 +235,7 @@ function openModal(key, type) {
     customizeArea.style.display = 'none';
   }
   
-  // Reset tamanhos
-  document.querySelector(".produtoInfo--size.selected")?.classList.remove("selected");
-  document.querySelectorAll(".produtoInfo--size").forEach((size, sizeIndex) => {
-    if (sizeIndex == 2) {
-      size.classList.add("selected");
-    }
-    size.querySelector("span").innerHTML = currentData[key].sizes[sizeIndex];
-  });
+  // Eventos de tamanho: atualização de preço com base no 'data-key' da opção ativa
 
   document.querySelector(".produtoInfo--qt").innerHTML = modalQt;
   document.querySelector(".modalArea").style.opacity = 0;
@@ -227,12 +272,9 @@ document
 //##CONTROLS
 document.querySelector(".produtoInfo--qtmenos").addEventListener("click", () => {
   if (modalQt > 1) {
-    let size = parseInt(
-      document
-        .querySelector(".produtoInfo--size.selected")
-        .getAttribute("data-key")
-    );
-    let preco = currentData[modalKey].price[size];
+    const sizeEl = document.querySelector('.produtoInfo--size.selected');
+    const size = sizeEl ? parseInt(sizeEl.getAttribute('data-key')) : 0;
+    const preco = (currentData[modalKey].price || [0,0,0])[size] || 0;
     modalQt--;
     document.querySelector(".produtoInfo--qt").innerHTML = modalQt;
     let updatePreco = preco * modalQt;
@@ -246,9 +288,8 @@ document.querySelector(".produtoInfo--qtmenos").addEventListener("click", () => 
 });
 
 document.querySelector(".produtoInfo--qtmais").addEventListener("click", () => {
-  let size = parseInt(
-    document.querySelector(".produtoInfo--size.selected").getAttribute("data-key")
-  );
+  const selectedEl = document.querySelector('.produtoInfo--size.selected');
+  const size = selectedEl ? parseInt(selectedEl.getAttribute('data-key')) : (Array.isArray(currentData[modalKey].price)? currentData[modalKey].price.findIndex(v=>Number(v)>0) : 0);
   let preco = currentData[modalKey].price[size];
   modalQt++;
   document.querySelector(".produtoInfo--qt").innerHTML = modalQt;
@@ -261,30 +302,25 @@ document.querySelector(".produtoInfo--qtmais").addEventListener("click", () => {
   })}`;
 });
 
-document.querySelectorAll(".produtoInfo--size").forEach((size, sizeIndex) => {
-  size.addEventListener("click", (e) => {
-    document
-      .querySelector(".produtoInfo--size.selected")
-      ?.classList.remove("selected");
-    size.classList.add("selected");
-    
+document.querySelectorAll(".produtoInfo--size").forEach((sizeEl) => {
+  sizeEl.addEventListener("click", (e) => {
+    document.querySelector(".produtoInfo--size.selected")?.classList.remove("selected");
+    const el = e.currentTarget;
+    el.classList.add("selected");
+    const idx = parseInt(el.getAttribute('data-key')) || 0;
     // Atualizar preço baseado no tamanho selecionado
     modalQt = 1;
     document.querySelector(".produtoInfo--qt").innerHTML = modalQt;
-    document.querySelector(
-      ".produtoInfo--actualPrice"
-    ).innerHTML = `${currentData[modalKey].price[sizeIndex].toLocaleString("pt-br", {
-      style: "currency", 
-      currency: "BRL"
-    })}`;
+    const priceArr = (currentData[modalKey].price || [0,0,0]);
+    const current = Number(priceArr[idx]) || 0;
+    document.querySelector(".produtoInfo--actualPrice").innerHTML = current.toLocaleString("pt-br", { style: "currency", currency: "BRL" });
   });
 });
 
 //##ADD CART
 document.querySelector(".produtoInfo--addButton").addEventListener("click", () => {
-  let size = parseInt(
-    document.querySelector(".produtoInfo--size.selected").getAttribute("data-key")
-  );
+  const addSelectedEl = document.querySelector('.produtoInfo--size.selected');
+  const addSize = addSelectedEl ? parseInt(addSelectedEl.getAttribute('data-key')) : (Array.isArray(currentData[modalKey].price)? currentData[modalKey].price.findIndex(v=>Number(v)>0) : 0);
 
   // Pegar ingredientes removidos (apenas para produtos)
   let removedIngredients = '';
@@ -292,7 +328,7 @@ document.querySelector(".produtoInfo--addButton").addEventListener("click", () =
     removedIngredients = document.getElementById("removeIngredients").value.trim();
   }
 
-  let identifier = `${currentData[modalKey].id}@${size}@${removedIngredients}`;
+  let identifier = `${currentData[modalKey].id}@${addSize}@${removedIngredients}`;
 
   let key = cart.findIndex((item) => item.identifier == identifier);
   if (key > -1) {
@@ -301,8 +337,8 @@ document.querySelector(".produtoInfo--addButton").addEventListener("click", () =
     cart.push({
       identifier,
       id: currentData[modalKey].id,
-      size,
-      price: currentData[modalKey].price[size],
+      size: addSize,
+      price: (currentData[modalKey].price || [0,0,0])[addSize] || 0,
       qt: modalQt,
       type: modalType,
       removedIngredients: removedIngredients
@@ -328,7 +364,7 @@ async function __fetchStoreStatus(){
     const json = await res.json();
     if (!res.ok || !json.sucesso) throw new Error('');
     return json.data || {};
-  } catch(_) { return { closedNow: true }; }
+  } catch(_) { return { effectiveClosed: true, closedNow: true }; }
 }
 
 function __showClosedModal(msg, reopenAt){
@@ -347,18 +383,46 @@ function __showClosedModal(msg, reopenAt){
   area.addEventListener('click', (e)=>{ if (e.target === area) close(); }, { once: true });
 }
 
-document.querySelector('.cart--finalizar').addEventListener('click', async (e) => {
-  e.preventDefault();
-  e.stopImmediatePropagation?.();
-  const status = await __fetchStoreStatus();
-  if (status && status.closedNow === true) {
-    __showClosedModal(status.reason, status.reopenAt);
-    return false;
-  }
-  try { document.querySelector('aside')?.classList.remove('show'); } catch(_) {}
-  // Auth guard é aplicado globalmente em auth.js/cart.js
-  window.location.href = '/checkout';
-});
+// Finalizar compra: spinner só se for seguir para checkout (loja aberta)
+(() => {
+  const btn = document.querySelector('.cart--finalizar');
+  if (!btn) return;
+  if (btn.getAttribute('data-finalize-bound') === '1') return; // evitar binds duplicados
+  btn.setAttribute('data-finalize-bound', '1');
+  btn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    // Se não autenticado, deixar o auth.js cuidar do redirecionamento e não mostrar spinner
+    try {
+      const isAuth = !!(window.AuthSystem && typeof window.AuthSystem.isAuthenticated === 'function' && window.AuthSystem.isAuthenticated());
+      if (!isAuth) return false;
+    } catch(_) {}
+
+    // Verificar status da loja
+    const status = await __fetchStoreStatus();
+    const isClosed = (status && (status.effectiveClosed === true || status.closedNow === true));
+    if (isClosed) {
+      // Não mostrar spinner; apenas o modal de estamos fechados e manter carrinho aberto
+      __showClosedModal(status.reason, status.reopenAt);
+      return false;
+    }
+
+    // Loja aberta: mostrar overlay de carregamento e prosseguir para checkout
+    try {
+      const loader = document.querySelector('.loader-content');
+      if (loader) loader.classList.add('show');
+    } catch(_) {}
+
+    // Em mobile, pode fechar o carrinho ao sair; em desktop manter sempre aberto
+    try {
+      const isMobile = window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
+      const aside = document.querySelector('aside');
+      if (isMobile && aside) aside.classList.remove('show');
+    } catch(_) {}
+
+    window.location.href = '/checkout';
+    return true;
+  });
+})();
 
 // Se viemos redirecionados por fechamento da loja, abrir modal automaticamente
 document.addEventListener('DOMContentLoaded', async ()=>{
@@ -369,7 +433,8 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     // limpar flag para não reabrir em navegações subsequentes
     try { localStorage.removeItem('pizzaria_trigger_closed_modal'); } catch(_) {}
     const status = await __fetchStoreStatus();
-    if (status && status.closedNow === true) {
+    const isClosed = (status && (status.effectiveClosed === true || status.closedNow === true));
+    if (isClosed) {
       __showClosedModal(status.reason, status.reopenAt);
     }
   } catch(_) {}
@@ -387,7 +452,11 @@ document.querySelector(".menu-openner").addEventListener("click", () => {
   }
 });
 document.querySelector(".menu-closer").addEventListener("click", () => {
-  document.querySelector("aside").classList.remove("show");
+  try {
+    const isMobile = window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
+    if (!isMobile) return; // em dispositivos maiores manter o carrinho sempre visível
+    document.querySelector("aside")?.classList.remove("show");
+  } catch(_) {}
 });
 
 // Aplicar configurações do Instagram salvas no admin

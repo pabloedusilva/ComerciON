@@ -1448,11 +1448,26 @@
                             </select>
                         </div>
                     </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Tamanhos</label>
+                            <div class="inline-field" role="radiogroup" aria-label="Seleção de tamanhos" style="display:flex;align-items:center;gap:16px;flex-wrap:nowrap;white-space:nowrap;margin-bottom:16px;">
+                                <label style="display:inline-flex!important;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;flex:0 0 auto;">
+                                    <input type="radio" name="sizeMode" value="multiple" checked>
+                                    <span>Vários tamanhos</span>
+                                </label>
+                                <label style="display:inline-flex!important;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;flex:0 0 auto;">
+                                    <input type="radio" name="sizeMode" value="unique">
+                                    <span>Tamanho único</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label>Descrição *</label>
                         <textarea name="description" required></textarea>
                     </div>
-                    <div class="form-row">
+                    <div id="multiplePricesGroup" class="form-row">
                         <div class="form-group">
                             <label>Preço Pequeno (R$)</label>
                             <input type="number" step="0.01" name="price1">
@@ -1462,8 +1477,14 @@
                             <input type="number" step="0.01" name="price2">
                         </div>
                         <div class="form-group">
-                            <label>Preço Grande (R$) *</label>
-                            <input type="number" step="0.01" name="price3" required>
+                            <label>Preço Grande (R$)</label>
+                            <input type="number" step="0.01" name="price3">
+                        </div>
+                    </div>
+                    <div id="uniquePriceGroup" class="form-row" style="display:none;">
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Preço Único (R$) *</label>
+                            <input type="number" step="0.01" name="priceUnique">
                         </div>
                     </div>
                     <div class="form-group">

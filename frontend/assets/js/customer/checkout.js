@@ -105,7 +105,13 @@
         const unitPrice = prod && Array.isArray(prod.price) ? Number(prod.price[item.size || 0] || item.price || 0) : Number(item.price || 0);
         const price = unitPrice * (item.qt || 1);
         itemsTotal += price;
-        const sizeText = prod && Array.isArray(prod.sizes) && typeof item.size === 'number' ? (prod.sizes[item.size] || '') : '';
+        // Nome do tamanho dinâmico: Único quando só há um preço >0; senão Pequeno/Médio/Grande
+        let sizeText = '';
+        if (prod && Array.isArray(prod.price)) {
+          const count = prod.price.map(n=>Number(n)||0).filter(v=>v>0).length;
+          if (count === 1) sizeText = 'Único';
+          else if (typeof item.size === 'number') sizeText = ['Pequeno','Médio','Grande'][item.size] || '';
+        }
         const removed = item.removedIngredients ? `<br><small style=\"color:#999;\">Sem: ${item.removedIngredients}</small>` : '';
         const displayName = prod && prod.name ? `${prod.name}${sizeText ? ` (${sizeText})` : ''}${removed}` : `Item ${item.id}${sizeText ? ` (${sizeText})` : ''}${removed}`;
         const imgUrl = (prod && prod.img) ? prod.img : '/assets/images/default-images/produto-padrao.png';
@@ -324,10 +330,13 @@
       const res = await fetch('/api/public/store', { cache: 'no-store' });
       const json = await res.json();
       if (!res.ok || !json.sucesso) throw new Error(json.mensagem || 'Falha ao verificar status');
-      return json.data || {};
+      const data = json.data || {};
+      // Normalizar campo de fechamento efetivo
+      data.effectiveClosed = (data.effectiveClosed === true) || (data.closedNow === true);
+      return data;
     } catch (e) {
       // Em caso de falha, considerar fechado (segurança em primeiro lugar)
-      return { closedNow: true };
+      return { closedNow: true, effectiveClosed: true };
     }
   }
 
@@ -361,7 +370,7 @@
       e.preventDefault();
       e.stopImmediatePropagation?.();
       const status = await fetchStoreStatus();
-      if (status && (status.closedNow === true)) {
+      if (status && (status.effectiveClosed === true)) {
         showClosedModal(status.reason, status.reopenAt);
         return false;
       }

@@ -5,7 +5,9 @@
       const res = await fetch('/api/public/store', { cache: 'no-store' });
       const json = await res.json();
       if (!res.ok || !json.sucesso) throw new Error();
-      if (json.data && json.data.closedNow === true) {
+      const d = json.data || {};
+      const effectiveClosed = (d.effectiveClosed === true) || (d.closedNow === true);
+      if (effectiveClosed) {
         try { localStorage.setItem('pizzaria_trigger_closed_modal', '1'); } catch(_) {}
         window.location.href = '/menu?closed=1';
         return;
@@ -29,8 +31,10 @@
       const res = await fetch('/api/public/store', { cache: 'no-store' });
       const json = await res.json();
       if (!res.ok || !json.sucesso) throw new Error('');
-      if (json.data && json.data.closedNow === true) {
-        alert((json.data.reason ? `Estamos fechados: ${json.data.reason}` : 'Estamos fechados no momento.') + '\
+      const d = json.data || {};
+      const effectiveClosed = (d.effectiveClosed === true) || (d.closedNow === true);
+      if (effectiveClosed) {
+        alert(((d.reason ? `Estamos fechados: ${d.reason}` : 'Estamos fechados no momento.')) + '\
 \nRetornando ao checkout.');
         window.location.href = '/checkout';
       }

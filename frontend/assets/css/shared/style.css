@@ -956,20 +956,12 @@ a.btn-primary:focus, button.btn-primary:focus { outline: none; box-shadow: 0 0 0
     background-color: #ccc
 }
 
-.produtoInfo--size span {
-    font-size: 12px;
-    color: #999;
-    font-weight: normal
-}
 
 .produtoInfo--size.selected {
     background-color: #fab427;
     color: #fff
 }
 
-.produtoInfo--size.selected span {
-    color: #fff
-}
 
 .produtoInfo--price {
     display: flex;

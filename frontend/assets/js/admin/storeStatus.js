@@ -41,23 +41,21 @@ class StoreStatusManager {
                 return;
             }
 
-            const { closedNow, reopenAt, hours, isManualMode } = result.data;
+            const { closedNow, effectiveClosed, reopenAt, hours, isManualMode } = result.data;
             const now = new Date();
             
-            let effectiveClosed = false;
+            let closed = false;
             
-            if (isManualMode) {
-                // Modo manual: usar valor do closedNow diretamente
-                effectiveClosed = closedNow;
-                this.nextOpenTime = reopenAt ? new Date(reopenAt) : null;
+            if (typeof effectiveClosed === 'boolean') {
+                closed = effectiveClosed;
+            } else if (isManualMode) {
+                closed = !!closedNow;
             } else {
-                // Modo automático: verificar horários de funcionamento
-                effectiveClosed = this.isClosedBySchedule(now, hours);
-                this.nextOpenTime = effectiveClosed ? this.getNextOpenTime(now, hours) : null;
+                closed = this.isClosedBySchedule(now, hours);
             }
-            
-            this.isStoreClosed = effectiveClosed;
-            this.updateStoreDisplay(effectiveClosed);
+            this.nextOpenTime = closed ? (reopenAt ? new Date(reopenAt) : this.getNextOpenTime(now, hours)) : null;
+            this.isStoreClosed = closed;
+            this.updateStoreDisplay(closed);
 
         } catch (error) {
             console.warn('Erro ao verificar status da loja na API:', error);
@@ -258,9 +256,7 @@ class StoreStatusManager {
 
     // Iniciar monitoramento contínuo
     startStatusMonitoring() {
-        setInterval(() => {
-            this.checkStoreStatus();
-        }, this.checkInterval);
+        setInterval(() => { this.checkStoreStatus(); }, this.checkInterval);
 
         // Também verificar quando a aba ganha foco
         window.addEventListener('focus', () => {
@@ -273,6 +269,28 @@ class StoreStatusManager {
                 this.checkStoreStatus();
             }
         });
+
+        // Escutar WebSocket público para atualizações imediatas
+        try {
+            if (typeof io === 'function') {
+                const sock = io('/cliente');
+                sock.on('connect', ()=>{});
+                sock.on('disconnect', ()=>{});
+                // Atualizações com payload completo
+                sock.on('dashboard:update', ()=> this.checkStoreStatus());
+                sock.on('store:status', (payload)=> {
+                    try {
+                        if (payload && typeof payload.effectiveClosed === 'boolean') {
+                            this.isStoreClosed = !!payload.effectiveClosed;
+                            this.nextOpenTime = payload.reopenAt ? new Date(payload.reopenAt) : null;
+                            this.updateStoreDisplay(this.isStoreClosed);
+                            return;
+                        }
+                    } catch(_) {}
+                    this.checkStoreStatus();
+                });
+            }
+        } catch(_) { /* noop */ }
     }
 }
 
