@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pagamento Confirmado</title>
+  <link rel="stylesheet" href="/assets/css/shared/style.css" />
+  <style>
+    body { background:#f7fafc; min-height:100vh; display:flex; align-items:center; justify-content:center; }
+    .card { background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:28px; width:min(560px,92vw); box-shadow:0 10px 30px rgba(0,0,0,.06); }
+    .title { display:flex; align-items:center; gap:10px; font-size:1.25rem; font-weight:800; color:#111827; margin:0 0 8px; }
+    .subtitle { color:#6b7280; margin:0 0 14px; }
+    .ok { color:#059669; }
+    .actions { display:flex; gap:10px; margin-top:18px; }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; height:42px; padding:0 14px; border-radius:10px; font-weight:700; text-decoration:none; }
+    .btn-primary { background:#fab427; color:#fff; }
+    .btn-outline { border:1px solid #e5e7eb; color:#374151; }
+    .meta { font-size:.9rem; color:#4b5563; margin-top:10px; }
+    .meta code { background:#f3f4f6; padding:2px 6px; border-radius:6px; }
+  </style>
+</head>
+<body>
+  <div class="card" role="status" aria-live="polite">
+    <h1 class="title"><span class="ok">✔</span> Pagamento recebido com sucesso</h1>
+    <p class="subtitle">Obrigado pela compra! Estamos preparando seu pedido.</p>
+    <div id="orderMeta" class="meta"></div>
+    <div class="actions">
+      <a href="/pedidos" class="btn btn-primary">Ver meus pedidos</a>
+      <a href="/menu" class="btn btn-outline">Voltar ao cardápio</a>
+    </div>
+  </div>
+  <script>
+    (function(){
+      try{
+        const url = new URL(window.location.href);
+        const order = url.searchParams.get('order');
+        const state = url.searchParams.get('state');
+        const sig = url.searchParams.get('sig');
+        // Validar minimamente a assinatura no backend (opcional aqui para UX)
+        fetch(`/api/customer/payment/infinitepay/success?order=${encodeURIComponent(order||'')}&state=${encodeURIComponent(state||'')}&sig=${encodeURIComponent(sig||'')}`)
+          .then(r=>r.json()).then(j=>{
+            if (j && j.sucesso) {
+              const el = document.getElementById('orderMeta');
+              if (el && order) el.innerHTML = `Número do pedido: <code>#${order}</code>`;
+            }
+          }).catch(()=>{});
+      }catch(_){}
+    })();
+  </script>
+</body>
+</html>

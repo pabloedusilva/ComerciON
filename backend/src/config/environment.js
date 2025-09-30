@@ -39,4 +39,10 @@ module.exports = {
 
     // Reporting / Timezone handling (minutes offset from UTC, e.g., -180 for America/Sao_Paulo)
     tzOffsetMinutes: parseInt(process.env.TZ_OFFSET_MINUTES || process.env.TZ_OFFSET || '-180')
+    ,
+    // Public base URL for building absolute redirects (payments)
+    publicBaseUrl: process.env.PUBLIC_BASE_URL || '',
+    // Payments - InfinitePay
+    infinitePayHandle: process.env.INFINITEPAY_HANDLE || '',
+    infinitePayHmacSecret: process.env.INFINITEPAY_HMAC_SECRET || ''
 };

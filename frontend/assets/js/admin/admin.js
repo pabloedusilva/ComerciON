@@ -2494,11 +2494,6 @@ function renderOrdersCards() {
                     ${statusInfo.text}
                 </button>
                 `}
-                ${(order.status === 'pendente' || order.status === 'preparando') ? `
-                <button class="cancel-btn-icon" onclick="cancelOrder('${order.id}')" title="Cancelar pedido">
-                    <i class="fas fa-times"></i>
-                </button>
-                ` : ''}
             </div>
         `;
 

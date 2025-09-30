@@ -391,34 +391,28 @@ function __showClosedModal(msg, reopenAt){
   btn.setAttribute('data-finalize-bound', '1');
   btn.addEventListener('click', async (e) => {
     e.preventDefault();
-    // Se não autenticado, deixar o auth.js cuidar do redirecionamento e não mostrar spinner
+    // Se não autenticado, deixar o auth.js cuidar do redirecionamento
     try {
       const isAuth = !!(window.AuthSystem && typeof window.AuthSystem.isAuthenticated === 'function' && window.AuthSystem.isAuthenticated());
       if (!isAuth) return false;
     } catch(_) {}
 
-    // Verificar status da loja
+    // Verificar status da loja; se fechada, abrir modal e manter carrinho
     const status = await __fetchStoreStatus();
     const isClosed = (status && (status.effectiveClosed === true || status.closedNow === true));
-    if (isClosed) {
-      // Não mostrar spinner; apenas o modal de estamos fechados e manter carrinho aberto
-      __showClosedModal(status.reason, status.reopenAt);
-      return false;
-    }
+    if (isClosed) { __showClosedModal(status.reason, status.reopenAt); return false; }
 
-    // Loja aberta: mostrar overlay de carregamento e prosseguir para checkout
-    try {
-      const loader = document.querySelector('.loader-content');
-      if (loader) loader.classList.add('show');
-    } catch(_) {}
+    // Carrinho vazio? alert e fica
+    let c = [];
+    try { c = JSON.parse(localStorage.getItem('produto_cart')||'[]'); } catch(_) { c = []; }
+    if (!Array.isArray(c) || c.length === 0) { alert('Seu carrinho está vazio.'); return false; }
 
-    // Em mobile, pode fechar o carrinho ao sair; em desktop manter sempre aberto
+    // Loja aberta e autenticado: ir para o Checkout protegido
     try {
       const isMobile = window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
       const aside = document.querySelector('aside');
       if (isMobile && aside) aside.classList.remove('show');
     } catch(_) {}
-
     window.location.href = '/checkout';
     return true;
   });

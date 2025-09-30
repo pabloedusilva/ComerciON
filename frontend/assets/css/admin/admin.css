@@ -1523,11 +1523,18 @@ body.orders-fullscreen #pedidos-section .filters-bar {
     margin-top: auto;
     flex: 0 0 auto;
     align-items: center;
+    /* Permite que os botões quebrem linha quando necessário, evitando texto recortado */
+    flex-wrap: wrap;
 }
 
 .action-btn-card {
-    flex: 1;
-    height: 44px;
+    /* Dimensionamento baseado no conteúdo, sem encolher além do necessário */
+    flex: 1 1 180px;
+    min-width: 180px; /* garante espaço para textos maiores como "Enviar para Entrega" */
+    /* Evita quebra de linha dentro do botão (texto não será cortado verticalmente) */
+    white-space: nowrap;
+    /* Altura mínima para manter consistência, permitindo crescer se necessário */
+    min-height: 44px;
     padding: 0 1rem;
     border: none;
     border-radius: 12px;
@@ -1658,12 +1665,20 @@ body.orders-fullscreen #pedidos-section .filters-bar {
     
     .order-actions {
         flex-direction: column;
-        gap: 0.75rem;
+        gap: 0.5rem;
+        align-items: stretch; /* permite botões ocuparem toda a largura */
     }
     
     .action-btn-card {
-        height: 48px;
+        /* Em coluna, não deixar o botão crescer na altura */
+        flex: 0 0 auto;
+        height: 44px; /* mais compacto em telas pequenas */
         font-size: 0.875rem;
+        width: 100%;
+        min-width: 0; /* remove limite mínimo para caber em telas estreitas */
+        white-space: nowrap; /* mantém em uma linha sem cortar */
+        padding: 0 0.875rem;
+        border-radius: 10px;
     }
     
     .cancel-btn-icon {
@@ -1733,14 +1748,15 @@ body.orders-fullscreen #pedidos-section .filters-bar {
     }
     
     .action-btn-card {
-        height: 44px;
+        flex: 0 0 auto; /* garante que não estica verticalmente em telas muito pequenas */
+        height: 42px;
         font-size: 0.8125rem;
-        padding: 0 0.875rem;
+        padding: 0 0.75rem;
+        border-radius: 10px;
     }
     
     .cancel-btn-icon {
-        width: 32px;
-        height: 32px;
+        display: none; /* não aparece mais no mobile (e foi removido do markup) */
     }
 }
 

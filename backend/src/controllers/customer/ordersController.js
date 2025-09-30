@@ -1,8 +1,18 @@
 const { pool } = require('../../config/database');
 const Product = require('../../models/Product');
 
-function computeTotals(items) {
-  const entrega = 5.0;
+async function computeTotalsWithDelivery(items, addr) {
+  // Buscar taxa dinâmica por cidade/UF quando disponível
+  let entrega = 5.0;
+  try {
+    const city = addr?.cidade || addr?.city;
+    const uf = (addr?.estado || addr?.state || '').toString().toUpperCase();
+    if (city && uf) {
+      const DeliveryArea = require('../../models/DeliveryArea');
+      const area = await DeliveryArea.findByCityState(city, uf);
+      if (area && typeof area.fee === 'number') entrega = Number(area.fee);
+    }
+  } catch(_) {}
   const produtosValor = items.reduce((acc, it) => acc + (it.unit_price * it.quantity), 0);
   const subtotal = produtosValor + entrega;
   const desconto = subtotal * 0.10;
@@ -49,8 +59,6 @@ module.exports = {
         });
       }
 
-      const totals = computeTotals(preparedItems);
-
       // Prefer address from checkout payload; fallback to user profile snapshot
       const sanitizeStr = (v, max = 120) => {
         if (v == null) return null;
@@ -80,6 +88,9 @@ module.exports = {
         estado: sanitizeStr(user.estado, 2)?.toUpperCase() || null,
         cep: sanitizeStr(user.cep, 12)
       };
+
+      const totals = await computeTotalsWithDelivery(preparedItems, addr);
+
 
       const conn = await pool.getConnection();
       try {

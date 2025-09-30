@@ -10,6 +10,7 @@ const cookieParser = require('cookie-parser');
 const { testConnection } = require('./config/database');
 const routes = require('./routes');
 const { limiteGeral } = require('./middleware/rateLimit');
+const environment = require('./config/environment');
 
 const app = express();
 const StoreStatus = require('./models/StoreStatus');
@@ -93,8 +94,15 @@ app.use(helmet({
             // Permitir atributos inline como onclick, sem liberar blocos <script> inline
             scriptSrcAttr: ["'unsafe-inline'"],
             imgSrc: ["'self'", "data:", "https:"],
-            // Permitir conexões WebSocket para atualizações em tempo real
-            connectSrc: ["'self'", "https:", "wss:", "ws:"]
+            // Permitir conexões Ajax/WebSocket necessárias (InfinitePay, ViaCEP)
+            connectSrc: [
+                "'self'",
+                "https:",
+                "wss:",
+                "ws:",
+                "https://*.infinitepay.io",
+                "https://viacep.com.br"
+            ]
         },
     },
 }));
@@ -124,15 +132,11 @@ app.set('trust proxy', 1);
 app.use(async (req, res, next) => {
     try {
         const p = (req.path || '').toLowerCase();
-        const isRestricted = (
-            p === '/checkout' ||
-            p === '/payment' ||
-            p.endsWith('/pages/customer/checkout.html') ||
-            p.endsWith('/pages/customer/payment.html')
-        );
-        if (!isRestricted) return next();
-        const open = await isStoreOpenNow();
-        if (!open) return respondClosed(req, res);
+        // Proteger checkout: requer loja aberta (demais proteções via frontend + APIs autenticadas)
+        if (p === '/checkout') {
+            const open = await isStoreOpenNow();
+            if (!open) return respondClosed(req, res);
+        }
         return next();
     } catch (_) {
         // Em caso de erro, negar acesso por segurança
@@ -173,17 +177,18 @@ app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, '../../frontend/pages/customer/login.html'));
 });
 
-// Checkout & Payment pages (extensionless)
-app.get('/checkout', async (req, res) => {
-    const open = await isStoreOpenNow();
-    if (!open) return respondClosed(req, res);
-    res.sendFile(path.join(__dirname, '../../frontend/pages/customer/checkout.html'));
+// Bloquear rota antiga de payment
+app.get(['/payment'], (req, res) => {
+    res.status(410).send('Página removida');
 });
 
-app.get('/payment', async (req, res) => {
-    const open = await isStoreOpenNow();
-    if (!open) return respondClosed(req, res);
-    res.sendFile(path.join(__dirname, '../../frontend/pages/customer/payment.html'));
+// Página de Sucesso de Pagamento (novo fluxo)
+app.get('/pay/sucesso', (req, res) => {
+    res.sendFile(path.join(__dirname, '../../frontend/pages/customer/success.html'));
+});
+// Novo Checkout protegido (HTML), requer loja aberta via guard acima
+app.get('/checkout', (req, res) => {
+    res.sendFile(path.join(__dirname, '../../frontend/pages/customer/checkout.html'));
 });
   
     app.get('/pedidos', (req, res) => {
@@ -272,5 +277,21 @@ testConnection().then(conectado => {
         console.log('❌ Problema na conexão com banco');
     }
 });
+
+// Validação mínima de variáveis de ambiente críticas (pagamentos)
+try {
+    const missing = [];
+    if (!process.env.INFINITEPAY_HANDLE) missing.push('INFINITEPAY_HANDLE');
+    if (!process.env.INFINITEPAY_HMAC_SECRET && !environment.jwtSecret) missing.push('INFINITEPAY_HMAC_SECRET');
+    if (!process.env.PUBLIC_BASE_URL) {
+        // Permitimos fallback, mas avisamos em desenvolvimento
+        if (environment.nodeEnv !== 'production') {
+            console.warn('ℹ PUBLIC_BASE_URL ausente; usando host dinâmico do request nos links de redirecionamento. Configure PUBLIC_BASE_URL para consistência.');
+        }
+    }
+    if (missing.length) {
+        console.warn('⚠ Variáveis de ambiente ausentes para pagamentos:', missing.join(', '));
+    }
+} catch(_) {}
 
 module.exports = app;
