@@ -146,7 +146,7 @@
 		const cont = $('#orderItems'); cont.innerHTML = '';
 		items.forEach(it=>{
 			let p = window.__catalogMap && window.__catalogMap.get ? window.__catalogMap.get(Number(it.id)) : null;
-			const baseImg = '../../assets/images/default-images/produto-padrao.png';
+			const baseImg = '';
 			const img = p?.img || baseImg;
 			let sizeName = '';
 			try {
@@ -157,7 +157,7 @@
 			} catch(_) {}
 			const name = p?.name || `Item #${it.id}`;
 			const html = `<div class="order-item">
-				<img src="${img}" alt="" />
+				<img src="${img}" alt="" data-fallback />
 				<div>
 					<div class="name">${name}${sizeName?` (${sizeName})`:''}</div>
 					${it.removedIngredients?`<div class="details">Sem: ${it.removedIngredients}</div>`:''}

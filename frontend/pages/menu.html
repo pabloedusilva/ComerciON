@@ -50,7 +50,7 @@
       <div class="models">
         <div class="produto-item">
           <a href="">
-            <div class="produto-item--img"><img src="" /></div>
+            <div class="produto-item--img"><img src="" data-fallback /></div>
             <div class="produto-item--add">+</div>
             <div class="produto-item--price">R$ --</div>
             <div class="produto-item--name">--</div>
@@ -58,7 +58,7 @@
           </a>
         </div>
         <div class="cart--item">
-          <img src="" />
+          <img src="" data-fallback />
           <div class="cart--item-nome">--</div>
           <div class="cart--item--qtarea">
             <button class="cart--item-qtmenos">-</button>
@@ -224,7 +224,7 @@
     <div class="footer-container">
       <div class="footer-content">
         <div class="footer-brand">
-          <img src="../assets/images/default-images/logo_estabelecimento.png" alt="Estabelecimento Logo" class="footer-logo">
+          <img src="" alt="Estabelecimento Logo" class="footer-logo" data-fallback>
           <p>Sabor que conquista</p>
         </div>
         
@@ -286,6 +286,7 @@
   </footer>
 
   <script src="../assets/js/shared/nav.js"></script>
+  <script src="../assets/js/shared/image-fallback.js"></script>
   <script src="../assets/js/shared/layout.js"></script>
   <!-- Sistema de Autenticação (necessário para dropdown e proteção do checkout) -->
   <script src="../assets/js/shared/auth.js"></script>

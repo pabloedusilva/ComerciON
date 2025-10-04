@@ -300,14 +300,14 @@
         </nav>
 
         <div class="sidebar-footer">
-            <div class="user-profile">
-                <div class="user-avatar">
-                    <img src="../../assets/images/default-images/logo_pizza.png" alt="Admin">
-                    <div class="status-indicator online"></div>
+            <div class="user-profile loading" aria-busy="true" aria-live="polite">
+                <div class="user-avatar skeleton-avatar">
+                    <img alt="" aria-hidden="true" style="opacity:0;" />
+                    <div class="status-indicator" style="display:none"></div>
                 </div>
                 <div class="user-info">
-                    <span class="user-name">Administrador</span>
-                    <span class="user-role">Super Admin</span>
+                    <span class="user-name skeleton-text" data-placeholder="nome"></span>
+                    <span class="user-role skeleton-text" data-placeholder="nivel"></span>
                 </div>
             </div>
             <button type="button" class="btn-logout" onclick="window.__adminLogout && window.__adminLogout()">
@@ -1605,10 +1605,12 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="../../assets/js/shared/layout.js"></script>
+    <script src="../../assets/js/shared/image-fallback.js"></script>
     <!-- Socket.IO client -->
     <script src="/socket.io/socket.io.js"></script>
     <script src="../../assets/js/admin/notification-sound.js"></script>
     <script src="../../assets/js/admin/notifications.js"></script>
+    <script src="../../assets/js/admin/userProfile.js"></script>
     <script src="../../assets/js/admin/admin.js"></script>
 </body>
 

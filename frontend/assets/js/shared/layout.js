@@ -133,21 +133,12 @@
         const active = c.active !== 0 && c.active !== false;
         if (!map.has(s)) map.set(s, { slug: s, title: t, position: pos, active });
       });
-      // Fallback canônico mínimo
-      if (map.size === 0) {
-        map.set('produto', { slug:'produto', title:'Produtos', position: 1, active: true });
-        map.set('drink', { slug:'drink', title:'Bebidas', position: 2, active: true });
-      }
       const cats = Array.from(map.values()).filter(c => c.active !== false)
         .sort((a,b)=> (a.position||0) - (b.position||0));
       return cats;
     } catch (e) {
       console.warn('Categorias públicas indisponíveis:', e.message);
-      // Fallback
-      return [
-        { slug:'produto', title:'Produtos', position:1, active:true },
-        { slug:'drink', title:'Bebidas', position:2, active:true }
-      ];
+      return [];
     }
   }
 

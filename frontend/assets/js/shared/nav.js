@@ -77,7 +77,7 @@ header = header.innerHTML = `<div class="menu-area">
     </div>
     <div class="logo">
         <a href="/">
-            <img src="${assetsPath}images/default-images/logo_estabelecimento.png" alt="logo_estabelecimento.png">
+            <img src="" alt="Logo" data-fallback>
         </a>
     </div>
     <nav>

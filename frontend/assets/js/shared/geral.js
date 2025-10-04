@@ -75,12 +75,32 @@ document.addEventListener('DOMContentLoaded', function() {
       const t = c.title && c.title.trim() ? c.title : titleFor(s);
       if (!map.has(s)) map.set(s, { slug: s, title: t, position: Number(c.position)||0, active: c.active!==0 });
     });
-    // Garantir categorias canônicas quando existirem itens correspondentes
-    if (drinks.length && !map.has('drink')) map.set('drink', { slug:'drink', title:'Bebidas', position: 999, active: true });
-    if (produtos.length && !map.has('produto')) map.set('produto', { slug:'produto', title:'Produtos', position: 1, active: true });
-    categorias = Array.from(map.values()).filter(c=>c.active !== false).sort((a,b)=> (a.position||0)-(b.position||0));
-    // Fallback final seguro
-    if (!categorias.length) categorias = [{ slug:'produto', title:'Produtos' }, { slug:'drink', title:'Bebidas' }];
+    // Usar somente o que vier do banco (public/categories) respeitando active=1
+    categorias = Array.from(map.values())
+      .filter(c=>c.active !== false)
+      .sort((a,b)=> (a.position||0)-(b.position||0));
+
+    // (NOVO) Adicionar categorias efêmeras para quaisquer slugs de produtos que não vieram do banco
+    try {
+      const productSlugs = new Set();
+      all.forEach(p => {
+        const s = alias(p.category || p.slug || '');
+        if (s) productSlugs.add(s);
+      });
+      const existingSlugs = new Set(categorias.map(c=>c.slug));
+      const ephemeral = [];
+      productSlugs.forEach(s => {
+        if (!existingSlugs.has(s)) {
+          // Criar categoria efêmera apenas para organizar visualmente
+          ephemeral.push({ slug: s, title: titleFor(s), position: 9999, active: true, _ephemeral: true });
+        }
+      });
+      if (ephemeral.length) {
+        categorias = [...categorias, ...ephemeral].sort((a,b)=> (a.position||0)-(b.position||0));
+      }
+    } catch(e) {
+      console.warn('Falha ao gerar categorias efêmeras', e);
+    }
 
     // Atualizar preços de itens antigos no carrinho
     cart = cart.map(item => {
@@ -119,14 +139,14 @@ document.addEventListener('DOMContentLoaded', function() {
         area.dataset.slug = slug;
         main.appendChild(area);
 
-        // Selecionar itens da categoria de forma robusta
+        // Selecionar itens APENAS da própria categoria (sem agrupar tudo em 'produto')
+        // Mantém apenas tratamento especial para drinks (já separado em array próprio)
         let list;
         if (slug === 'drink') {
           list = drinks;
-        } else if (slug === 'produto') {
-          list = produtos;
         } else {
-          list = all.filter(p => String(p.category).toLowerCase() === slug);
+          // Usar mesma normalização (alias) para casar slugs equivalentes (ex: 'produtos' -> 'produto')
+          list = all.filter(p => alias(p.category) === slug);
         }
         list.forEach(prod => {
           const itemEl = document.querySelector('.models .produto-item').cloneNode(true);
@@ -134,7 +154,9 @@ document.addEventListener('DOMContentLoaded', function() {
           const keyIndex = isDrink ? drinks.findIndex(p=>p.id===prod.id) : produtos.findIndex(p=>p.id===prod.id);
           itemEl.setAttribute('data-key', String(keyIndex >= 0 ? keyIndex : 0));
           itemEl.setAttribute('data-type', isDrink ? 'drink' : 'produto');
-          itemEl.querySelector('.produto-item--img img').src = prod.img || (assetsPath + 'images/default-images/produto-padrao.png');
+          const imgEl = itemEl.querySelector('.produto-item--img img');
+          imgEl.src = prod.img || '';
+          imgEl.setAttribute('data-fallback','');
           // Mostrar o maior preço disponível (não-zero) na listagem
           try {
             const pArr = Array.isArray(prod.price) ? prod.price.map(n=>Number(n)||0) : [0,0,0];
@@ -171,7 +193,8 @@ function openModal(key, type) {
   currentData = type === 'produto' ? produtos : drinks;
 
   const assetsPath = getAssetsPath();
-  document.querySelector(".produtoBig img").src = currentData[key].img || (assetsPath + 'images/default-images/produto-padrao.png');
+  const bigImg = document.querySelector(".produtoBig img");
+  if(bigImg){ bigImg.src = currentData[key].img || ''; bigImg.setAttribute('data-fallback',''); }
   document.querySelector(".produtoInfo h1").innerHTML = currentData[key].name;
   document.querySelector(".produtoInfo--desc").innerHTML = currentData[key].description;
   // Preparar tamanhos dinâmicos com base nos preços disponíveis (>0)
