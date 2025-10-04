@@ -2661,6 +2661,17 @@ tbody tr:hover {
         padding: 1rem;
     }
     
+    /* Modal responsiveness for tablets */
+    .modal {
+        padding: 0.75rem;
+    }
+    
+    .modal-content {
+        width: calc(100vw - 1.5rem);
+        max-width: 600px;
+        max-height: calc(100vh - 1.5rem);
+    }
+    
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 0.75rem;
@@ -2732,14 +2743,15 @@ tbody tr:hover {
     }
     
     .modal-content {
-        width: 95%;
-        max-width: 95vw;
-        margin: 1rem auto;
-        max-height: 85vh;
+        width: calc(100vw - 2rem);
+        max-width: calc(100vw - 2rem);
+        margin: 1rem;
+        max-height: calc(100vh - 2rem);
     }
     
     .modal-body {
         padding: 1rem;
+        overflow-y: auto;
     }
     
     .form-row {
@@ -2799,6 +2811,59 @@ tbody tr:hover {
     .content {
         padding: 0.75rem;
     }
+    
+    .modal {
+        padding: 0.5rem;
+    }
+    
+    .modal-content {
+        width: calc(100vw - 1rem);
+        max-width: calc(100vw - 1rem);
+        margin: 0.5rem;
+        max-height: calc(100vh - 1rem);
+        border-radius: 8px;
+    }
+    
+    .modal-body {
+        padding: 0.75rem;
+    }
+    
+    .modal-header {
+        padding: 0.75rem;
+    }
+    
+    .form-group {
+        margin-bottom: 0.75rem;
+    }
+    
+    .form-group label {
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+        font-size: 0.9rem;
+        padding: 0.6rem;
+    }
+    
+    .btn-primary,
+    .btn-secondary {
+        font-size: 0.85rem;
+        padding: 0.6rem 1rem;
+        border-radius: 6px;
+    }
+    
+    .form-actions {
+        gap: 0.5rem;
+        flex-direction: column-reverse;
+    }
+    
+    .form-actions button {
+        width: 100%;
+    }
+}
     
     .stats-grid {
         grid-template-columns: 1fr;
@@ -2921,7 +2986,9 @@ tbody tr:hover {
     .notification-btn {
         padding: 0.375rem;
     }
-}
+
+/* Fix for CSS parser */
+.css-fix { display: none; }
 
 /* Telas muito pequenas */
 @media (max-width: 360px) {
@@ -4837,8 +4904,15 @@ tbody tr:hover {
 /* Responsive modal */
 @media (max-width: 768px) {
     .review-modal-content {
-        width: 95%;
+        width: calc(100vw - 2rem);
+        max-width: calc(100vw - 2rem);
         margin: 0 1rem;
+        max-height: calc(100vh - 2rem);
+    }
+    
+    .review-modal-header,
+    .review-modal-body {
+        padding: 1rem;
     }
     
     .customer-info-modal {
@@ -4849,6 +4923,40 @@ tbody tr:hover {
     .customer-info-modal .rating-stars {
         align-self: flex-start;
         margin-top: 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .review-modal-content {
+        width: calc(100vw - 1rem);
+        max-width: calc(100vw - 1rem);
+        margin: 0 0.5rem;
+        max-height: calc(100vh - 1rem);
+        border-radius: 8px;
+    }
+    
+    .review-modal-header,
+    .review-modal-body {
+        padding: 0.75rem;
+    }
+    
+    .review-modal-header h3 {
+        font-size: 1.1rem;
+    }
+    
+    .customer-info-modal .customer-avatar {
+        width: 45px;
+        height: 45px;
+        font-size: 1.1rem;
+    }
+    
+    .customer-info-modal .customer-details h4 {
+        font-size: 1rem;
+    }
+    
+    .full-review-text p {
+        font-size: 0.9rem;
+        line-height: 1.6;
     }
 }
 
@@ -4988,10 +5096,31 @@ tbody tr:hover {
 }
 
 /* Responsive confirm modal */
+@media (max-width: 768px) {
+    .confirm-modal-content {
+        width: calc(100vw - 2rem);
+        max-width: calc(100vw - 2rem);
+        margin: 0 1rem;
+    }
+    
+    .confirm-modal-footer {
+        padding: 1rem 2rem 1.5rem;
+        flex-direction: column-reverse;
+        gap: 0.75rem;
+    }
+    
+    .confirm-modal-footer button {
+        max-width: none;
+        width: 100%;
+    }
+}
+
 @media (max-width: 480px) {
     .confirm-modal-content {
-        width: 95%;
-        margin: 0 1rem;
+        width: calc(100vw - 1rem);
+        max-width: calc(100vw - 1rem);
+        margin: 0 0.5rem;
+        border-radius: 8px;
     }
     
     .confirm-modal-header {
@@ -5015,13 +5144,12 @@ tbody tr:hover {
         padding: 1rem 1.5rem;
     }
     
-    .confirm-modal-footer {
-        padding: 1rem 1.5rem 1.5rem;
-        flex-direction: column;
+    .confirm-modal-body p {
+        font-size: 0.9rem;
     }
     
-    .confirm-modal-footer button {
-        max-width: none;
+    .confirm-modal-footer {
+        padding: 1rem 1.5rem 1.5rem;
     }
 }
 
@@ -5776,5 +5904,61 @@ tbody tr:hover {
         flex-direction: column;
         gap: 0.5rem;
         text-align: center;
+    }
+}
+
+/* ============================================
+   MODAL RESPONSIVENESS ENHANCEMENTS
+   ============================================ */
+
+/* Scroll suave para modais */
+.modal-body {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+
+.modal-body::-webkit-scrollbar {
+    width: 4px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.1);
+    border-radius: 2px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.3);
+    border-radius: 2px;
+}
+
+/* Ajustes para telas muito pequenas - Modais */
+@media (max-width: 360px) {
+    .modal {
+        padding: 0.25rem;
+    }
+    
+    .modal-content {
+        width: calc(100vw - 0.5rem);
+        max-width: calc(100vw - 0.5rem);
+        margin: 0.25rem;
+        max-height: calc(100vh - 0.5rem);
+        border-radius: 6px;
+    }
+    
+    .modal-body,
+    .modal-header {
+        padding: 0.5rem;
+    }
+}
+
+/* Ajustes para orientação landscape em mobile - Modais */
+@media (max-height: 500px) and (orientation: landscape) {
+    .modal {
+        align-items: flex-start;
+        padding-top: 0.25rem;
+    }
+    
+    .modal-content {
+        max-height: calc(100vh - 0.5rem);
     }
 }

@@ -221,18 +221,22 @@
 	}
 
 		async function createOrderAndPay(address){
-		const items = getCart();
-		const headers = { 'Content-Type': 'application/json', ...authHeader() };
-		// Enviar endereço para não depender do snapshot incompleto
-		const orderResp = await fetch('/api/customer/orders', { method:'POST', headers, body: JSON.stringify({ items, address }) });
-		const orderJson = await orderResp.json().catch(()=>({}));
-		if (!orderResp.ok || !orderJson.sucesso) throw new Error(orderJson?.mensagem || 'Falha ao criar pedido');
-		const orderId = orderJson.data?.id; if (!orderId) throw new Error('Pedido inválido');
-		const linkResp = await fetch('/api/customer/payment/infinitepay/checkout-link', { method:'POST', headers, body: JSON.stringify({ orderId }) });
-		const linkJson = await linkResp.json().catch(()=>({}));
-		if (!linkResp.ok || !linkJson.sucesso || !linkJson.url) throw new Error(linkJson?.mensagem || 'Falha ao gerar link de pagamento');
-		window.location.href = linkJson.url;
-	}
+			const items = getCart();
+			const headers = { 'Content-Type': 'application/json', ...authHeader() };
+			let couponCode = null;
+			try { const c = JSON.parse(localStorage.getItem('pizzaria_coupon')||'null')||{}; couponCode = c.code || null; } catch(_) {}
+			// 1) Criar intent (não cria pedido ainda)
+			const intentResp = await fetch('/api/customer/checkout-intents', { method:'POST', headers, body: JSON.stringify({ items, address, couponCode }) });
+			const intentJson = await intentResp.json().catch(()=>({}));
+			if(!intentResp.ok || !intentJson.sucesso) throw new Error(intentJson?.mensagem || 'Falha ao criar intent');
+			const intentId = intentJson.data?.intentId; if(!intentId) throw new Error('Intent inválida');
+			// 2) Gerar link de pagamento para a intent
+			const linkResp = await fetch(`/api/customer/checkout-intents/${intentId}/generate-link`, { method:'POST', headers });
+			const linkJson = await linkResp.json().catch(()=>({}));
+			if(!linkResp.ok || !linkJson.sucesso || !linkJson.url) throw new Error(linkJson?.mensagem || 'Falha ao gerar link de pagamento');
+			// 3) Redirecionar. Pedido só existirá após retorno success (intent paga -> criação de pedido)
+			window.location.replace(linkJson.url);
+		}
 
 		document.addEventListener('DOMContentLoaded', async ()=>{
 		try {

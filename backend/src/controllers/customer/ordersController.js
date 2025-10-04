@@ -1,7 +1,14 @@
 const { pool } = require('../../config/database');
 const Product = require('../../models/Product');
 
-async function computeTotalsWithDelivery(items, addr) {
+function resolveCouponPercentServer(code){
+  if (!code) return 0;
+  const up = String(code).trim().toUpperCase();
+  if (up === 'SITE10') return 10;
+  return 0;
+}
+
+async function computeTotalsWithDelivery(items, addr, couponCode) {
   // Buscar taxa dinâmica por cidade/UF quando disponível
   let entrega = 5.0;
   try {
@@ -15,7 +22,8 @@ async function computeTotalsWithDelivery(items, addr) {
   } catch(_) {}
   const produtosValor = items.reduce((acc, it) => acc + (it.unit_price * it.quantity), 0);
   const subtotal = produtosValor + entrega;
-  const desconto = subtotal * 0.10;
+  const pct = resolveCouponPercentServer(couponCode);
+  const desconto = pct > 0 ? (subtotal * (pct/100)) : 0;
   const total = subtotal - desconto;
   return { subtotal, entrega, desconto, total };
 }
@@ -89,7 +97,8 @@ module.exports = {
         cep: sanitizeStr(user.cep, 12)
       };
 
-      const totals = await computeTotalsWithDelivery(preparedItems, addr);
+  const couponCode = (body.couponCode || body.coupon?.code || '').toString().trim() || null;
+  const totals = await computeTotalsWithDelivery(preparedItems, addr, couponCode);
 
 
       const conn = await pool.getConnection();
@@ -105,51 +114,23 @@ module.exports = {
         const insertValues = [];
         const placeholders = [];
         for (const it of preparedItems) {
-          placeholders.push('(?,?,?,?,?,?,?)');
-          insertValues.push(orderId, it.product_id, it.category, it.size, it.quantity, it.unit_price, it.removed_ingredients);
+          placeholders.push('(?,?,?,?,?,?,?,?)');
+          insertValues.push(orderId, it.product_id, it.category, it.size, it.quantity, it.unit_price, it.removed_ingredients, it.name_snapshot || null);
         }
         await conn.execute(
-          `INSERT INTO pedido_itens (order_id, product_id, category, size, quantity, unit_price, removed_ingredients)
+          `INSERT INTO pedido_itens (order_id, product_id, category, size, quantity, unit_price, removed_ingredients, name_snapshot)
            VALUES ${placeholders.join(',')}`,
           insertValues
         );
 
         await conn.commit();
 
-        // Emitir evento de novo pedido para admin em tempo real (payload enriquecido)
-        try {
-          const io = req.app?.get('io');
-          if (io && typeof io.emitOrderCreated === 'function') {
-            // Montar payload seguro para o painel admin
-            const formatAddr = (a) => {
-              if (!a || typeof a !== 'object') return '';
-              const p1 = [];
-              if (a.endereco) p1.push(a.endereco);
-              if (a.numero) p1.push(`, ${a.numero}`);
-              if (a.bairro) p1.push(` - ${a.bairro}`);
-              const l1 = p1.join('');
-              const p2 = [];
-              if (a.cidade) p2.push(a.cidade);
-              if (a.estado) p2.push(a.estado);
-              const l2 = p2.length ? p2.join('/') : '';
-              const cep = a.cep ? (l2 ? `, CEP: ${a.cep}` : `CEP: ${a.cep}`) : '';
-              const comp = a.complemento ? `, ${a.complemento}` : '';
-              return [l1, (l1 && l2) ? ' - ' : '', l2, cep, comp].join('').trim();
-            };
-            io.emitOrderCreated({
-              id: orderId,
-              total: Number(totals.total) || 0,
-              created_at: new Date().toISOString(),
-              customer: {
-                name: String(user?.nome || 'Cliente'),
-                phone: String(user?.telefone || ''),
-                address: formatAddr(addr)
-              }
-            });
-          }
-        } catch (_) { /* noop */ }
+        // (Alteração de fluxo) NÃO emitir mais o evento order:created neste momento.
+        // Agora o pedido só deve aparecer/contar para o admin e métricas após pagamento aprovado.
+        // O front irá usar o id retornado para gerar o link de pagamento e, quando o webhook
+        // ou retorno de sucesso confirmar o pagamento, o backend emitirá o order:created.
 
-        return res.json({ sucesso: true, data: { id: orderId, totals } });
+        return res.json({ sucesso: true, data: { id: orderId, totals, deferred: true } });
       } catch (e) {
         await conn.rollback();
         throw e;
@@ -232,9 +213,29 @@ module.exports = {
       );
       if (!orders || orders.length === 0) return res.status(404).json({ sucesso: false, mensagem: 'Pedido não encontrado' });
       const order = orders[0];
+      // Buscar último pagamento para exibir no success/recibo
+      let payment = null;
+      try {
+        const [pays] = await pool.execute(
+          `SELECT txid, status, amount, received_at FROM payments WHERE order_id = ? ORDER BY received_at DESC LIMIT 1`, [id]
+        );
+        if (pays && pays[0]) {
+          payment = {
+            txid: String(pays[0].txid || ''),
+            status: String(pays[0].status || ''),
+            amount: Number(pays[0].amount) || 0,
+            received_at: pays[0].received_at
+          };
+        }
+      } catch(_) { /* optional payments table */ }
       const [items] = await pool.execute(
-        `SELECT order_id, product_id, category, size, quantity, unit_price, removed_ingredients
-         FROM pedido_itens WHERE order_id = ?`, [id]
+        `SELECT i.order_id, i.product_id, i.category, i.size, i.quantity, i.unit_price, i.removed_ingredients,
+                i.name_snapshot AS name_snapshot,
+                p.name AS product_name,
+                p.price_small, p.price_medium, p.price_large
+         FROM pedido_itens i
+         LEFT JOIN products p ON p.id = i.product_id
+         WHERE i.order_id = ?`, [id]
       );
       const formatAddr = (a) => {
         if (!a || typeof a !== 'object') return '';
@@ -263,7 +264,28 @@ module.exports = {
         created_at: order.created_at,
         address: addrObj,
         formattedAddress: formatAddr(addrObj),
-        items
+        items: items.map(it=>{
+          const s = Number(it.size);
+          const pricesArr = [Number(it.price_small || 0), Number(it.price_medium || 0), Number(it.price_large || 0)];
+          const nonZero = pricesArr.filter(v => v > 0).length;
+          const isUnique = nonZero === 1;
+          const sizeMap = ['P', 'M', 'G'];
+          const size_name = isUnique ? 'Tamanho Único' : (sizeMap[s] || null);
+          return {
+            order_id: it.order_id,
+            product_id: it.product_id,
+            category: it.category,
+            size: s,
+            size_name,
+            quantity: Number(it.quantity),
+            unit_price: Number(it.unit_price),
+            removed_ingredients: it.removed_ingredients,
+            name: it.product_name || it.name_snapshot || null,
+            name_snapshot: it.name_snapshot || it.product_name || null,
+            product_name: it.product_name || null
+          };
+        }),
+        payment
       } });
     } catch (error) {
       console.error('Erro ao obter pedido:', error);

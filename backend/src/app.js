@@ -101,8 +101,19 @@ app.use(helmet({
                 "wss:",
                 "ws:",
                 "https://*.infinitepay.io",
+                "https://*.cloudwalk.network",
+                "https://*.capybaras.dev",
+                "https://*.rudderstack.com",
+                "https://*.amplitude.com",
+                "https://*.googletagmanager.com",
+                "https://*.google-analytics.com",
+                "https://*.clarity.ms",
+                "https://c.bing.com",
                 "https://viacep.com.br"
-            ]
+            ],
+            // Permitir iframes e frames (ex: provedores externos)
+            frameSrc: ["'self'", "https:"],
+            childSrc: ["'self'", "https:"]
         },
     },
 }));
@@ -136,6 +147,10 @@ app.use(async (req, res, next) => {
         if (p === '/checkout') {
             const open = await isStoreOpenNow();
             if (!open) return respondClosed(req, res);
+        }
+        // Nunca bloquear a página de sucesso de pagamento (usuário já concluiu a transação)
+        if (p === '/pay/sucesso') {
+            return next();
         }
         return next();
     } catch (_) {
@@ -182,13 +197,22 @@ app.get(['/payment'], (req, res) => {
     res.status(410).send('Página removida');
 });
 
-// Página de Sucesso de Pagamento (novo fluxo)
+// Página de Sucesso de Pagamento (novo fluxo) - impedir cache
 app.get('/pay/sucesso', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.sendFile(path.join(__dirname, '../../frontend/pages/customer/success.html'));
 });
 // Novo Checkout protegido (HTML), requer loja aberta via guard acima
 app.get('/checkout', (req, res) => {
     res.sendFile(path.join(__dirname, '../../frontend/pages/customer/checkout.html'));
+});
+
+// Endpoint opcional para pings de monitoramento de scripts de terceiros (retorna 204)
+app.get('/monitoring', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.status(204).end();
 });
   
     app.get('/pedidos', (req, res) => {

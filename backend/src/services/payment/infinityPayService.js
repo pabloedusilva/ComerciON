@@ -11,10 +11,12 @@ function encodeItemsParam(items) {
 	// Ex.: [{"name":"Produto+1","price":1000,"quantity":1}]
 	const allowImage = String(process.env.INFINITEPAY_SEND_IMAGE_URLS || 'false') === 'true';
 	const json = JSON.stringify(items.map(it => {
+		const priceCents = Math.max(1, Math.round(Number(it.price)||0));
+		const qty = Math.max(1, parseInt(it.quantity, 10) || 1);
 		const base = {
 			name: String(it.name || '').slice(0, 120),
-			price: Number(it.price) | 0, // em centavos
-			quantity: Math.max(1, parseInt(it.quantity, 10) || 1)
+			price: priceCents,
+			quantity: qty
 		};
 		const imageUrl = it.image_url;
 		if (allowImage && imageUrl && /^https?:\/\//i.test(String(imageUrl))) {

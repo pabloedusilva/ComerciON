@@ -29,10 +29,10 @@ module.exports = {
                 o.ultimo_pedido               AS ultimo_pedido
          FROM usuarios u
          LEFT JOIN (
-           SELECT user_id,
-                  SUM(CASE WHEN status <> 'cancelado' THEN 1 ELSE 0 END) AS pedidos,
-                  SUM(CASE WHEN status <> 'cancelado' THEN total ELSE 0 END) AS total_gasto,
-                  MAX(created_at) AS ultimo_pedido
+      SELECT user_id,
+        SUM(CASE WHEN status NOT IN ('cancelado','pendente') THEN 1 ELSE 0 END) AS pedidos,
+        SUM(CASE WHEN status NOT IN ('cancelado','pendente') THEN total ELSE 0 END) AS total_gasto,
+        MAX(CASE WHEN status NOT IN ('cancelado','pendente') THEN created_at ELSE NULL END) AS ultimo_pedido
            FROM pedido
            GROUP BY user_id
          ) o ON o.user_id = u.id
@@ -62,10 +62,10 @@ module.exports = {
                 o.ultimo_pedido               AS ultimo_pedido
          FROM usuarios u
          LEFT JOIN (
-           SELECT user_id,
-                  SUM(CASE WHEN status <> 'cancelado' THEN 1 ELSE 0 END) AS pedidos,
-                  SUM(CASE WHEN status <> 'cancelado' THEN total ELSE 0 END) AS total_gasto,
-                  MAX(created_at) AS ultimo_pedido
+      SELECT user_id,
+        SUM(CASE WHEN status NOT IN ('cancelado','pendente') THEN 1 ELSE 0 END) AS pedidos,
+        SUM(CASE WHEN status NOT IN ('cancelado','pendente') THEN total ELSE 0 END) AS total_gasto,
+        MAX(CASE WHEN status NOT IN ('cancelado','pendente') THEN created_at ELSE NULL END) AS ultimo_pedido
            FROM pedido
            GROUP BY user_id
          ) o ON o.user_id = u.id

@@ -2953,19 +2953,33 @@ async function deleteProduct(id) {
     if (confirmed) {
         try {
             const token = localStorage.getItem('admin_token');
+            console.log('Deletando produto ID:', id);
+            
             const resp = await fetch(`/api/admin/products/${id}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': token ? `Bearer ${token}` : ''
+                    'Authorization': token ? `Bearer ${token}` : '',
+                    'Content-Type': 'application/json'
                 }
             });
-            const result = await resp.json();
-            if (!resp.ok || !result.sucesso) throw new Error(result.mensagem || 'Falha ao excluir produto');
+            
+            let result;
+            try {
+                result = await resp.json();
+            } catch (jsonErr) {
+                console.error('Erro ao fazer parse do JSON:', jsonErr);
+                throw new Error(`Erro de comunicação com o servidor (${resp.status})`);
+            }
+            
+            if (!resp.ok || !result.sucesso) {
+                console.error('Resposta da API:', { status: resp.status, result });
+                throw new Error(result.mensagem || `Falha ao excluir produto (${resp.status})`);
+            }
             await loadProductsFromAPI();
             showNotification('Produto excluído com sucesso!', 'success');
         } catch (err) {
-            console.error(err);
-            showNotification(err.message || 'Erro ao excluir produto', 'error');
+            console.error('Erro ao deletar produto:', err);
+            showNotification(err.message || 'Erro ao remover produto', 'error');
         }
     }
 }

@@ -35,6 +35,7 @@ async function ensureOrderItems() {
       size TINYINT NOT NULL DEFAULT 0,
       quantity INT NOT NULL DEFAULT 1,
       unit_price DECIMAL(10,2) NOT NULL DEFAULT 0,
+      name_snapshot VARCHAR(255) NULL,
       removed_ingredients VARCHAR(255) NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
