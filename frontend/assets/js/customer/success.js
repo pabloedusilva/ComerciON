@@ -488,9 +488,9 @@ function clearCartData() {
 async function init() {
 	// Requer parâmetros assinados válidos
 	if (!orderParam || !state || !sig) {
-		console.log('Parâmetros de segurança inválidos, redirecionando para menu');
-		if (typeof window.allowSuccessRedirect === 'function') window.allowSuccessRedirect();
-		window.location.replace('/menu');
+		console.log('Parâmetros de segurança ausentes. Mantendo na página para debug controlado.');
+		const c = document.getElementById('successStatus');
+		if (c) { c.textContent = 'Não foi possível validar os parâmetros de retorno. Atualize a página ou finalize um novo pagamento.'; c.style.color = '#f87171'; }
 		return;
 	}
 	
@@ -527,29 +527,22 @@ async function init() {
 	// Se a validação falhou completamente (sem order), ainda assim ficar na página
 	// desde que tenhamos os parâmetros básicos de segurança (order, state, sig)
 	if (!validOrder) {
-		console.warn('Validação de sucesso falhou, mas permanecendo na página com parâmetros válidos');
-		// Usar o orderParam como fallback se a validação backend falhou
+		console.warn('Validação de sucesso falhou, exibindo modo degradado sem redirecionar.');
 		if (orderParam) {
-			try { 
-				populateFallbackSuccess(orderParam); 
-				clearCartData();
-				return;
-			} catch(_) {}
+			try { populateFallbackSuccess(orderParam); clearCartData(); } catch(_) {}
 		}
-		// Só redirecionar se realmente não temos nenhuma informação válida
-		console.log('Nenhuma informação válida encontrada, redirecionando para menu');
-		if (typeof window.allowSuccessRedirect === 'function') window.allowSuccessRedirect();
-		window.location.replace('/menu');
+		const c = document.getElementById('successStatus');
+		if (c) { c.textContent = 'Processando... aguardando confirmação do pagamento.'; c.className='status processing'; }
+		// Não redirecionar
 		return;
 	}
 	
 	// Verificar se o order retornado confere com o parâmetro
 	if (String(validOrder) !== String(orderParam)) {
 		console.error('Order mismatch:', validOrder, 'vs', orderParam);
-		console.log('Order mismatch detectado, redirecionando para menu');
-		if (typeof window.allowSuccessRedirect === 'function') window.allowSuccessRedirect();
-		window.location.replace('/menu');
-		return;
+		const c = document.getElementById('successStatus');
+		if (c) { c.textContent = 'Confirmando pedido...'; c.className='status processing'; }
+		// Continuar sem redirecionar - permitirá novos polls/refresh manual
 	}
 
 	// Inicia listener em tempo real para receber TXID via WebSocket
