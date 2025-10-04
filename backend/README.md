@@ -76,6 +76,26 @@ Integração Infinity Pay:
 - Cartão de crédito/débito
 - Webhooks automáticos
 
+### Configuração InfinitePay
+
+Variáveis de ambiente necessárias:
+
+- `INFINITEPAY_HANDLE` — seu handle no InfinitePay (por ex.: $pablo_eduardo_)
+- `INFINITEPAY_HMAC_SECRET` — segredo HMAC para assinar o state de retorno e validar webhooks
+- `PUBLIC_BASE_URL` — URL pública do backend (ex.: https://minhapizzaria.com)
+
+Rotas relevantes:
+
+- Cliente: `POST /api/customer/payment/infinitepay/checkout-link` (token cliente requerido)
+- Sucesso: `GET /api/customer/payment/infinitepay/success?order=...&state=...&sig=...`
+- Webhook: `POST /api/customer/payment/infinitepay/webhook`
+
+Observações de segurança:
+
+- O link de checkout é gerado no backend e contém `state` assinado (HMAC-SHA256) com timestamp e nonce.
+- O retorno de sucesso é validado com TTL de 30 minutos. A confirmação final depende do webhook.
+- O webhook deve ser configurado no painel do InfinitePay para apontar para a rota acima; a assinatura HMAC é verificada.
+
 ## 📞 Notificações
 
 - WhatsApp Business API

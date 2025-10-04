@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="shortcut icon" href="../../assets/images/favicon.ico" type="image/x-icon">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+	<link rel="stylesheet" href="../../assets/css/shared/style.css">
+		<link rel="stylesheet" href="../../assets/css/customer/success.css">
+	<title>Carregando...</title>
+</head>
+<body class="success-page">
+	<div class="loader-content"><div class="loader-circle"></div></div>
+	<header class="header"></header>
+
+	<main class="success-hero">
+		<div class="success-container">
+			<!-- Hero Header -->
+			<div class="success-hero-header">
+				<div class="success-icon-container">
+					<i class="fa-solid fa-circle-check success-hero-icon" aria-hidden="true"></i>
+				</div>
+				<h1 class="success-hero-title">Compra realizada com sucesso!</h1>
+				<p class="success-hero-subtitle">Obrigado pela preferência. Recebemos seu pagamento e já estamos preparando seu pedido.</p>
+				<div>
+					<a href="/pedidos" class="btn btn-link btn-link-primary" id="heroMyOrders">Ver meus pedidos</a>
+				</div>
+			</div>
+
+			<!-- Content Grid -->
+			<div class="success-content-grid">
+				<!-- Order Summary Card -->
+				<div class="success-card order-summary-card">
+					<div class="card-header">
+						<i class="fa-solid fa-receipt card-icon" aria-hidden="true"></i>
+						<h2 class="card-title">Resumo do Pedido</h2>
+					</div>
+					<div class="card-content">
+						<div class="order-info-grid">
+							<div class="info-item">
+								<span class="info-label">Pedido</span>
+								<span class="info-value" id="sOrder">—</span>
+							</div>
+							<div class="info-item">
+								<span class="info-label">Status</span>
+								<span class="info-badge success-badge" id="sStatus">Aprovado</span>
+							</div>
+							<div class="info-item">
+								<span class="info-label">Valor Total</span>
+								<span class="info-value highlight" id="sAmount">—</span>
+							</div>
+							<div class="info-item">
+								<span class="info-label">Data</span>
+								<span class="info-value" id="sDate">—</span>
+							</div>
+							<div class="info-item">
+								<span class="info-label">ID Transação</span>
+								<span class="info-value mono" id="sTxid">—</span>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Items Card -->
+				<div class="success-card items-card" id="purchasedBox">
+					<div class="card-header">
+						<i class="fa-solid fa-shopping-bag card-icon" aria-hidden="true"></i>
+						<h2 class="card-title">Itens do Pedido</h2>
+					</div>
+					<div class="card-content">
+						<div class="items-list" id="itemsList"></div>
+					</div>
+				</div>
+
+				<!-- (removido) área de comprovante do grid -->
+			</div>
+
+			<!-- Bottom Actions: somente comprovante -->
+			<div class="success-actions">
+				<div class="receipt-actions">
+					<button id="receiptView" class="btn btn-link" type="button">Ver Comprovante</button>
+					<button id="receiptDownload" class="btn btn-black" type="button">Baixar PDF</button>
+				</div>
+			</div>
+		</div>
+	</main>
+
+	<footer class="modern-footer">
+		<div class="footer-container">
+			<div class="footer-bottom">
+				<div class="footer-credits">
+					<p>&copy; 2025 Estabelecimento. Todos os direitos reservados.</p>
+					<p class="dev-credit"><a href="https://github.com/pabloedusilva" target="_blank" rel="noopener noreferrer">Desenvolvido por Pablo Silva</a></p>
+				</div>
+			</div>
+		</div>
+	</footer>
+
+	<script src="../../assets/js/shared/nav.js"></script>
+	<script src="../../assets/js/shared/layout.js"></script>
+	<script src="../../assets/js/shared/auth.js"></script>
+	<!-- Socket.IO client for realtime payment updates -->
+	<script src="/socket.io/socket.io.js"></script>
+	<script src="../../assets/js/customer/success.js"></script>
+	<script src="../../assets/js/shared/page-title.js"></script>
+</body>
+</html>

@@ -43,9 +43,9 @@ async function getSalesSeries(period, baseNow, overrideTzOffsetMin) {
       const day = new Date(localDayStartMs - offsetMs - i * 24 * 60 * 60 * 1000);
       const next = new Date(day.getTime() + 24 * 60 * 60 * 1000);
       const [[row]] = await pool.query(
-        `SELECT COALESCE(SUM(total),0) as receita
-         FROM pedido
-         WHERE created_at >= ? AND created_at < ? AND status <> 'cancelado'`,
+  `SELECT COALESCE(SUM(total),0) as receita
+   FROM pedido
+   WHERE created_at >= ? AND created_at < ? AND status NOT IN ('cancelado','pendente')`,
         [formatDateUTC(day), formatDateUTC(next)]
       );
       labels.push(day.toISOString().slice(5,10).split('-').reverse().join('/'));
@@ -62,9 +62,9 @@ async function getSalesSeries(period, baseNow, overrideTzOffsetMin) {
       const day = new Date(localDayStartMs - offsetMs - i * 24 * 60 * 60 * 1000);
       const next = new Date(day.getTime() + 24 * 60 * 60 * 1000);
       const [[row]] = await pool.query(
-        `SELECT COALESCE(SUM(total),0) as receita
-         FROM pedido
-         WHERE created_at >= ? AND created_at < ? AND status <> 'cancelado'`,
+  `SELECT COALESCE(SUM(total),0) as receita
+   FROM pedido
+   WHERE created_at >= ? AND created_at < ? AND status NOT IN ('cancelado','pendente')`,
         [formatDateUTC(day), formatDateUTC(next)]
       );
       labels.push(day.toISOString().slice(5,10).split('-').reverse().join('/'));
@@ -87,9 +87,9 @@ async function getSalesSeries(period, baseNow, overrideTzOffsetMin) {
       const start = new Date(startLocal.getTime() - offsetMs);
       const end = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000);
       const [[row]] = await pool.query(
-        `SELECT COALESCE(SUM(total),0) as receita
-         FROM pedido
-         WHERE created_at >= ? AND created_at < ? AND status <> 'cancelado'`,
+  `SELECT COALESCE(SUM(total),0) as receita
+   FROM pedido
+   WHERE created_at >= ? AND created_at < ? AND status NOT IN ('cancelado','pendente')`,
         [formatDateUTC(start), formatDateUTC(end)]
       );
       labels.push(`Sem ${12 - w}`);
@@ -108,9 +108,9 @@ async function getSalesSeries(period, baseNow, overrideTzOffsetMin) {
     const start = startOfMonthUTC(ref);
     const end = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth()+1, 1, 0,0,0));
     const [[row]] = await pool.query(
-      `SELECT COALESCE(SUM(total),0) as receita
-       FROM pedido
-       WHERE created_at >= ? AND created_at < ? AND status <> 'cancelado'`,
+  `SELECT COALESCE(SUM(total),0) as receita
+   FROM pedido
+   WHERE created_at >= ? AND created_at < ? AND status NOT IN ('cancelado','pendente')`,
       [formatDateUTC(start), formatDateUTC(end)]
     );
     labels.push(monthNames[start.getUTCMonth()]);

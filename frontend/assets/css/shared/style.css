@@ -646,8 +646,6 @@ h1 {
     width: 200px;
     height: 200px;
     margin: 35px 10px 0;
-    background-color: #eee;
-    border-radius: 100px;
     box-shadow: 0px 10px 50px rgba(0, 0, 0, .02);
     z-index: -1
 }
@@ -711,15 +709,16 @@ h1 {
 
 .modalBody {
     width: 900px;
+    max-width: 95vw;
     background-color: #fff;
     border-radius: 10px;
     box-shadow: 0px 10px 25px rgba(153, 153, 153, .342);
     display: flex;
-    margin: 20px 0px
+    margin: 20px;
 }
 
 .modalBody.modal {
-    padding: 10px 50px
+    padding: 10px 50px;
 }
 
 /* Rating modal */
@@ -774,6 +773,141 @@ h1 {
     transition: color .2s ease;
 }
 .rating-skip:hover { color: #666; }
+
+/* Responsive Modal Styles */
+@media (max-width: 1200px) {
+    .modalBody {
+        width: 95vw;
+        max-width: 800px;
+        margin: 15px;
+    }
+    
+    .modalBody.modal {
+        padding: 15px 35px;
+    }
+}
+
+@media (max-width: 992px) {
+    .modalBody {
+        width: 96vw;
+        max-width: 700px;
+        margin: 12px;
+    }
+    
+    .modalBody.modal {
+        padding: 12px 25px;
+    }
+}
+
+@media (max-width: 768px) {
+    .modalArea {
+        padding: 10px;
+        align-items: flex-start;
+        padding-top: 20px;
+    }
+    
+    .modalBody {
+        width: calc(100vw - 20px);
+        max-width: none;
+        margin: 0;
+        border-radius: 15px;
+        max-height: calc(100vh - 40px);
+        overflow-y: auto;
+    }
+    
+    .modalBody.modal {
+        padding: 20px;
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 576px) {
+    .modalArea {
+        padding: 8px;
+        padding-top: 15px;
+    }
+    
+    .modalBody {
+        width: calc(100vw - 16px);
+        border-radius: 12px;
+        max-height: calc(100vh - 30px);
+    }
+    
+    .modalBody.modal {
+        padding: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .modalArea {
+        padding: 5px;
+        padding-top: 10px;
+    }
+    
+    .modalBody {
+        width: calc(100vw - 10px);
+        border-radius: 10px;
+        max-height: calc(100vh - 20px);
+        overflow-y: auto;
+    }
+    
+    .modalBody.modal {
+        padding: 12px;
+    }
+    
+    /* Ajustes específicos para modais de produto */
+    .modalBody .produtoInfo h1 {
+        font-size: 1.2rem;
+        margin-top: 0.5rem;
+    }
+    
+    .modalBody .produtoInfo--desc {
+        font-size: 0.85rem;
+        line-height: 1.4;
+    }
+    
+    .modalBody .produtoInfo--sector {
+        font-size: 0.9rem;
+        margin-top: 1rem;
+    }
+    
+    .modalBody .produtoInfo--addButton {
+        font-size: 0.9rem;
+        padding: 12px 16px;
+        margin-top: 1rem;
+    }
+}
+
+/* Ajustes para telas muito pequenas */
+@media (max-width: 360px) {
+    .modalArea {
+        padding: 3px;
+        padding-top: 8px;
+    }
+    
+    .modalBody {
+        width: calc(100vw - 6px);
+        border-radius: 8px;
+        max-height: calc(100vh - 16px);
+    }
+    
+    .modalBody.modal {
+        padding: 10px;
+    }
+}
+
+/* Ajustes para orientação landscape em dispositivos móveis */
+@media (max-height: 500px) and (orientation: landscape) {
+    .modalArea {
+        align-items: flex-start;
+        padding-top: 5px;
+    }
+    
+    .modalBody {
+        max-height: calc(100vh - 10px);
+        overflow-y: auto;
+    }
+}
 
 @media (max-width: 820px) {
     .pizzaWindowBody.modal.rating { height: auto; padding: 24px 22px; }

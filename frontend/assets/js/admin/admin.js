@@ -571,7 +571,7 @@ function updatePopularProducts(list) {
         const card = document.createElement('div');
         card.className = 'product-card';
         card.innerHTML = `
-            <img src="../../assets/images/default-images/produto-padrao.png" alt="${p.name}">
+            <img src="" alt="${p.name}" data-fallback>
             <div class="product-info">
                 <h4>${p.name}</h4>
                 <p>${p.vendas} vendas</p>
@@ -1552,26 +1552,18 @@ async function fetchCategoriesPublic() {
         const json = await resp.json();
         if (resp.ok && json?.sucesso) {
             const rows = json.data || [];
-            // Normalizar slugs comuns
-            const alias = (s)=>{
-                const v = String(s||'').toLowerCase();
-                if (v === 'bebida' || v === 'bebidas' || v === 'drinks') return 'drink';
-                if (v === 'produtos' || v === 'product' || v === 'products') return 'produto';
-                return v;
-            };
-            const map = new Map();
-            rows.forEach(c=>{
-                const s = alias(c.slug);
-                const t = c.title && c.title.trim() ? c.title : (s==='drink'?'Bebidas':(s==='produto'?'Produtos':s));
-                if (!map.has(s)) map.set(s, { slug:s, title:t });
-            });
-            // Garantir padrão
-            if (!map.has('produto')) map.set('produto', { slug:'produto', title:'Produtos' });
-            if (!map.has('drink')) map.set('drink', { slug:'drink', title:'Bebidas' });
-            return Array.from(map.values());
+            // Apenas refletir exatamente o que vier do banco (sem inserir defaults)
+            // Sanitização mínima
+            return rows
+                .filter(c => c && c.slug)
+                .map(c => ({
+                    slug: String(c.slug).trim(),
+                    title: (c.title && c.title.trim()) ? c.title.trim() : String(c.slug).trim()
+                }));
         }
     } catch(_) {}
-    return [ { slug:'produto', title:'Produtos' }, { slug:'drink', title:'Bebidas' } ];
+    // Em erro, retornar lista vazia para não forçar categorias fantasmas
+    return [];
 }
 
 async function populateCategoryFilter() {
@@ -2309,19 +2301,45 @@ function renderProductsTable() {
 
     tbody.innerHTML = '';
 
+    // Construir mapa slug->titulo para uso rápido (cache leve em memória)
+    if (!window.__adminCategoriesCache || !Array.isArray(window.__adminCategoriesCache)) {
+        // disparar fetch em background caso ainda não tenhamos cache
+        fetchCategoriesPublic().then(c=>{ window.__adminCategoriesCache = c; });
+        window.__adminCategoriesCache = [];
+    }
+    const catTitle = (slug) => {
+        if (!slug) return '-';
+        const norm = String(slug).trim();
+        const found = (window.__adminCategoriesCache||[]).find(c=>c.slug===norm);
+        if (found) return found.title;
+        // fallback: tentar usar campo title presente no próprio produto (caso backend envie)
+        if (typeof slug === 'string' && slug) return slug; // mostra slug se nada mais
+        return '-';
+    };
+
     products.forEach(product => {
         const imgSrc = product.img && typeof product.img === 'string' && product.img.trim() !== ''
             ? product.img
-            : '/assets/images/default-images/produto-padrao.png';
+            : '';
         const row = document.createElement('tr');
         const nonZeroPrices = (Array.isArray(product.price) ? product.price : []).filter(v => Number(v) > 0);
         const displayPrice = nonZeroPrices.length ? Math.max(...nonZeroPrices) : 0;
+        // categoria pode vir em diferentes formatos: product.category (slug) ou product.category.slug
+        let categorySlug = '';
+        if (product.category && typeof product.category === 'object') {
+            categorySlug = product.category.slug || '';
+        } else {
+            categorySlug = product.category || '';
+        }
+        const categoryTitle = product.category && typeof product.category === 'object' && product.category.title
+            ? product.category.title
+            : catTitle(categorySlug);
         row.innerHTML = `
             <td>
-                <img src="${imgSrc}" alt="${product.name}" class="product-img" onerror="this.onerror=null;this.src='/assets/images/default-images/produto-padrao.png'">
+                <img src="${imgSrc}" alt="${product.name}" class="product-img" data-fallback>
             </td>
             <td>${product.name}</td>
-            <td>${(product.category==='drink') ? 'Bebida' : 'Produto'}</td>
+            <td>${escapeHtml(categoryTitle || '-')}</td>
             <td>R$ ${Number(displayPrice).toFixed(2)}</td>
             <td>
                 <span class="status-badge ${product.status}">
@@ -2494,11 +2512,6 @@ function renderOrdersCards() {
                     ${statusInfo.text}
                 </button>
                 `}
-                ${(order.status === 'pendente' || order.status === 'preparando') ? `
-                <button class="cancel-btn-icon" onclick="cancelOrder('${order.id}')" title="Cancelar pedido">
-                    <i class="fas fa-times"></i>
-                </button>
-                ` : ''}
             </div>
         `;
 
@@ -2562,13 +2575,13 @@ function renderFilteredProducts(filteredProducts) {
     filteredProducts.forEach(product => {
         const imgSrc = product.img && typeof product.img === 'string' && product.img.trim() !== ''
             ? product.img
-            : '/assets/images/default-images/produto-padrao.png';
+            : '';
         const row = document.createElement('tr');
         const nonZeroPrices = (Array.isArray(product.price) ? product.price : []).filter(v => Number(v) > 0);
         const displayPrice = nonZeroPrices.length ? Math.max(...nonZeroPrices) : 0;
         row.innerHTML = `
             <td>
-                <img src="${imgSrc}" alt="${product.name}" class="product-img" onerror="this.onerror=null;this.src='/assets/images/default-images/produto-padrao.png'">
+                <img src="${imgSrc}" alt="${product.name}" class="product-img" data-fallback>
             </td>
             <td>${product.name}</td>
             <td>${(product.category==='drink') ? 'Bebida' : 'Produto'}</td>
@@ -2958,19 +2971,33 @@ async function deleteProduct(id) {
     if (confirmed) {
         try {
             const token = localStorage.getItem('admin_token');
+            console.log('Deletando produto ID:', id);
+            
             const resp = await fetch(`/api/admin/products/${id}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': token ? `Bearer ${token}` : ''
+                    'Authorization': token ? `Bearer ${token}` : '',
+                    'Content-Type': 'application/json'
                 }
             });
-            const result = await resp.json();
-            if (!resp.ok || !result.sucesso) throw new Error(result.mensagem || 'Falha ao excluir produto');
+            
+            let result;
+            try {
+                result = await resp.json();
+            } catch (jsonErr) {
+                console.error('Erro ao fazer parse do JSON:', jsonErr);
+                throw new Error(`Erro de comunicação com o servidor (${resp.status})`);
+            }
+            
+            if (!resp.ok || !result.sucesso) {
+                console.error('Resposta da API:', { status: resp.status, result });
+                throw new Error(result.mensagem || `Falha ao excluir produto (${resp.status})`);
+            }
             await loadProductsFromAPI();
             showNotification('Produto excluído com sucesso!', 'success');
         } catch (err) {
-            console.error(err);
-            showNotification(err.message || 'Erro ao excluir produto', 'error');
+            console.error('Erro ao deletar produto:', err);
+            showNotification(err.message || 'Erro ao remover produto', 'error');
         }
     }
 }
@@ -3497,7 +3524,7 @@ const layoutManager = {
     eventsBound: false,
     currentLayout: {
         background: '../../assets/images/default-images/background.jpg',
-        logo: '../../assets/images/default-images/logo_estabelecimento.png',
+    logo: '',
         title: 'Produtos 10% OFF',
         subtitle: 'Confira no cardápio',
         description: 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Incidunt, vitae beatae sint magnam, libero harum quae nobis veritatis iure hic provident illo porro.',
@@ -3710,7 +3737,7 @@ const layoutManager = {
 
     async resetLogo() {
         try {
-            const url = '../../assets/images/default-images/logo_estabelecimento.png';
+            const url = '';
             const resp = await this.apiFetch('/api/admin/layout/logo', {
                 method: 'PUT',
                 body: JSON.stringify({ image: url })
@@ -3788,12 +3815,10 @@ const layoutManager = {
 
             const reader = new FileReader();
             reader.onload = (e) => {
-                this.currentLayout.carouselSlides.push({
-                    image: e.target.result,
-                    caption: 'Nova imagem'
-                });
+                this.currentLayout.carouselSlides.push({ image: e.target.result, caption: 'Nova imagem' });
                 this.updateCarouselPreview();
-                this.saveLayout();
+                // Persistir imediatamente no backend
+                this.syncCarouselToBackend();
             };
             reader.readAsDataURL(file);
         });
@@ -3861,8 +3886,7 @@ const layoutManager = {
             this.currentLayout.carouselSlides[index].caption = captionInput.value;
             this.updateCarouselPreview();
             this.cancelSlideEdit();
-            this.saveLayout();
-            showNotification('Slide atualizado!', 'success');
+            this.syncCarouselToBackend('Slide atualizado!');
         }
     },
 
@@ -3909,6 +3933,23 @@ const layoutManager = {
             this.saveLayout();
             showNotification('Carousel salvo com sucesso!', 'success');
         } catch (e) {
+            showNotification(e.message || 'Falha ao salvar carousel', 'error');
+        }
+    },
+
+    async syncCarouselToBackend(successMsg) {
+        try {
+            const slides = this.currentLayout.carouselSlides.map(s => ({ image: s.image, caption: s.caption }));
+            const resp = await this.apiFetch('/api/admin/layout/carousel', {
+                method: 'PUT',
+                body: JSON.stringify({ slides })
+            });
+            const updated = (resp.data?.carousel || []).map(s => ({ image: s.image_url, caption: s.caption }));
+            if (updated.length) this.currentLayout.carouselSlides = updated;
+            this.saveLayoutSilent();
+            if (successMsg) showNotification(successMsg, 'success');
+        } catch (e) {
+            console.warn('Falha ao sincronizar carousel:', e);
             showNotification(e.message || 'Falha ao salvar carousel', 'error');
         }
     },

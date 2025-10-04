@@ -1,0 +1,43 @@
+# ===== Server =====
+PORT=3000
+NODE_ENV=development
+PUBLIC_BASE_URL=http://localhost:3000
+
+# ===== Database (Railway) =====
+DB_HOST=turntable.proxy.rlwy.net
+DB_PORT=58558
+DB_NAME=railway
+DB_USER=root
+DB_PASS=bhJZXyLUWzOFQxKXlCaqKzspWiwinrVc
+
+# ===== JWT Security =====
+# 64-hex strong secret for signing JWTs
+JWT_SECRET=6a4c6d8a9b7f41bcb2f6c4e1a8d0f7c9a4e2b1c3d5f6a7b89c0d1e2f3a4b5c6d
+JWT_EXPIRES_IN=24h
+JWT_REFRESH_EXPIRES_IN=7d
+
+# ===== Security / Sessions =====
+BCRYPT_ROUNDS=12
+STRICT_SESSION_UA=true
+STRICT_SESSION_IP=false
+
+# ===== Rate Limiting =====
+RATE_LIMIT_WINDOW=900000
+RATE_LIMIT_MAX=100
+
+# ===== Timezone (America/Sao_Paulo ~ -180 min) =====
+TZ_OFFSET_MINUTES=-180
+
+# ===== Payments - InfinitePay =====
+# Handle oficial do lojista (fornecido)
+INFINITEPAY_HANDLE=$pablo_eduardo_
+# Segredo HMAC (64-hex) para validar webhooks e assinar o retorno de sucesso
+INFINITEPAY_HMAC_SECRET=9f3b7c2e1a4d5f6b8c9d0e1f2a3b4c5d6e7f8091a2b3c4d5e6f7a8b9c0d1e2f3
+INFINITEPAY_SEND_IMAGE_URLS=false
+
+# ===== Optional / Upload / Mail (preencher quando necessário) =====
+# CLOUDINARY_URL=
+# SMTP_HOST=
+# SMTP_PORT=
+# SMTP_USER=
+# SMTP_PASS=
