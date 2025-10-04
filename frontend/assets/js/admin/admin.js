@@ -3815,12 +3815,10 @@ const layoutManager = {
 
             const reader = new FileReader();
             reader.onload = (e) => {
-                this.currentLayout.carouselSlides.push({
-                    image: e.target.result,
-                    caption: 'Nova imagem'
-                });
+                this.currentLayout.carouselSlides.push({ image: e.target.result, caption: 'Nova imagem' });
                 this.updateCarouselPreview();
-                this.saveLayout();
+                // Persistir imediatamente no backend
+                this.syncCarouselToBackend();
             };
             reader.readAsDataURL(file);
         });
@@ -3888,8 +3886,7 @@ const layoutManager = {
             this.currentLayout.carouselSlides[index].caption = captionInput.value;
             this.updateCarouselPreview();
             this.cancelSlideEdit();
-            this.saveLayout();
-            showNotification('Slide atualizado!', 'success');
+            this.syncCarouselToBackend('Slide atualizado!');
         }
     },
 
@@ -3936,6 +3933,23 @@ const layoutManager = {
             this.saveLayout();
             showNotification('Carousel salvo com sucesso!', 'success');
         } catch (e) {
+            showNotification(e.message || 'Falha ao salvar carousel', 'error');
+        }
+    },
+
+    async syncCarouselToBackend(successMsg) {
+        try {
+            const slides = this.currentLayout.carouselSlides.map(s => ({ image: s.image, caption: s.caption }));
+            const resp = await this.apiFetch('/api/admin/layout/carousel', {
+                method: 'PUT',
+                body: JSON.stringify({ slides })
+            });
+            const updated = (resp.data?.carousel || []).map(s => ({ image: s.image_url, caption: s.caption }));
+            if (updated.length) this.currentLayout.carouselSlides = updated;
+            this.saveLayoutSilent();
+            if (successMsg) showNotification(successMsg, 'success');
+        } catch (e) {
+            console.warn('Falha ao sincronizar carousel:', e);
             showNotification(e.message || 'Falha ao salvar carousel', 'error');
         }
     },
