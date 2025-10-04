@@ -37,18 +37,20 @@ async function getMonthStats() {
 	const prevStart = startOfPrevMonthUTC(now);
 	const prevEnd = start;
 
-	// Receita e pedidos do mês (exclui cancelados)
+	// Receita e pedidos do mês (exclui cancelados E pendentes não pagos).
+	// Importante: após alteração de fluxo de pagamento, status 'pendente' representa
+	// pedidos ainda não pagos e que não devem contar em métricas.
 	const [[curAgg]] = await pool.query(
 		`SELECT COALESCE(SUM(total),0) as receita, COUNT(*) as pedidos
 		 FROM pedido
-		 WHERE created_at >= ? AND created_at < ? AND status <> 'cancelado'`,
+		 WHERE created_at >= ? AND created_at < ? AND status NOT IN ('cancelado','pendente')`,
 		[formatDateUTC(start), formatDateUTC(end)]
 	);
 
 	const [[prevAgg]] = await pool.query(
 		`SELECT COALESCE(SUM(total),0) as receita, COUNT(*) as pedidos
 		 FROM pedido
-		 WHERE created_at >= ? AND created_at < ? AND status <> 'cancelado'`,
+		 WHERE created_at >= ? AND created_at < ? AND status NOT IN ('cancelado','pendente')`,
 		[formatDateUTC(prevStart), formatDateUTC(prevEnd)]
 	);
 
@@ -103,11 +105,11 @@ async function getPopularProducts(days = 30, limit = 3) {
 	since.setUTCDate(since.getUTCDate() - (Number(days) || 30));
 	const [rows] = await pool.query(
 		`SELECT pr.id, pr.name, COALESCE(SUM(i.quantity),0) as vendas,
-						COALESCE(SUM(i.quantity * i.unit_price),0) as receita
+					COALESCE(SUM(i.quantity * i.unit_price),0) as receita
 		 FROM pedido_itens i
 		 JOIN products pr ON pr.id = i.product_id
 		 JOIN pedido p ON p.id = i.order_id
-		 WHERE p.created_at >= ? AND p.status <> 'cancelado'
+		 WHERE p.created_at >= ? AND p.status NOT IN ('cancelado','pendente')
 		 GROUP BY pr.id, pr.name
 		 ORDER BY vendas DESC, receita DESC
 		 LIMIT ?`,
@@ -135,7 +137,7 @@ async function getSalesSeries(days = 7) {
 		const [[row]] = await pool.query(
 			`SELECT COALESCE(SUM(total),0) as receita
 			 FROM pedido
-			 WHERE created_at >= ? AND created_at < ? AND status <> 'cancelado'`,
+			 WHERE created_at >= ? AND created_at < ? AND status NOT IN ('cancelado','pendente')`,
 			[formatDateUTC(start), formatDateUTC(end)]
 		);
 		// Label as ISO date (YYYY-MM-DD) for frontend parsing

@@ -32,10 +32,6 @@ function updateCart() {
     document.querySelector(".cart").innerHTML = ""; //Limpar carrinho
 
     let produtosValor = 0;
-    let subtotal = 0;
-    let entrega = 5;
-    let desconto = 0;
-    let total = 0;
 
     for (let i in cart) {
       // Determinar se é pizza ou drink e buscar no array correto
@@ -121,19 +117,20 @@ function updateCart() {
       document.querySelector(".cart").append(cartItem);
     }
 
-    subtotal = produtosValor + entrega;
-    desconto = subtotal * 0.1;
-    total = subtotal - desconto;
+  // No menu, exibimos apenas o valor dos itens; entrega e descontos serão calculados no Checkout
+    // Cupom: SITE10 (10% OFF) – client-side test only
+    const couponState = (()=>{ try { return JSON.parse(localStorage.getItem('pizzaria_coupon')||'null') || {}; } catch(_) { return {}; } })();
+    const entrega = 0;
+    const subtotal = produtosValor + entrega;
+    let desconto = 0;
+    if (couponState && couponState.code === 'SITE10') {
+      desconto = subtotal * 0.10;
+    }
+    const total = Math.max(0, subtotal - desconto);
 
     document.querySelector(
       ".produtosValor span:last-child"
     ).innerHTML = `${produtosValor.toLocaleString("pt-br", {
-      style: "currency",
-      currency: "BRL",
-    })}`;
-    document.querySelector(
-      ".entrega span:last-child"
-    ).innerHTML = `${entrega.toLocaleString("pt-br", {
       style: "currency",
       currency: "BRL",
     })}`;
@@ -143,12 +140,7 @@ function updateCart() {
       style: "currency",
       currency: "BRL",
     })}`;
-    document.querySelector(
-      ".desconto span:last-child"
-    ).innerHTML = `${desconto.toLocaleString("pt-br", {
-      style: "currency",
-      currency: "BRL",
-    })}`;
+    // Não sobrescrever o lado direito de 'Desconto' (botão de cupom)
     document.querySelector(
       ".total span:last-child"
     ).innerHTML = `${total.toLocaleString("pt-br", {
@@ -197,10 +189,9 @@ function updateCart() {
     // Zera os totais exibidos
     const zero = (0).toLocaleString("pt-br", { style: "currency", currency: "BRL" });
     document.querySelector(".produtosValor span:last-child").textContent = zero;
-    document.querySelector(".entrega span:last-child").textContent = zero;
-    document.querySelector(".subtotal span:last-child").textContent = zero;
-    document.querySelector(".desconto span:last-child").textContent = zero;
-    document.querySelector(".total span:last-child").textContent = zero;
+  document.querySelector(".subtotal span:last-child").textContent = zero;
+  // Não sobrescrever o lado direito de 'Desconto' (botão de cupom)
+  document.querySelector(".total span:last-child").textContent = zero;
     // Não abrir automaticamente o carrinho no estado vazio; respeitar estado atual
   }
 
@@ -239,5 +230,93 @@ document.addEventListener('DOMContentLoaded', function(){
 
 // Handler de finalizar movido para shared/geral.js para unificar spinner/fechamento
 
+// ===== Cupom (SITE10 - 10% OFF | client-side test) =====
+document.addEventListener('DOMContentLoaded', ()=>{
+  const toggleBtn = document.querySelector('.coupon-toggle');
+  const box = document.querySelector('.coupon-box');
+  const input = document.getElementById('couponInput');
+  const applyBtn = document.getElementById('applyCouponBtn');
+  const msg = document.getElementById('couponMsg');
+  if (!toggleBtn || !box || !input || !applyBtn) return;
+
+  const loadState = ()=>{ try { return JSON.parse(localStorage.getItem('pizzaria_coupon')||'null') || {}; } catch(_) { return {}; } };
+  const saveState = (s)=>{ try { localStorage.setItem('pizzaria_coupon', JSON.stringify(s||{})); } catch(_) {} };
+  const fmt = (n)=> Number(n||0).toLocaleString('pt-br',{style:'currency',currency:'BRL'});
+
+  // Restore
+  const state = loadState();
+  const openBox = ()=> box.classList.add('open');
+  const closeBox = ()=> box.classList.remove('open');
+  const setAppliedUI = (code)=>{
+    input.value = code;
+    msg.innerHTML = `Cupom aplicado: <span class=\"coupon-badge removable\" title=\"Remover cupom\" role=\"button\" tabindex=\"0\">${code}</span>`;
+    msg.style.color = '#065f46';
+    try { toggleBtn.textContent = 'Cupom aplicado'; } catch(_) {}
+    // Clique para remover o cupom no badge
+    const badge = msg.querySelector('.coupon-badge.removable');
+    if (badge) {
+      const clear = ()=>{ saveState({}); setClearedUI(); try { updateCart(); } catch(_) {} };
+      badge.addEventListener('click', clear);
+      badge.addEventListener('keydown', (e)=>{ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); clear(); } });
+    }
+  };
+  const setClearedUI = ()=>{
+    input.value = '';
+    msg.textContent = 'Insira um cupom';
+    msg.style.color = '#6b7280';
+    try { toggleBtn.textContent = 'Possui cupom?'; } catch(_) {}
+  };
+  if (state.code) {
+    openBox();
+    setAppliedUI(state.code);
+  }
+
+  toggleBtn.addEventListener('click', ()=>{
+    const on = !box.classList.contains('open');
+    if (on) openBox(); else closeBox();
+  });
+
+  applyBtn.addEventListener('click', ()=>{
+    const code = (input.value || '').trim().toUpperCase();
+    if (!code) { setClearedUI(); return; }
+    // Por enquanto aceitar somente SITE10
+    if (code === 'SITE10') {
+      saveState({ code: 'SITE10' });
+      setAppliedUI('SITE10');
+      try { updateCart(); } catch(_) {}
+      // Mantém a caixa visível para o usuário ver/remover
+    } else {
+      // Código inválido
+      saveState({});
+      msg.textContent = 'Cupom inválido.';
+      msg.style.color = '#b91c1c';
+      try { toggleBtn.textContent = 'Possui cupom?'; } catch(_) {}
+      try { updateCart(); } catch(_) {}
+      // Mantém a caixa aberta para nova tentativa e preserva o input
+    }
+  });
+
+  // Remover cupom com tecla Esc dentro do input
+  input.addEventListener('keydown', (e)=>{
+    if (e.key === 'Escape') {
+      saveState({});
+      setClearedUI();
+      try { updateCart(); } catch(_) {}
+      closeBox();
+    }
+  });
+
+  // Clique com botão direito no botão toggle para limpar rapidamente (atalho sutil)
+  toggleBtn.addEventListener('contextmenu', (e)=>{
+    e.preventDefault();
+    saveState({});
+    setClearedUI();
+    try { updateCart(); } catch(_) {}
+    closeBox();
+  });
+});
+
 // Pós-pagamento: abrir modal de "pedido sendo preparado" e depois avaliação
 // Removido: fluxo de modal de avaliação e pós-pagamento
+
+// Removido: calculadora de entrega no menu. Esse cálculo acontece no Checkout protegido.
